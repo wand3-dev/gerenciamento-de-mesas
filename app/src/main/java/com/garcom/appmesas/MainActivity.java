@@ -62,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
     private String queryBusca = "";
 
     private View rootLayoutMain, layoutSearchContainer;
-    private TextView btnToggleTema;
 
     // Chips de filtro da Fila (Bebidas vs Comidas)
     private TextView btnFilaFiltroTodas, btnFilaFiltroBebidas, btnFilaFiltroComidas;
@@ -104,14 +103,6 @@ public class MainActivity extends AppCompatActivity {
 
         rootLayoutMain = findViewById(R.id.rootLayoutMain);
         layoutSearchContainer = findViewById(R.id.layoutSearchContainer);
-        btnToggleTema = findViewById(R.id.btnToggleTema);
-        if (btnToggleTema != null) {
-            btnToggleTema.setOnClickListener(v -> {
-                boolean novoModo = ThemeManager.toggleDarkMode(this);
-                aplicarTemaVisual();
-                Toast.makeText(this, novoModo ? "🌙 Modo Escuro ativado!" : "☀️ Modo Claro ativado!", Toast.LENGTH_SHORT).show();
-            });
-        }
 
         rvMesas = findViewById(R.id.rvMesas);
         rvFilaPedidos = findViewById(R.id.rvFilaPedidos);
@@ -468,20 +459,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void aplicarTemaVisual() {
-        boolean isDark = ThemeManager.isDarkMode(this);
-        if (btnToggleTema != null) {
-            btnToggleTema.setText(isDark ? "☀️ CLARO" : "🌙 ESCURO");
-            btnToggleTema.setTextColor(Color.parseColor(isDark ? "#FDE68A" : "#94A3B8"));
-        }
         if (rootLayoutMain != null) {
-            rootLayoutMain.setBackgroundColor(Color.parseColor(isDark ? "#090D16" : "#F8FAFC"));
+            rootLayoutMain.setBackgroundColor(Color.parseColor("#F8FAFC"));
         }
         if (layoutSearchContainer != null) {
-            layoutSearchContainer.setBackgroundResource(isDark ? R.drawable.bg_search_bar_dark : R.drawable.bg_search_bar);
+            layoutSearchContainer.setBackgroundResource(R.drawable.bg_search_bar);
         }
         if (etBuscarMesa != null) {
-            etBuscarMesa.setTextColor(Color.parseColor(isDark ? "#F8FAFC" : "#0F172A"));
-            etBuscarMesa.setHintTextColor(Color.parseColor(isDark ? "#64748B" : "#94A3B8"));
+            etBuscarMesa.setTextColor(Color.parseColor("#0F172A"));
+            etBuscarMesa.setHintTextColor(Color.parseColor("#94A3B8"));
         }
         if (adapter != null) {
             adapter.notifyDataSetChanged();

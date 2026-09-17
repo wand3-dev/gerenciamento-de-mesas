@@ -2,32 +2,77 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    android:background="#090D16">
 
-    <VideoView
-        android:id="@+id/videoViewAbertura"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_centerInParent="true" />
-
-    <!-- Botão Pular discreto no canto superior direito -->
-    <TextView
-        android:id="@+id/btnPularAbertura"
+    <!-- Container Central: Logo + Textos com Efeito Luxo -->
+    <LinearLayout
+        android:id="@+id/layoutSplashContent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_margin="20dp"
-        android:text="PULAR ❯"
-        android:textColor="#FFFFFF"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:background="@drawable/bg_badge_creator"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp"
-        android:clickable="true"
-        android:focusable="true" />
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <ImageView
+            android:id="@+id/ivSplashLogo"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:src="@drawable/logo_app"
+            android:contentDescription="Portugália Logo"
+            android:scaleType="fitCenter" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="PORTUGÁLIA"
+            android:textColor="#FDE68A"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.12" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="PADARIA &amp; RESTAURANTE"
+            android:textColor="#94A3B8"
+            android:textSize="9.5sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Gerenciamento Ágil de Mesas &amp; Comandas"
+            android:textColor="#CBD5E1"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Rodapé: Indicador de Carregamento Discreto e Versão -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="32dp"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <ProgressBar
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:indeterminateTint="#F59E0B" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Conectando ao sistema..."
+            android:textColor="#64748B"
+            android:textSize="11sp" />
+    </LinearLayout>
 
 </RelativeLayout>

@@ -69,60 +69,41 @@
             </LinearLayout>
         </RelativeLayout>
 
-        <!-- Faixa do Garçom com Estilo Moderno + Botão Modo Escuro -->
-        <LinearLayout
+        <!-- Faixa do Garçom: Nome Completo no Meio -->
+        <RelativeLayout
             android:id="@+id/layoutUsuarioLogado"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="36dp"
             android:layout_marginTop="10dp"
             android:background="#162235"
             android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="6dp"
-            android:paddingBottom="6dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:paddingEnd="12dp">
 
             <TextView
                 android:id="@+id/tvNomeUsuarioLogado"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="👤 GARÇOM EM TURNO"
-                android:textColor="#FDE68A"
-                android:textSize="11.5sp"
-                android:textStyle="bold"
-                android:ellipsize="end"
-                android:maxLines="1" />
-
-            <TextView
-                android:id="@+id/btnToggleTema"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🌙 ESCURO"
+                android:layout_centerInParent="true"
+                android:text="👤 GARÇOM EM TURNO"
                 android:textColor="#FDE68A"
-                android:textSize="10sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
-                android:background="@drawable/bg_pill_server"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:paddingTop="3dp"
-                android:paddingBottom="3dp"
-                android:layout_marginEnd="10dp"
-                android:clickable="true"
-                android:focusable="true" />
+                android:gravity="center"
+                android:maxLines="1" />
 
             <TextView
                 android:id="@+id/btnSairSessao"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
                 android:text="SAIR 🚪"
                 android:textColor="#F87171"
                 android:textSize="10.5sp"
                 android:textStyle="bold"
                 android:clickable="true"
                 android:focusable="true" />
-        </LinearLayout>
+        </RelativeLayout>
 
         <!-- Dashboard de Métricas do Salão (Cards com cantos modernos) -->
         <LinearLayout
