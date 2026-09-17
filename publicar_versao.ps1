@@ -82,7 +82,8 @@ if (Test-Path $firebaseCli) {
     }
     $rtdbPayload = $objPayload | ConvertTo-Json -Depth 5
 
-    Set-Content -Path $tempJson -Value $rtdbPayload -Encoding UTF8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($tempJson, $rtdbPayload, $utf8NoBom)
     & $firebaseCli database:set / "$tempJson" --project $firebaseProject --instance $firebaseInstance -f | Out-Null
     Remove-Item $tempJson -Force -ErrorAction SilentlyContinue
     Write-Host "OK: Firebase Realtime Database atualizado: Versao $vName ($vCode)" -ForegroundColor Green
