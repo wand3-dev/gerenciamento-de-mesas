@@ -168,14 +168,42 @@ public class ServerComandasClient {
      * Procura a comanda varrendo as mesas 1 por 1 com a requisição 1:
      * Faz GET /func_MostrarComandasItens/T/mesa={M} iterando mesa a mesa até encontrar a comanda procurada!
      */
+    /**
+     * Procura a comanda varrendo o servidor:
+     * 1. Testa a mesa de número igual à comanda (caso mesa == comanda, ex: 239)
+     * 2. Testa a mesa preferencial
+     * 3. Varre as mesas abertas e mesas padrão
+     */
     public void buscarComandaVarrendoMesas(String numeroComanda, int mesaPreferencial, OnComandaEncontradaListener listener) {
         executor.execute(() -> {
             String alvo = numeroComanda.trim();
             List<JSONObject> itensEncontrados = new ArrayList<>();
             int mesaOndeAchou = -1;
 
-            // 1. Testa primeiro a mesa indicada pelo garçom (se informada) para resposta instantânea
-            if (mesaPreferencial >= 1 && mesaPreferencial <= 34) {
+            // 1. Testa primeiro a mesa com o mesmo número da comanda (se numérico, ex: comanda 239 -> mesa 239)
+            int mesaIgualComanda = -1;
+            try {
+                mesaIgualComanda = Integer.parseInt(alvo);
+                if (mesaIgualComanda > 0) {
+                    List<JSONObject> itensMesa = buscarItensDaMesaSync(mesaIgualComanda);
+                    for (JSONObject obj : itensMesa) {
+                        String cmd = obj.optString("NUM_COMANDA", "").trim();
+                        if (cmd.equals(alvo) || alvo.equals(String.valueOf(mesaIgualComanda))) {
+                            itensEncontrados.add(obj);
+                        }
+                    }
+                    if (!itensEncontrados.isEmpty()) {
+                        mesaOndeAchou = mesaIgualComanda;
+                        final int fMesa = mesaOndeAchou;
+                        final List<JSONObject> fItens = itensEncontrados;
+                        mainHandler.post(() -> listener.onEncontrada(fMesa, fItens));
+                        return;
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            // 2. Testa a mesa indicada pelo garçom (se informada)
+            if (mesaPreferencial > 0 && mesaPreferencial != mesaIgualComanda) {
                 try {
                     List<JSONObject> itensMesa = buscarItensDaMesaSync(mesaPreferencial);
                     for (JSONObject obj : itensMesa) {
@@ -194,12 +222,22 @@ public class ServerComandasClient {
                 } catch (Exception ignored) {}
             }
 
-            // 2. Se não achou na mesa inicial, varre as mesas de 1 até 34 uma a uma
+            // 3. Se não achou, varre mesas conhecidas cadastradas no MesaManager + 1 a 34
             boolean houveErro = false;
             String ultimoErro = "";
 
-            for (int m = 1; m <= 34; m++) {
-                if (m == mesaPreferencial) continue; // Já testada no passo anterior
+            java.util.LinkedHashSet<Integer> mesasParaTestar = new java.util.LinkedHashSet<>();
+            if (MesaManager.getInstance(context) != null) {
+                for (Mesa m : MesaManager.getInstance(context).getMesas()) {
+                    mesasParaTestar.add(m.getNumero());
+                }
+            }
+            for (int i = 1; i <= 34; i++) {
+                mesasParaTestar.add(i);
+            }
+
+            for (int m : mesasParaTestar) {
+                if (m == mesaPreferencial || m == mesaIgualComanda) continue;
 
                 try {
                     List<JSONObject> itensMesa = buscarItensDaMesaSync(m);
@@ -212,7 +250,7 @@ public class ServerComandasClient {
 
                     if (!itensEncontrados.isEmpty()) {
                         mesaOndeAchou = m;
-                        break; // ENCONTROU! Interrompe a varredura na hora!
+                        break; // ENCONTROU!
                     }
                 } catch (Exception e) {
                     houveErro = true;
@@ -231,5 +269,51 @@ public class ServerComandasClient {
                 mainHandler.post(() -> listener.onNotFound("Comanda #" + alvo + " não encontrada aberta em nenhuma mesa."));
             }
         });
+    }
+
+    /**
+     * Busca síncrona para detectar se uma comanda mudou para outra mesa no servidor
+     * Retorna o número da nova mesa onde a comanda foi localizada, ou -1 se não encontrada
+     */
+    public int detectarNovaMesaDaComandaSync(String comanda, int mesaAtual) {
+        if (comanda == null || comanda.trim().isEmpty()) return -1;
+        String alvo = comanda.trim();
+
+        // 1. Testa mesa com mesmo número da comanda
+        try {
+            int numIgual = Integer.parseInt(alvo);
+            if (numIgual != mesaAtual && numIgual > 0) {
+                List<JSONObject> itens = buscarItensDaMesaSync(numIgual);
+                for (JSONObject obj : itens) {
+                    if (alvo.equals(obj.optString("NUM_COMANDA", "").trim())) {
+                        return numIgual;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // 2. Varre as outras mesas ativas no app
+        java.util.LinkedHashSet<Integer> mesas = new java.util.LinkedHashSet<>();
+        if (MesaManager.getInstance(context) != null) {
+            for (Mesa m : MesaManager.getInstance(context).getMesas()) {
+                if (m.getNumero() != mesaAtual) mesas.add(m.getNumero());
+            }
+        }
+        for (int i = 1; i <= 34; i++) {
+            if (i != mesaAtual) mesas.add(i);
+        }
+
+        for (int m : mesas) {
+            try {
+                List<JSONObject> itens = buscarItensDaMesaSync(m);
+                for (JSONObject obj : itens) {
+                    if (alvo.equals(obj.optString("NUM_COMANDA", "").trim())) {
+                        return m;
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        return -1;
     }
 }

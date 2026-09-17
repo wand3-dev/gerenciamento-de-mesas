@@ -1,6 +1,6 @@
 param (
     [string]$Versao = "",
-    [string]$Changelog = "AppMesas atualizado com melhorias de desempenho e estabilidade."
+    [string]$Changelog = "AppMesas atualizado com suporte a comandas e mesas dinamicas, Minhas Comandas e deteccao de troca de mesa."
 )
 
 $ErrorActionPreference = "Stop"
@@ -38,16 +38,16 @@ if ([string]::IsNullOrWhiteSpace($Versao)) {
 $tituloRelease = "AppMesas $Versao"
 
 Write-Host "=============================================" -ForegroundColor Cyan
-Write-Host "Iniciando publicação de $tituloRelease (Code: $vCode)" -ForegroundColor Cyan
+Write-Host "Iniciando publicacao de $tituloRelease (Code: $vCode)" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 
 # 1. Commit e push do código fonte no GitHub
-Write-Host "[1/3] Enviando código para o GitHub..." -ForegroundColor Yellow
+Write-Host "[1/3] Enviando codigo para o GitHub..." -ForegroundColor Yellow
 git add .
 try {
-    git commit -m "Atualização $Versao (code $vCode)"
+    git commit -m "Atualizacao $Versao (code $vCode)"
 } catch {
-    Write-Host "Sem alterações pendentes de código para commit." -ForegroundColor Gray
+    Write-Host "Sem alteracoes pendentes de codigo para commit." -ForegroundColor Gray
 }
 git push origin main
 
@@ -64,32 +64,33 @@ if ($releasesJson -and $releasesJson.Count -gt 0) {
     & $ghCli api -X PATCH "repos/$repo/releases/$releaseId" -f name="$tituloRelease" -f body="" | Out-Null
     & $ghCli release upload "$releaseTag" "$apkSrc" --clobber
     $downloadUrl = "https://github.com/$repo/releases/download/$releaseTag/AppMesas.apk"
-    Write-Host "✓ Release '$tituloRelease' atualizada com sucesso!" -ForegroundColor Green
+    Write-Host "OK: Release '$tituloRelease' atualizada com sucesso!" -ForegroundColor Green
 } else {
     & $ghCli release create "$Versao" "$apkSrc" --title "$tituloRelease" --notes ""
-    Write-Host "✓ Primeira release criada com sucesso!" -ForegroundColor Green
+    Write-Host "OK: Primeira release criada com sucesso!" -ForegroundColor Green
 }
 
 # 3. Atualiza o Firebase Realtime Database
-Write-Host "[3/3] Sincronizando versão no Firebase Realtime Database..." -ForegroundColor Yellow
+Write-Host "[3/3] Sincronizando versao no Firebase Realtime Database..." -ForegroundColor Yellow
 if (Test-Path $firebaseCli) {
     $tempJson = Join-Path $env:TEMP "firebase_rtdb_update.json"
-    $rtdbPayload = @{
+    $objPayload = [PSCustomObject]@{
         versionCode = $vCode
         versionName = $vName
         downloadUrl = $downloadUrl
         changelog   = "$tituloRelease - $Changelog"
-    } | ConvertTo-Json -Depth 5
+    }
+    $rtdbPayload = $objPayload | ConvertTo-Json -Depth 5
 
     Set-Content -Path $tempJson -Value $rtdbPayload -Encoding UTF8
     & $firebaseCli database:set / "$tempJson" --project $firebaseProject --instance $firebaseInstance -f | Out-Null
     Remove-Item $tempJson -Force -ErrorAction SilentlyContinue
-    Write-Host "✓ Firebase Realtime Database atualizado: Versão $vName ($vCode)" -ForegroundColor Green
+    Write-Host "OK: Firebase Realtime Database atualizado: Versao $vName ($vCode)" -ForegroundColor Green
 } else {
-    Write-Warning "Firebase CLI não encontrado para sincronização remota."
+    Write-Warning "Firebase CLI nao encontrado para sincronizacao remota."
 }
 
 Write-Host "=============================================" -ForegroundColor Green
-Write-Host "✓ Processo concluído com sucesso total!" -ForegroundColor Green
+Write-Host "OK: Processo concluido com sucesso total!" -ForegroundColor Green
 Write-Host "Download: $downloadUrl" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Green

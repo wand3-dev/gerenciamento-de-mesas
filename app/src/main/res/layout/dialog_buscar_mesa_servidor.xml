@@ -24,7 +24,7 @@
             android:id="@+id/tvTituloDialogServidor"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="VINCULAR COMANDA À MESA"
+            android:text="MONITORAR COMANDA OU MESA"
             android:textColor="#0F172A"
             android:textSize="15sp"
             android:textStyle="bold"
@@ -36,17 +36,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="3dp"
-        android:text="Vincule e acompanhe os pedidos lançados para esta mesa."
+        android:text="Se a comanda for volante (ex: 239), o card da Mesa 239 será criado na hora!"
         android:textColor="#64748B"
         android:textSize="11.5sp" />
 
-    <!-- Campo 1 (Mesa) -->
+    <!-- Campo 1 (Comanda ou Mesa) -->
     <TextView
         android:id="@+id/tvLabelCampo1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="NÚMERO DA MESA (1 a 34)"
+        android:text="NÚMERO DA COMANDA OU MESA"
         android:textColor="#0D9488"
         android:textSize="10sp"
         android:textStyle="bold" />
@@ -57,7 +57,7 @@
         android:layout_height="44dp"
         android:layout_marginTop="4dp"
         android:background="#F1F5F9"
-        android:hint="Ex: 5"
+        android:hint="Ex: 239, 12, 105..."
         android:inputType="number"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
@@ -65,14 +65,14 @@
         android:textSize="15sp"
         android:textStyle="bold" />
 
-    <!-- Campo 2 (Comanda) -->
+    <!-- Campo 2 (Mesa separada caso a comanda esteja em mesa diferente) -->
     <TextView
         android:id="@+id/tvLabelCampo2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:text="NÚMERO DA COMANDA (OPCIONAL)"
-        android:textColor="#0D9488"
+        android:text="MESA FÍSICA ESPECÍFICA (OPCIONAL)"
+        android:textColor="#64748B"
         android:textSize="10sp"
         android:textStyle="bold" />
 
@@ -82,13 +82,12 @@
         android:layout_height="44dp"
         android:layout_marginTop="4dp"
         android:background="#F1F5F9"
-        android:hint="Ex: 267 (ou em branco para todos)"
+        android:hint="Em branco se a mesa for o próprio número"
         android:inputType="number"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
         android:textColor="#0F172A"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+        android:textSize="14sp" />
 
     <!-- Status / Indicador de Carregamento -->
     <TextView

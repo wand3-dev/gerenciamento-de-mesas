@@ -339,6 +339,99 @@ public class NotificationHelper {
         } catch (Exception ignored) {}
     }
 
+    /**
+     * Notifica quando um novo pedido é lançado em uma mesa/comanda monitorada
+     */
+    public static void notificarNovoPedido(Context context, int numeroMesa, String comanda, String descricaoItem, int quantidade) {
+        if (context == null) return;
+        final Context appContext = context.getApplicationContext();
+
+        criarCanaisNotificacao(appContext);
+        if (!podeEnviarNotificacoes(appContext)) return;
+
+        try {
+            Intent intent = new Intent(appContext, MesaDetailActivity.class);
+            intent.putExtra("NUMERO_MESA", numeroMesa);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+            int notifId = notifCounter.incrementAndGet();
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    appContext,
+                    notifId,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            String titulo = (comanda != null && !comanda.isEmpty())
+                    ? String.format(Locale.getDefault(), "🔔 Novo Pedido - Mesa %02d (CMD #%s)", numeroMesa, comanda)
+                    : String.format(Locale.getDefault(), "🔔 Novo Pedido - Mesa %02d", numeroMesa);
+
+            String texto = quantidade + "x " + (descricaoItem != null ? descricaoItem : "Item");
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(appContext, CHANNEL_PEDIDOS)
+                    .setSmallIcon(R.drawable.ic_notification_bell)
+                    .setContentTitle(titulo)
+                    .setContentText(texto)
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(texto))
+                    .setColor(Color.parseColor("#F97316"))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent);
+
+            NotificationManagerCompat.from(appContext).notify(notifId, builder.build());
+
+            // Toca aviso sonoro e vibra
+            tocarAudio(appContext, R.raw.bip_pedido, 1);
+            vibrar(appContext, new long[]{0, 250, 150, 250});
+        } catch (Exception ignored) {}
+    }
+
+    /**
+     * Notifica quando uma comanda mudou de mesa no servidor (transferência de mesa)
+     */
+    public static void notificarMudancaMesa(Context context, String comanda, int mesaOrigem, int mesaDestino) {
+        if (context == null) return;
+        final Context appContext = context.getApplicationContext();
+
+        criarCanaisNotificacao(appContext);
+        if (!podeEnviarNotificacoes(appContext)) return;
+
+        try {
+            Intent intent = new Intent(appContext, MesaDetailActivity.class);
+            intent.putExtra("NUMERO_MESA", mesaDestino);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+            int notifId = notifCounter.incrementAndGet();
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    appContext,
+                    notifId,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            String titulo = String.format(Locale.getDefault(), "🔄 Comanda #%s Transferida!", comanda);
+            String texto = String.format(Locale.getDefault(), "Atenção: transferida da Mesa %02d ➔ Mesa %02d!", mesaOrigem, mesaDestino);
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(appContext, CHANNEL_ATRASOS)
+                    .setSmallIcon(R.drawable.ic_notification_alert)
+                    .setContentTitle(titulo)
+                    .setContentText(texto)
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(texto + "\nToque para abrir a Mesa " + mesaDestino))
+                    .setColor(Color.parseColor("#3B82F6"))
+                    .setPriority(NotificationCompat.PRIORITY_MAX)
+                    .setCategory(NotificationCompat.CATEGORY_ALARM)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .setFullScreenIntent(pendingIntent, true);
+
+            NotificationManagerCompat.from(appContext).notify(notifId, builder.build());
+
+            // Toca som de sino duplo e vibração forte de alerta
+            tocarAudio(appContext, R.raw.sino_pedido, 2);
+            vibrar(appContext, new long[]{0, 400, 200, 400, 200, 400});
+        } catch (Exception ignored) {}
+    }
+
     private static int extrairNumeroMesa(String texto) {
         if (texto == null) return -1;
         try {

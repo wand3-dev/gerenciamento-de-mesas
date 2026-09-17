@@ -66,6 +66,9 @@ public class MesaDetailActivity extends AppCompatActivity {
         manager = MesaManager.getInstance(this);
         serverClient = ServerComandasClient.getInstance(this);
         mesa = manager.getMesa(numeroMesa);
+        if (mesa == null) {
+            mesa = manager.getOuCriarMesa(numeroMesa);
+        }
 
         tvTituloMesa = findViewById(R.id.tvTituloMesa);
         tvMesaTempoTotal = findViewById(R.id.tvMesaTempoTotal);

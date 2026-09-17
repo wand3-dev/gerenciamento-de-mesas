@@ -70,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView tvNomeUsuarioLogado, btnSairSessao;
     private View btnAdicionarMesaServidor, btnConfigServidor;
+    private View btnAddMinhaComandaRapida;
+    private android.widget.LinearLayout layoutChipsMinhasComandas;
     private MesaManager manager;
     private ServerComandasClient serverClient;
     private UpdateChecker updateChecker;
@@ -121,11 +123,18 @@ public class MainActivity extends AppCompatActivity {
         btnSairSessao = findViewById(R.id.btnSairSessao);
         btnAdicionarMesaServidor = findViewById(R.id.btnAdicionarMesaServidor);
         btnConfigServidor = findViewById(R.id.btnConfigServidor);
+        btnAddMinhaComandaRapida = findViewById(R.id.btnAddMinhaComandaRapida);
+        layoutChipsMinhasComandas = findViewById(R.id.layoutChipsMinhasComandas);
         btnFiltroTodas = findViewById(R.id.btnFiltroTodas);
         btnFiltroAbertas = findViewById(R.id.btnFiltroAbertas);
         btnFiltroLivres = findViewById(R.id.btnFiltroLivres);
         etBuscarMesa = findViewById(R.id.etBuscarMesa);
         btnClearSearch = findViewById(R.id.btnClearSearch);
+
+        if (btnAddMinhaComandaRapida != null) {
+            btnAddMinhaComandaRapida.setOnClickListener(v -> exibirModalAdicionarMesaServidor());
+        }
+        atualizarChipsMinhasComandas();
 
         if (btnSairSessao != null) {
             btnSairSessao.setOnClickListener(v -> confirmarLogout());
@@ -624,84 +633,117 @@ public class MainActivity extends AppCompatActivity {
         btnCancelar.setOnClickListener(v -> dialog.dismiss());
 
         btnBuscar.setOnClickListener(v -> {
-            String mesaStr = etMesa.getText().toString().trim();
-            final String comandaFiltro = etComanda.getText().toString().trim();
+            String campo1 = etMesa.getText().toString().trim();
+            final String campo2 = etComanda.getText().toString().trim();
 
-            if (mesaStr.isEmpty()) {
-                etMesa.setError("Informe a Mesa (1 a 34)");
+            if (campo1.isEmpty() && campo2.isEmpty()) {
+                etMesa.setError("Informe a Comanda ou Mesa");
                 return;
             }
 
             int numMesa;
-            try {
-                numMesa = Integer.parseInt(mesaStr);
-            } catch (Exception e) {
-                etMesa.setError("Número de mesa inválido");
-                return;
-            }
+            final String comandaAlvo;
 
-            Mesa mesa = manager.getMesa(numMesa);
-            if (mesa == null) {
-                Toast.makeText(this, "Mesa " + numMesa + " não encontrada no app!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            tvStatus.setVisibility(View.VISIBLE);
-            if (!comandaFiltro.isEmpty()) {
-                tvStatus.setText("Procurando Comanda #" + comandaFiltro + " nas mesas...");
-                serverClient.buscarComandaVarrendoMesas(comandaFiltro, numMesa, new ServerComandasClient.OnComandaEncontradaListener() {
-                    @Override
-                    public void onEncontrada(int mesaOrigem, List<JSONObject> itensComanda) {
-                        btnBuscar.setEnabled(true);
-                        tvStatus.setVisibility(View.GONE);
-                        importarItensParaMesa(mesa, numMesa, comandaFiltro, itensComanda);
-                        dialog.dismiss();
-                    }
-
-                    @Override
-                    public void onNotFound(String mensagem) {
-                        btnBuscar.setEnabled(true);
-                        tvStatus.setVisibility(View.VISIBLE);
-                        tvStatus.setTextColor(Color.parseColor("#EF4444"));
-                        tvStatus.setText(mensagem);
-                    }
-
-                    @Override
-                    public void onError(String erro) {
-                        btnBuscar.setEnabled(true);
-                        tvStatus.setVisibility(View.VISIBLE);
-                        tvStatus.setTextColor(Color.parseColor("#EF4444"));
-                        tvStatus.setText(erro);
-                    }
-                });
+            if (!campo2.isEmpty()) {
+                try {
+                    numMesa = Integer.parseInt(campo1);
+                } catch (Exception e) {
+                    etMesa.setError("Número de mesa inválido");
+                    return;
+                }
+                comandaAlvo = campo2;
             } else {
-                tvStatus.setText("Consultando itens da Mesa " + numMesa + "...");
-                serverClient.buscarItensDaMesa(numMesa, new ServerComandasClient.OnItensMesaLoadedListener() {
-                    @Override
-                    public void onSuccess(List<JSONObject> itens) {
+                try {
+                    numMesa = Integer.parseInt(campo1);
+                } catch (Exception e) {
+                    etMesa.setError("Informe um número válido");
+                    return;
+                }
+                comandaAlvo = campo1;
+            }
+
+            // Garante criação e abertura automática do card da mesa (ex: Mesa 239)
+            Mesa mesa = manager.getOuCriarMesa(numMesa);
+            mesa.setAberta(true);
+            manager.adicionarMinhaComanda(this, comandaAlvo);
+            manager.salvarMesas(this);
+
+            btnBuscar.setEnabled(false);
+            tvStatus.setVisibility(View.VISIBLE);
+            tvStatus.setTextColor(Color.parseColor("#D97706"));
+            tvStatus.setText("Buscando dados no servidor para a Mesa " + numMesa + "...");
+
+            serverClient.buscarItensDaMesa(numMesa, new ServerComandasClient.OnItensMesaLoadedListener() {
+                @Override
+                public void onSuccess(List<JSONObject> itens) {
+                    btnBuscar.setEnabled(true);
+                    tvStatus.setVisibility(View.GONE);
+                    importarItensParaMesa(mesa, numMesa, comandaAlvo, itens);
+                    atualizarChipsMinhasComandas();
+                    dialog.dismiss();
+                    Toast.makeText(MainActivity.this, "Mesa " + numMesa + " (CMD #" + comandaAlvo + ") aberta com sucesso!", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onEmpty() {
+                    // Se não achou itens na mesa informada, tenta varrer outras mesas para localizar a comanda
+                    if (!comandaAlvo.isEmpty()) {
+                        tvStatus.setText("Varrendo mesas no servidor para achar a Comanda #" + comandaAlvo + "...");
+                        serverClient.buscarComandaVarrendoMesas(comandaAlvo, numMesa, new ServerComandasClient.OnComandaEncontradaListener() {
+                            @Override
+                            public void onEncontrada(int mesaOrigem, List<JSONObject> itensComanda) {
+                                btnBuscar.setEnabled(true);
+                                tvStatus.setVisibility(View.GONE);
+                                Mesa mReal = manager.getOuCriarMesa(mesaOrigem);
+                                mReal.setAberta(true);
+                                importarItensParaMesa(mReal, mesaOrigem, comandaAlvo, itensComanda);
+                                atualizarChipsMinhasComandas();
+                                dialog.dismiss();
+                                Toast.makeText(MainActivity.this, "Comanda #" + comandaAlvo + " encontrada na Mesa " + mesaOrigem + "!", Toast.LENGTH_LONG).show();
+                            }
+
+                            @Override
+                            public void onNotFound(String mensagem) {
+                                btnBuscar.setEnabled(true);
+                                tvStatus.setVisibility(View.GONE);
+                                // Mesmo ainda sem itens no servidor, o card já fica ativo e monitorado!
+                                atualizarListaExibicao();
+                                adapter.notifyDataSetChanged();
+                                atualizarChipsMinhasComandas();
+                                dialog.dismiss();
+                                Toast.makeText(MainActivity.this, "Mesa " + numMesa + " (CMD #" + comandaAlvo + ") criada e sendo monitorada!", Toast.LENGTH_LONG).show();
+                            }
+
+                            @Override
+                            public void onError(String erro) {
+                                btnBuscar.setEnabled(true);
+                                tvStatus.setVisibility(View.GONE);
+                                atualizarListaExibicao();
+                                adapter.notifyDataSetChanged();
+                                atualizarChipsMinhasComandas();
+                                dialog.dismiss();
+                            }
+                        });
+                    } else {
                         btnBuscar.setEnabled(true);
                         tvStatus.setVisibility(View.GONE);
-                        importarItensParaMesa(mesa, numMesa, "", itens);
+                        atualizarListaExibicao();
+                        adapter.notifyDataSetChanged();
+                        atualizarChipsMinhasComandas();
                         dialog.dismiss();
+                        Toast.makeText(MainActivity.this, "Mesa " + numMesa + " criada e sendo monitorada!", Toast.LENGTH_SHORT).show();
                     }
+                }
 
-                    @Override
-                    public void onEmpty() {
-                        btnBuscar.setEnabled(true);
-                        tvStatus.setVisibility(View.VISIBLE);
-                        tvStatus.setTextColor(Color.parseColor("#EF4444"));
-                        tvStatus.setText("Nenhum item aberto encontrado para a Mesa " + numMesa + ".");
-                    }
-
-                    @Override
-                    public void onError(String erro) {
-                        btnBuscar.setEnabled(true);
-                        tvStatus.setVisibility(View.VISIBLE);
-                        tvStatus.setTextColor(Color.parseColor("#EF4444"));
-                        tvStatus.setText(erro);
-                    }
-                });
-            }
+                @Override
+                public void onError(String erro) {
+                    btnBuscar.setEnabled(true);
+                    tvStatus.setVisibility(View.VISIBLE);
+                    tvStatus.setTextColor(Color.parseColor("#EF4444"));
+                    tvStatus.setText(erro);
+                    atualizarChipsMinhasComandas();
+                }
+            });
         });
 
         dialog.show();
@@ -751,6 +793,80 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "✓ " + adicionados + " item(ns) importado(s) para a Mesa " + numMesa + "!", Toast.LENGTH_SHORT).show();
         } else {
             Toast.makeText(this, "✓ Itens da Mesa " + numMesa + " já estavam atualizados.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void atualizarChipsMinhasComandas() {
+        if (layoutChipsMinhasComandas == null) return;
+        layoutChipsMinhasComandas.removeAllViews();
+
+        Set<String> comandas = manager.getMinhasComandas();
+        if (comandas.isEmpty()) {
+            TextView tvEmpty = new TextView(this);
+            tvEmpty.setText("Nenhuma comanda vinculada. Toque em + MONITORAR");
+            tvEmpty.setTextColor(Color.parseColor("#94A3B8"));
+            tvEmpty.setTextSize(11f);
+            tvEmpty.setPadding(8, 4, 8, 4);
+            layoutChipsMinhasComandas.addView(tvEmpty);
+            return;
+        }
+
+        for (final String cmd : comandas) {
+            android.widget.LinearLayout chip = new android.widget.LinearLayout(this);
+            chip.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+            chip.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            chip.setBackgroundResource(R.drawable.bg_filter_chip_active);
+            chip.setPadding(22, 10, 16, 10);
+            android.widget.LinearLayout.LayoutParams params = new android.widget.LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            params.setMargins(0, 0, 16, 0);
+            chip.setLayoutParams(params);
+
+            TextView tvText = new TextView(this);
+            Mesa mEncontrada = manager.buscarMesaComComanda(cmd, -1);
+            String label = "CMD #" + cmd;
+            int mesaAlvo = -1;
+            try {
+                mesaAlvo = Integer.parseInt(cmd);
+            } catch (Exception ignored) {}
+
+            if (mEncontrada != null) {
+                label = "CMD #" + cmd + " (Mesa " + mEncontrada.getNumero() + ")";
+                mesaAlvo = mEncontrada.getNumero();
+            }
+            tvText.setText(label);
+            tvText.setTextColor(Color.WHITE);
+            tvText.setTextSize(11f);
+            tvText.setTypeface(null, android.graphics.Typeface.BOLD);
+            chip.addView(tvText);
+
+            final int fMesa = mesaAlvo;
+            chip.setOnClickListener(v -> {
+                if (fMesa > 0) {
+                    Intent intent = new Intent(MainActivity.this, MesaDetailActivity.class);
+                    intent.putExtra("NUMERO_MESA", fMesa);
+                    startActivity(intent);
+                }
+            });
+
+            TextView btnX = new TextView(this);
+            btnX.setText(" ✕");
+            btnX.setTextColor(Color.parseColor("#FDE68A"));
+            btnX.setTextSize(12f);
+            btnX.setTypeface(null, android.graphics.Typeface.BOLD);
+            btnX.setPadding(8, 0, 4, 0);
+            btnX.setOnClickListener(v -> {
+                manager.removerMinhaComanda(MainActivity.this, cmd);
+                atualizarChipsMinhasComandas();
+                atualizarListaExibicao();
+                if (adapter != null) adapter.notifyDataSetChanged();
+                Toast.makeText(MainActivity.this, "Comanda #" + cmd + " removida das suas comandas.", Toast.LENGTH_SHORT).show();
+            });
+            chip.addView(btnX);
+
+            layoutChipsMinhasComandas.addView(chip);
         }
     }
 
@@ -949,6 +1065,7 @@ public class MainActivity extends AppCompatActivity {
             if (adapter != null) adapter.notifyDataSetChanged();
             atualizarFilaPedidos();
             atualizarResumo();
+            atualizarChipsMinhasComandas();
         }
     };
 
@@ -973,6 +1090,7 @@ public class MainActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
         atualizarFilaPedidos();
         atualizarResumo();
+        atualizarChipsMinhasComandas();
         verificarPedidosAtrasados15Minutos();
         timerHandler.post(timerRunnable);
 

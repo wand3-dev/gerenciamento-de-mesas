@@ -81,6 +81,17 @@ public class MonitorMesasService extends Service {
     private void sincronizarMesasServidor() {
         if (sincronizando || manager == null || serverClient == null) return;
 
+        // Garante que todas as 'Minhas Comandas' numéricas tenham suas mesas ativas
+        for (String cmd : manager.getMinhasComandas()) {
+            try {
+                int numCmd = Integer.parseInt(cmd.trim());
+                if (numCmd > 0) {
+                    Mesa m = manager.getOuCriarMesa(numCmd);
+                    if (!m.isAberta()) m.setAberta(true);
+                }
+            } catch (Exception ignored) {}
+        }
+
         List<Mesa> mesasAbertas = new ArrayList<>();
         for (Mesa m : manager.getMesas()) {
             if (m.isAberta()) mesasAbertas.add(m);
@@ -93,7 +104,13 @@ public class MonitorMesasService extends Service {
         for (Mesa mesa : mesasAbertas) {
             final int numMesa = mesa.getNumero();
             final List<String> comandasMonitoradas = mesa.getComandasUnicas();
-            if (comandasMonitoradas.isEmpty()) {
+
+            // Se for mesa criada pelo número da comanda (ex: mesa 239), monitora também a própria comanda 239
+            if (comandasMonitoradas.isEmpty() && manager.isMinhaComanda(String.valueOf(numMesa))) {
+                comandasMonitoradas.add(String.valueOf(numMesa));
+            }
+
+            if (comandasMonitoradas.isEmpty() && mesa.getPedidos().isEmpty()) {
                 if (pendentes.decrementAndGet() <= 0) sincronizando = false;
                 continue;
             }
@@ -102,10 +119,18 @@ public class MonitorMesasService extends Service {
                 @Override
                 public void onSuccess(List<JSONObject> itens) {
                     boolean houveNovidade = false;
+                    List<PedidoItem> novosItens = new ArrayList<>();
+                    Set<String> comandasServidor = new HashSet<>();
+
                     for (JSONObject objServidor : itens) {
                         PedidoItem itemServ = PedidoItem.fromServerJson(objServidor);
                         String comandaItem = itemServ.getComanda();
-                        if (!comandasMonitoradas.contains(comandaItem)) continue;
+                        if (!comandaItem.isEmpty()) comandasServidor.add(comandaItem);
+
+                        // Se monitora comandas específicas, filtra; caso contrário (mesa aberta), aceita os itens
+                        if (!comandasMonitoradas.isEmpty() && !comandasMonitoradas.contains(comandaItem) && !comandaItem.equals(String.valueOf(numMesa))) {
+                            continue;
+                        }
 
                         boolean encontrado = false;
                         for (PedidoItem local : mesa.getPedidos()) {
@@ -116,6 +141,7 @@ public class MonitorMesasService extends Service {
                         }
                         if (!encontrado) {
                             mesa.adicionarPedido(itemServ);
+                            novosItens.add(itemServ);
                             houveNovidade = true;
                         }
                     }
@@ -123,11 +149,34 @@ public class MonitorMesasService extends Service {
                     if (houveNovidade) {
                         manager.salvarMesas(MonitorMesasService.this);
                         sendBroadcast(new Intent(MesaManager.ACTION_PEDIDOS_ATUALIZADOS));
-                        NotificationHelper.notificarNovoItem(
-                                MonitorMesasService.this,
-                                "Mesa " + numMesa + ": Novo Pedido!",
-                                "Novos itens foram vinculados à mesa " + numMesa
-                        );
+
+                        // Notifica cada novo pedido detectado com som e vibração
+                        for (PedidoItem novo : novosItens) {
+                            NotificationHelper.notificarNovoPedido(
+                                    MonitorMesasService.this,
+                                    numMesa,
+                                    novo.getComanda(),
+                                    novo.getDescricao(),
+                                    novo.getQuantidade()
+                            );
+                        }
+                    }
+
+                    // Detecção de Transferência de Mesa:
+                    // Se alguma comanda monitorada nesta mesa não veio mais na lista do servidor,
+                    // verifica se ela foi transferida para outra mesa no sistema
+                    for (String cmdLocal : comandasMonitoradas) {
+                        if (!comandasServidor.contains(cmdLocal)) {
+                            new Thread(() -> {
+                                int novaMesa = serverClient.detectarNovaMesaDaComandaSync(cmdLocal, numMesa);
+                                if (novaMesa != -1 && novaMesa != numMesa) {
+                                    handler.post(() -> {
+                                        manager.transferirComanda(MonitorMesasService.this, cmdLocal, numMesa, novaMesa);
+                                        NotificationHelper.notificarMudancaMesa(MonitorMesasService.this, cmdLocal, numMesa, novaMesa);
+                                    });
+                                }
+                            }).start();
+                        }
                     }
 
                     if (pendentes.decrementAndGet() <= 0) sincronizando = false;
@@ -135,6 +184,19 @@ public class MonitorMesasService extends Service {
 
                 @Override
                 public void onEmpty() {
+                    // Se a mesa ficou vazia no servidor, checa se as comandas que estavam nela mudaram de mesa
+                    for (String cmdLocal : comandasMonitoradas) {
+                        new Thread(() -> {
+                            int novaMesa = serverClient.detectarNovaMesaDaComandaSync(cmdLocal, numMesa);
+                            if (novaMesa != -1 && novaMesa != numMesa) {
+                                handler.post(() -> {
+                                    manager.transferirComanda(MonitorMesasService.this, cmdLocal, numMesa, novaMesa);
+                                    NotificationHelper.notificarMudancaMesa(MonitorMesasService.this, cmdLocal, numMesa, novaMesa);
+                                });
+                            }
+                        }).start();
+                    }
+
                     if (pendentes.decrementAndGet() <= 0) sincronizando = false;
                 }
 

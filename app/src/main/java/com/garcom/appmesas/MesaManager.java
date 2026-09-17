@@ -1,29 +1,37 @@
 package com.garcom.appmesas;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class MesaManager {
     public static final String ACTION_PEDIDOS_ATUALIZADOS = "com.garcom.appmesas.ACTION_PEDIDOS_ATUALIZADOS";
     private static final String PREF_NAME = "mesas_prefs";
     private static final String KEY_MESAS = "key_mesas_data";
     private static final String KEY_HISTORICO = "key_historico_trocas";
+    private static final String KEY_MINHAS_COMANDAS = "key_minhas_comandas";
     private static MesaManager instance;
 
     private List<Mesa> mesas;
     private List<Product> produtosCatalog;
+    private Set<String> minhasComandas;
 
     private MesaManager(Context context) {
         mesas = new ArrayList<>();
         produtosCatalog = new ArrayList<>();
+        minhasComandas = new HashSet<>();
         carregarMesas(context);
         carregarCatalogo(context);
+        carregarMinhasComandas(context);
     }
 
     public static synchronized MesaManager getInstance(Context context) {
@@ -47,8 +55,8 @@ public class MesaManager {
             }
         }
 
-        // Se estiver vazio, inicializa 1 a 34
-        if (mesas.isEmpty() || mesas.size() != 34) {
+        // Se estiver vazio, inicializa pelo menos 1 a 34 como padrão
+        if (mesas.isEmpty()) {
             mesas.clear();
             for (int i = 1; i <= 34; i++) {
                 mesas.add(new Mesa(i));
@@ -56,7 +64,7 @@ public class MesaManager {
         }
     }
 
-    public void salvarMesas(Context context) {
+    public synchronized void salvarMesas(Context context) {
         SharedPreferences sp = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         try {
             JSONArray arr = new JSONArray();
@@ -86,15 +94,127 @@ public class MesaManager {
         }
     }
 
-    public List<Mesa> getMesas() {
+    private void carregarMinhasComandas(Context context) {
+        SharedPreferences sp = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        Set<String> salvos = sp.getStringSet(KEY_MINHAS_COMANDAS, null);
+        if (salvos != null) {
+            minhasComandas.addAll(salvos);
+        }
+    }
+
+    public synchronized Set<String> getMinhasComandas() {
+        return new HashSet<>(minhasComandas);
+    }
+
+    public synchronized void adicionarMinhaComanda(Context context, String comanda) {
+        if (comanda == null || comanda.trim().isEmpty()) return;
+        String limpa = comanda.trim();
+        minhasComandas.add(limpa);
+        salvarMinhasComandas(context);
+
+        // Se a comanda for número (ex: 239), garante que o card da mesa 239 existe e está aberta
+        try {
+            int numMesa = Integer.parseInt(limpa);
+            Mesa m = getOuCriarMesa(numMesa);
+            m.setAberta(true);
+            salvarMesas(context);
+        } catch (Exception ignored) {}
+    }
+
+    public synchronized void removerMinhaComanda(Context context, String comanda) {
+        if (comanda == null) return;
+        minhasComandas.remove(comanda.trim());
+        salvarMinhasComandas(context);
+    }
+
+    public synchronized boolean isMinhaComanda(String comanda) {
+        if (comanda == null) return false;
+        return minhasComandas.contains(comanda.trim());
+    }
+
+    private void salvarMinhasComandas(Context context) {
+        SharedPreferences sp = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        sp.edit().putStringSet(KEY_MINHAS_COMANDAS, new HashSet<>(minhasComandas)).apply();
+    }
+
+    public synchronized List<Mesa> getMesas() {
         return mesas;
     }
 
-    public Mesa getMesa(int numero) {
+    public synchronized Mesa getMesa(int numero) {
         for (Mesa m : mesas) {
             if (m.getNumero() == numero) return m;
         }
         return null;
+    }
+
+    /**
+     * Obtém a mesa existente ou cria dinamicamente o card se o número for superior a 34
+     * ou não estiver cadastrado (ex: Mesa 239, 105, etc.)
+     */
+    public synchronized Mesa getOuCriarMesa(int numero) {
+        for (Mesa m : mesas) {
+            if (m.getNumero() == numero) return m;
+        }
+        Mesa nova = new Mesa(numero);
+        nova.setAberta(true);
+        mesas.add(nova);
+        Collections.sort(mesas, (a, b) -> Integer.compare(a.getNumero(), b.getNumero()));
+        return nova;
+    }
+
+    /**
+     * Remove card de mesa dinâmica (> 34) quando não tiver mais pedidos e for fechada,
+     * para manter a grade de mesas limpa e organizada
+     */
+    public synchronized void removerMesaDinamicaSeVazia(Context context, int numeroMesa) {
+        if (numeroMesa <= 34) return; // Mantém fixas as mesas 1 a 34
+        for (int i = 0; i < mesas.size(); i++) {
+            Mesa m = mesas.get(i);
+            if (m.getNumero() == numeroMesa && (!m.isAberta() || m.getPedidos().isEmpty())) {
+                mesas.remove(i);
+                salvarMesas(context);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Transfere uma comanda e seus pedidos de uma mesa origem para a mesa destino
+     */
+    public synchronized void transferirComanda(Context context, String comanda, int mesaOrigem, int mesaDestino) {
+        if (comanda == null || comanda.trim().isEmpty() || mesaOrigem == mesaDestino) return;
+        String alvo = comanda.trim();
+
+        Mesa mOrigem = getMesa(mesaOrigem);
+        Mesa mDestino = getOuCriarMesa(mesaDestino);
+        mDestino.setAberta(true);
+
+        List<PedidoItem> transferidos = new ArrayList<>();
+        if (mOrigem != null) {
+            List<PedidoItem> restantes = new ArrayList<>();
+            for (PedidoItem item : mOrigem.getPedidos()) {
+                if (alvo.equals(item.getComanda())) {
+                    transferidos.add(item);
+                } else {
+                    restantes.add(item);
+                }
+            }
+            mOrigem.getPedidos().clear();
+            mOrigem.getPedidos().addAll(restantes);
+            if (mOrigem.getPedidos().isEmpty()) {
+                mOrigem.setAberta(false);
+                removerMesaDinamicaSeVazia(context, mesaOrigem);
+            }
+        }
+
+        for (PedidoItem item : transferidos) {
+            mDestino.adicionarPedido(item);
+        }
+
+        salvarMesas(context);
+        registrarTroca(context, "Comanda #" + alvo + " transferida da Mesa " + mesaOrigem + " para Mesa " + mesaDestino);
+        context.sendBroadcast(new Intent(ACTION_PEDIDOS_ATUALIZADOS));
     }
 
     public Mesa buscarMesaComComanda(String comanda, int numeroMesaIgnorada) {
