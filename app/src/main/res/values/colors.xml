@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base palette (obsidian navy header) -->
+    <color name="purple_500">#0F172A</color>
+    <color name="purple_700">#09101D</color>
+
+    <!-- Amber / Gold Luxury Padaria -->
+    <color name="gold_primary">#F59E0B</color>
+    <color name="gold_dark">#D97706</color>
+    <color name="gold_light">#FEF3C7</color>
+
+    <!-- Teal / action -->
+    <color name="teal_200">#2DD4BF</color>
+    <color name="teal_700">#0D9488</color>
+
+    <!-- Utility -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- Mesa status -->
+    <color name="mesa_fechada">#EF4444</color>
+    <color name="mesa_fechada_card">#FFF1F2</color>
+    <color name="mesa_fechada_border">#FECDD3</color>
+
+    <color name="mesa_aberta">#10B981</color>
+    <color name="mesa_aberta_card">#F0FDF4</color>
+    <color name="mesa_aberta_border">#86EFAC</color>
+
+    <!-- Backgrounds -->
+    <color name="bg_dark">#F1F5F9</color>
+    <color name="bg_card">#FFFFFF</color>
+    <color name="bg_header">#0F172A</color>
+    <color name="bg_input">#F8FAFC</color>
+    <color name="bg_item">#F8FAFC</color>
+    <color name="bg_favorites">#FFFBEB</color>
+
+    <!-- Text -->
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#64748B</color>
+    <color name="text_accent">#0D9488</color>
+    <color name="text_highlight">#D97706</color>
+    <color name="text_on_dark">#FFFFFF</color>
+    <color name="text_on_dark_secondary">#94A3B8</color>
+
+    <!-- Pedido status -->
+    <color name="status_pendente">#F59E0B</color>
+    <color name="status_entregue">#10B981</color>
+    <color name="status_nao_lancado">#EF4444</color>
+    <color name="status_lancado">#64748B</color>
+
+    <!-- FAB -->
+    <color name="fab_bg">#0D9488</color>
+    <color name="fab_icon">#FFFFFF</color>
+
+    <!-- Divider -->
+    <color name="divider">#E2E8F0</color>
+</resources>

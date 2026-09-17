@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/bg_card_pending_item"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <!-- Topo: Mesa, Comanda e Tempo -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <!-- Badge da Mesa -->
+        <TextView
+            android:id="@+id/tvMesaPendente"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_badge_mesa_floating"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
+            android:text="MESA 01"
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <!-- Badge da Comanda (se existir) -->
+        <TextView
+            android:id="@+id/tvComandaPendente"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_chip_item"
+            android:paddingStart="6dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="6dp"
+            android:paddingBottom="2dp"
+            android:text="CMD #123"
+            android:textColor="#0369A1"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <!-- Tempo decorrido -->
+        <TextView
+            android:id="@+id/tvTempoPendente"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⏱️ há 3 min"
+            android:textColor="#64748B"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <!-- Descrição e Quantidade -->
+    <TextView
+        android:id="@+id/tvDescricaoPendente"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="2x Pão Francês na Chapa"
+        android:textColor="#0F172A"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <!-- Observação / Adicional (se houver) -->
+    <TextView
+        android:id="@+id/tvAdicionalPendente"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="Obs: Bem passado"
+        android:textColor="#64748B"
+        android:textSize="11sp"
+        android:textStyle="italic"
+        android:visibility="gone" />
+
+    <!-- Botão ENTREGUE -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnEntreguePendente"
+        android:layout_width="match_parent"
+        android:layout_height="38dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_button_gradient_emerald"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="✓ ENTREGUE"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        app:cornerRadius="8dp" />
+
+</LinearLayout>

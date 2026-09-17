@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "508634632362",
+    "project_id": "appmesas-238a0",
+    "storage_bucket": "appmesas-238a0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:508634632362:android:3c69a35781cde4c53d80d3",
+        "android_client_info": {
+          "package_name": "com.garcom.appmesas"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDkmHXR3uEF1IGCOlpjBq3cij5u43hxLbQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

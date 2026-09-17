@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#09101D">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="36dp"
+        android:paddingBottom="36dp">
+
+        <!-- Logo e Cabeçalho Portugalia -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="6dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🥐"
+                android:textSize="32sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="PORTUGALIA"
+                android:textColor="#FFFFFF"
+                android:textSize="26sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CONTROLE DE MESAS E COMANDAS"
+                android:textColor="#F59E0B"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="✨ wand-dev"
+                android:textColor="#FBBF24"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_badge_creator"
+                android:paddingStart="7dp"
+                android:paddingEnd="7dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp" />
+        </LinearLayout>
+
+        <!-- Card Elegante de Autenticação -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="12dp"
+            app:cardBackgroundColor="#131D31"
+            app:strokeWidth="1.5dp"
+            app:strokeColor="#253554">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="26dp">
+
+                <!-- Seletor de Modo: [ ENTRAR ] | [ CADASTRAR ] -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:orientation="horizontal"
+                    android:background="#0B1323"
+                    android:padding="4dp"
+                    android:gravity="center"
+                    android:layout_marginBottom="22dp">
+
+                    <TextView
+                        android:id="@+id/tabEntrar"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="ENTRAR"
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:background="@drawable/bg_button_gradient_amber" />
+
+                    <TextView
+                        android:id="@+id/tabCadastrar"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="CRIAR CONTA"
+                        android:textColor="#94A3B8"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:background="@android:color/transparent" />
+                </LinearLayout>
+
+                <!-- Título dinâmico da seção -->
+                <TextView
+                    android:id="@+id/tvTituloSecao"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Acesse sua conta"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvSubtituloSecao"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="16dp"
+                    android:text="Entre com seu e-mail e senha do Firebase"
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp" />
+
+                <!-- Campo Nome Completo (Apenas no Cadastro) -->
+                <LinearLayout
+                    android:id="@+id/layoutCampoNome"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:layout_marginBottom="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="SEU NOME COMPLETO"
+                        android:textColor="#F59E0B"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05" />
+
+                    <EditText
+                        android:id="@+id/etLoginNome"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="5dp"
+                        android:background="@drawable/bg_input_field"
+                        android:hint="Ex: João Garçom"
+                        android:inputType="textPersonName|textCapWords"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:textColor="#FFFFFF"
+                        android:textColorHint="#64748B"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <!-- Campo E-mail -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="E-MAIL"
+                    android:textColor="#F59E0B"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05" />
+
+                <EditText
+                    android:id="@+id/etLoginEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_marginBottom="14dp"
+                    android:background="@drawable/bg_input_field"
+                    android:hint="seuemail@exemplo.com"
+                    android:inputType="textEmailAddress"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#64748B"
+                    android:textSize="14sp" />
+
+                <!-- Campo Senha -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SENHA"
+                    android:textColor="#F59E0B"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05" />
+
+                <EditText
+                    android:id="@+id/etLoginSenha"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_marginBottom="14dp"
+                    android:background="@drawable/bg_input_field"
+                    android:hint="••••••••"
+                    android:inputType="textPassword"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#64748B"
+                    android:textSize="15sp" />
+
+                <!-- Campo Confirmar Senha (Apenas no Cadastro) -->
+                <LinearLayout
+                    android:id="@+id/layoutConfirmarSenha"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:layout_marginBottom="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="CONFIRME SUA SENHA"
+                        android:textColor="#F59E0B"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05" />
+
+                    <EditText
+                        android:id="@+id/etLoginConfirmarSenha"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="5dp"
+                        android:background="@drawable/bg_input_field"
+                        android:hint="••••••••"
+                        android:inputType="textPassword"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:textColor="#FFFFFF"
+                        android:textColorHint="#64748B"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <!-- Feedback de Status / Erro / Carregando -->
+                <TextView
+                    android:id="@+id/tvLoginStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:text=""
+                    android:textColor="#EF4444"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:visibility="gone" />
+
+                <!-- Botão de Ação Primário -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFazerLogin"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:text="ENTRAR COM FIREBASE"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04"
+                    android:background="@drawable/bg_button_gradient_emerald"
+                    app:backgroundTint="@null"
+                    app:cornerRadius="14dp"
+                    android:elevation="6dp" />
+
+                <!-- Alternador Rápido (Texto no rodapé do card) -->
+                <TextView
+                    android:id="@+id/btnAlternarModoTexto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="16dp"
+                    android:text="Não tem uma conta? Cadastre-se aqui"
+                    android:textColor="#38BDF8"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Informações de Conexão no Rodapé -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="🔒 Autenticação protegida via Firebase Identity"
+            android:textColor="#475569"
+            android:textSize="11sp" />
+
+    </LinearLayout>
+</ScrollView>

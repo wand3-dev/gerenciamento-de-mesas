@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootLayoutDetail"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- ═══ HEADER LUXO ═══ -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_header_luxury"
+            android:elevation="6dp">
+
+            <!-- Linha: Voltar + Título Mesa + Total R$ + Fechar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="6dp"
+                android:paddingEnd="12dp">
+
+                <ImageButton
+                    android:id="@+id/btnVoltar"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_revert"
+                    app:tint="@color/text_on_dark" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="4dp">
+
+                    <TextView
+                        android:id="@+id/tvTituloMesa"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="MESA 01"
+                        android:textColor="@color/text_on_dark"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.04" />
+
+                    <TextView
+                        android:id="@+id/tvMesaSubtituloServidor"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="COMANDA ELETRÔNICA"
+                        android:textColor="#34D399"
+                        android:textSize="9.5sp"
+                        android:letterSpacing="0.05"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Total R$ no topo -->
+                <TextView
+                    android:id="@+id/tvHeaderTotalValor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="R$ 0,00"
+                    android:textColor="#FBBF24"
+                    android:textSize="17sp"
+                    android:textStyle="bold"
+                    android:layout_marginEnd="10dp" />
+
+                <!-- Botão Fechar Mesa -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFecharMesa"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:text="Fechar"
+                    android:textColor="@color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="@color/mesa_fechada"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
+
+            <!-- Linha: Métricas (TEMPO | PENDENTES | ENTREGUES | TOTAL) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:background="#09101D">
+
+                <!-- Tempo -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="TEMPO"
+                        android:textColor="@color/text_on_dark_secondary"
+                        android:textSize="8sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.1" />
+
+                    <TextView
+                        android:id="@+id/tvMesaTempoTotal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="--:--"
+                        android:textColor="#FCD34D"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center_vertical"
+                    android:background="#1E293B" />
+
+                <!-- Pendentes -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="FALTA IR"
+                        android:textColor="@color/text_on_dark_secondary"
+                        android:textSize="8sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.1" />
+
+                    <TextView
+                        android:id="@+id/tvPendentesCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="#F59E0B"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center_vertical"
+                    android:background="#1E293B" />
+
+                <!-- Entregues -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="NA MESA"
+                        android:textColor="@color/text_on_dark_secondary"
+                        android:textSize="8sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.1" />
+
+                    <TextView
+                        android:id="@+id/tvEntreguesCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="#10B981"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center_vertical"
+                    android:background="#1E293B" />
+
+                <!-- Comandas Qtd -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="COMANDAS"
+                        android:textColor="@color/text_on_dark_secondary"
+                        android:textSize="8sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.1" />
+
+                    <TextView
+                        android:id="@+id/tvComandasCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="#38BDF8"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Barra de Ações Rápidas: Sincronizar + Gerenciar Comandas + Trocar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="6dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSincronizarMesa"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="🔄 SINCRONIZAR"
+                android:textColor="#0D9488"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:layout_marginEnd="6dp"
+                app:strokeColor="#0D9488"
+                app:strokeWidth="1.5dp"
+                app:cornerRadius="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnComandas"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="COMANDAS"
+                android:textColor="#64748B"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:layout_marginEnd="6dp"
+                app:strokeColor="#CBD5E1"
+                app:strokeWidth="1dp"
+                app:cornerRadius="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTrocarMesa"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:text="TRANSFERIR"
+                android:textColor="#64748B"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                app:strokeColor="#CBD5E1"
+                app:strokeWidth="1dp"
+                app:cornerRadius="8dp" />
+        </LinearLayout>
+
+        <!-- Empty state -->
+        <LinearLayout
+            android:id="@+id/tvEmptyState"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🥐"
+                android:textSize="48sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Nenhuma comanda vinculada"
+                android:textColor="@color/text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:text="Esta mesa não possui comandas vinculadas.\nToque no botão abaixo para puxar uma comanda."
+                android:textColor="#64748B"
+                android:textSize="13sp"
+                android:lineSpacingExtra="3dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPuxarComandaEmpty"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginTop="16dp"
+                android:text="📥 PUXAR COMANDA"
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:background="@drawable/bg_button_gradient_amber"
+                app:backgroundTint="@null"
+                app:cornerRadius="14dp"
+                android:elevation="4dp" />
+        </LinearLayout>
+
+        <!-- ═══ ABAS DE SETOR: BEBIDAS PENDENTES vs COMIDAS PENDENTES ═══ -->
+        <LinearLayout
+            android:id="@+id/layoutAbasSetor"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:background="#0F172A"
+            android:visibility="gone">
+
+            <!-- Aba 1: Bebidas Pendentes -->
+            <LinearLayout
+                android:id="@+id/tabBebidasPendentes"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="@drawable/bg_pill_comanda"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginEnd="4dp">
+
+                <TextView
+                    android:id="@+id/tvTabBebidasTitulo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="☕ BEBIDAS (0)"
+                    android:textColor="#92400E"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Aba 2: Comidas Pendentes -->
+            <LinearLayout
+                android:id="@+id/tabComidasPendentes"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="#1E293B"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_marginStart="2dp"
+                android:layout_marginEnd="4dp">
+
+                <TextView
+                    android:id="@+id/tvTabComidasTitulo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🍳 COMIDAS (0)"
+                    android:textColor="#94A3B8"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Aba 3: Todos os Itens -->
+            <LinearLayout
+                android:id="@+id/tabTodosItens"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:background="#1E293B"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:id="@+id/tvTabTodosTitulo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="TODOS"
+                    android:textColor="#94A3B8"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ═══ BOTÃO DE AÇÃO RÁPIDA EM LOTE (ENTREGAR TODAS AS BEBIDAS/COMIDAS) ═══ -->
+        <LinearLayout
+            android:id="@+id/layoutAcaoLoteSetor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:background="#0F172A"
+            android:visibility="gone">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEntregarTodosSetor"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="✓ ENTREGAR TODAS AS BEBIDAS (0)"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_button_gradient_emerald"
+                app:backgroundTint="@null"
+                app:cornerRadius="10dp"
+                android:elevation="2dp" />
+        </LinearLayout>
+
+        <!-- Estado vazio específico da aba selecionada -->
+        <LinearLayout
+            android:id="@+id/layoutEmptyAba"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="24dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvIconeEmptyAba"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="☕"
+                android:textSize="40sp" />
+
+            <TextView
+                android:id="@+id/tvMensagemEmptyAba"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center"
+                android:text="Nenhuma bebida pendente para esta mesa."
+                android:textColor="#64748B"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Lista de comandas / pedidos -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvPedidos"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="84dp"
+            android:clipToPadding="false"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- ═══ BOTÃO PRINCIPAL FIXO NO RODAPÉ: + VINCULAR NOVA COMANDA ═══ -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAdicionarPedido"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_margin="14dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:text="＋  VINCULAR NOVA COMANDA"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.04"
+        android:background="@drawable/bg_button_gradient_amber"
+        app:backgroundTint="@null"
+        android:elevation="8dp"
+        app:cornerRadius="16dp" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

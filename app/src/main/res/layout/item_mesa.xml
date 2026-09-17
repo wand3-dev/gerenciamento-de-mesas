@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardMesa"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="5dp"
+    app:cardBackgroundColor="#FFFFFF"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="3dp"
+    app:strokeWidth="1.5dp"
+    app:strokeColor="#E2E8F0">
+
+    <LinearLayout
+        android:id="@+id/layoutMesaContent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- Linha do Topo: Número da Mesa + Badge de Status -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvMesaNumero"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="MESA 01"
+                android:textColor="#0F172A"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.02" />
+
+            <TextView
+                android:id="@+id/tvMesaStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_pill_status_livre"
+                android:text="LIVRE"
+                android:textColor="#64748B"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:paddingStart="8dp"
+                android:paddingTop="3dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="3dp"
+                android:letterSpacing="0.05" />
+        </LinearLayout>
+
+        <!-- Divisor moderno bem sutil -->
+        <View
+            android:id="@+id/dividerMesa"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="#F1F5F9" />
+
+        <!-- Seção de Comandas e Valor Total (visível quando aberta) -->
+        <LinearLayout
+            android:id="@+id/layoutComandasMesa"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvMesaComandas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_chip_item"
+                android:paddingStart="7dp"
+                android:paddingTop="3dp"
+                android:paddingEnd="7dp"
+                android:paddingBottom="3dp"
+                android:text="Cmd #227"
+                android:textColor="#0369A1"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvMesaValorTotal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="end"
+                android:text="R$ 0,00"
+                android:textColor="#D97706"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Subtítulo para Mesa Livre -->
+        <LinearLayout
+            android:id="@+id/layoutMesaLivreInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✨ "
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tvMesaLivreSub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mesa disponível"
+                android:textColor="#94A3B8"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Rodapé da Mesa Aberta: Tempo + Contagem / Alerta 15m -->
+        <LinearLayout
+            android:id="@+id/layoutMesaFooter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <!-- Cronômetro de Permanência -->
+            <TextView
+                android:id="@+id/tvMesaTempo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="⏱️ há 5 min"
+                android:textColor="#065F46"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <!-- Badge de itens / pendências -->
+            <TextView
+                android:id="@+id/tvMesaItensCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="4 itens"
+                android:textColor="#10B981"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <!-- Alerta 15m -->
+            <TextView
+                android:id="@+id/tvMesaAlerta15m"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:background="@drawable/bg_pill_danger"
+                android:text="🚨 15m+"
+                android:textColor="#DC2626"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Destaque visual: De quem é esse prato? (Busca Reversa por Produto) -->
+        <TextView
+            android:id="@+id/tvMesaProdutoEncontrado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_pill_found_product"
+            android:text="🔍 1x Coxinha de Frango (⏳ Pendente)"
+            android:textColor="#B45309"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

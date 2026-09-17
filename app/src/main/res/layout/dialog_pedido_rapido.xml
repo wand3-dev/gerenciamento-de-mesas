@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dialog de pedido rápido: otimizado para velocidade máxima no pico -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/bg_card">
+
+    <!-- ── CABEÇALHO: mesa + voz ── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@color/bg_header"
+        android:paddingStart="18dp"
+        android:paddingEnd="12dp">
+
+        <TextView
+            android:id="@+id/tvDialogMesaLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="MESA 01"
+            android:textColor="@color/text_on_dark"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <!-- Botão de voz: grande, sempre visível -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFalarPedido"
+            android:layout_width="120dp"
+            android:layout_height="40dp"
+            android:text="🎤 Falar"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:backgroundTint="#2DD4BF"
+            app:cornerRadius="20dp" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <!-- ── COMANDA (opcional) ── -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Comanda (opcional)"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxBackgroundColor="@color/bg_input"
+                app:boxStrokeColor="@color/teal_200"
+                app:hintTextColor="@color/text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etNumeroComanda"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLines="1"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- ── BUSCA DE PRODUTO ── -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="🔍  Pesquisar produto"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxBackgroundColor="@color/bg_input"
+                app:boxStrokeColor="@color/teal_200"
+                app:hintTextColor="@color/text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etBuscaProdutoRapido"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Lista de sugestões de busca -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvProdutosRapidos"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:layout_marginTop="2dp"
+                android:background="@color/bg_input"
+                android:visibility="gone" />
+
+            <!-- ── CAMPO LIVRE DE PEDIDO ── -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="O QUE FOI PEDIDO?"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.15" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                app:boxBackgroundColor="@color/bg_input"
+                app:boxStrokeColor="@color/text_highlight"
+                app:hintTextColor="@color/text_highlight">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPedidoRapido"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:gravity="top|start"
+                    android:hint="Um item por linha&#10;Ex: 2 cafés&#10;1 pão na chapa"
+                    android:inputType="textCapSentences|textMultiLine"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
+                    android:textSize="16sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Use a busca acima para adicionar produtos ao campo, ou use voz."
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+
+            <!-- ── BOTÕES DE AÇÃO ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:orientation="horizontal"
+                android:gravity="end">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancelar"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="50dp"
+                    android:text="Cancelar"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnConfirmarItem"
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:backgroundTint="@color/teal_700"
+                    android:text="✓  SALVAR PEDIDO"
+                    android:textColor="@color/white"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
