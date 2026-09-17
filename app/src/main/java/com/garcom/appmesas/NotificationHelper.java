@@ -159,6 +159,7 @@ public class NotificationHelper {
     public static void notificarComandaVinculada(Context context, int numeroMesa, String comanda, int totalItens) {
         String titulo = String.format(Locale.getDefault(), "🥐 Mesa %02d: Comanda #%s Vinculada", numeroMesa, comanda);
         String msg = totalItens + " item(ns) importado(s) e aguardando entrega.";
+        AlertaHistoricoManager.registrarAlerta(context, new AlertaHistorico("COMANDA_VINCULADA", titulo, msg, numeroMesa, comanda));
         notificarNovoItem(context, titulo, msg);
     }
 
@@ -256,6 +257,7 @@ public class NotificationHelper {
                     .addAction(R.drawable.ic_notification_alert, "⏱️ +2 MIN", adiarPendingIntent);
 
             NotificationManagerCompat.from(appContext).notify(ID_BASE_ATRASO + numeroMesa, builder.build());
+            AlertaHistoricoManager.registrarAlerta(appContext, new AlertaHistorico("ATRASO", titulo, texto, numeroMesa, comanda));
 
             // Tenta puxar a tela da mesa para a frente diretamente se permitido pelo sistema
             try {
@@ -326,6 +328,7 @@ public class NotificationHelper {
                     .setContentIntent(pendingIntent);
 
             NotificationManagerCompat.from(appContext).notify(ID_BASE_LIBERADA + numeroMesa, builder.build());
+            AlertaHistoricoManager.registrarAlerta(appContext, new AlertaHistorico("MESA_LIBERADA", titulo, texto, numeroMesa, ""));
         } catch (Exception ignored) {}
     }
 
@@ -379,6 +382,7 @@ public class NotificationHelper {
                     .setContentIntent(pendingIntent);
 
             NotificationManagerCompat.from(appContext).notify(notifId, builder.build());
+            AlertaHistoricoManager.registrarAlerta(appContext, new AlertaHistorico("NOVO_PEDIDO", titulo, texto, numeroMesa, comanda));
 
             // Toca aviso sonoro e vibra
             tocarAudio(appContext, R.raw.bip_pedido, 1);
@@ -425,6 +429,7 @@ public class NotificationHelper {
                     .setFullScreenIntent(pendingIntent, true);
 
             NotificationManagerCompat.from(appContext).notify(notifId, builder.build());
+            AlertaHistoricoManager.registrarAlerta(appContext, new AlertaHistorico("TRANSFERENCIA", titulo, texto, mesaDestino, comanda));
 
             // Toca som de sino duplo e vibração forte de alerta
             tocarAudio(appContext, R.raw.sino_pedido, 2);

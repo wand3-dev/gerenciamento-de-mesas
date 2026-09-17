@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layoutCardAlerta"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/bg_search_bar"
+    android:layout_marginBottom="8dp"
+    android:padding="10dp"
+    android:gravity="center_vertical"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Ícone Circular de Alerta -->
+    <TextView
+        android:id="@+id/tvIconeAlerta"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:background="#FEF3C7"
+        android:gravity="center"
+        android:text="🔔"
+        android:textSize="18sp"
+        android:layout_marginEnd="10dp" />
+
+    <!-- Conteúdo do Alerta -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tvTituloAlerta"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Novo Pedido - Mesa 05"
+                android:textColor="#0F172A"
+                android:textSize="12.5sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/tvHoraAlerta"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="18:14"
+                android:textColor="#94A3B8"
+                android:textSize="10.5sp"
+                android:layout_marginStart="6dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvMensagemAlerta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="1x Picanha na Chapa"
+            android:textColor="#475569"
+            android:textSize="11.5sp"
+            android:maxLines="2"
+            android:ellipsize="end" />
+
+        <!-- Tag clicável para ir para a mesa -->
+        <TextView
+            android:id="@+id/tvIrParaMesa"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="➔ Abrir Mesa"
+            android:textColor="#2563EB"
+            android:textSize="10.5sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </LinearLayout>
+
+</LinearLayout>

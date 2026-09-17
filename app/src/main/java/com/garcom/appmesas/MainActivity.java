@@ -55,10 +55,12 @@ public class MainActivity extends AppCompatActivity {
     private boolean ocultarEntreguesFila = true;
 
     private TextView tvResumoAbertas, tvResumoFechadas, tvResumoAlertas15m;
-    private TextView tvServerStatusTag, btnFiltroTodas, btnFiltroAbertas, btnFiltroLivres;
+    private TextView tvServerStatusTag, btnFiltroTodas, btnFiltroMinhas, btnFiltroAbertas, btnFiltroLivres;
+    private View btnAvisosRecentes;
+    private TextView tvBadgeAvisos;
     private EditText etBuscarMesa;
     private TextView btnClearSearch;
-    private int filtroSelecionado = 0; // 0 = Todas, 1 = Abertas, 2 = Livres
+    private int filtroSelecionado = 0; // 0 = Todas, 1 = Minhas, 2 = Abertas, 3 = Livres
     private String queryBusca = "";
 
     private View rootLayoutMain, layoutSearchContainer;
@@ -117,10 +119,17 @@ public class MainActivity extends AppCompatActivity {
         btnAddMinhaComandaRapida = findViewById(R.id.btnAddMinhaComandaRapida);
         layoutChipsMinhasComandas = findViewById(R.id.layoutChipsMinhasComandas);
         btnFiltroTodas = findViewById(R.id.btnFiltroTodas);
+        btnFiltroMinhas = findViewById(R.id.btnFiltroMinhas);
         btnFiltroAbertas = findViewById(R.id.btnFiltroAbertas);
         btnFiltroLivres = findViewById(R.id.btnFiltroLivres);
+        btnAvisosRecentes = findViewById(R.id.btnAvisosRecentes);
+        tvBadgeAvisos = findViewById(R.id.tvBadgeAvisos);
         etBuscarMesa = findViewById(R.id.etBuscarMesa);
         btnClearSearch = findViewById(R.id.btnClearSearch);
+
+        if (btnAvisosRecentes != null) {
+            btnAvisosRecentes.setOnClickListener(v -> exibirModalCentralAvisos());
+        }
 
         if (btnAddMinhaComandaRapida != null) {
             btnAddMinhaComandaRapida.setOnClickListener(v -> exibirModalAdicionarMesaServidor());
@@ -258,9 +267,12 @@ public class MainActivity extends AppCompatActivity {
 
         // Filtros rápidos da aba Mesas
         btnFiltroTodas.setOnClickListener(v -> setFiltro(0));
-        btnFiltroAbertas.setOnClickListener(v -> setFiltro(1));
+        if (btnFiltroMinhas != null) {
+            btnFiltroMinhas.setOnClickListener(v -> setFiltro(1));
+        }
+        btnFiltroAbertas.setOnClickListener(v -> setFiltro(2));
         if (btnFiltroLivres != null) {
-            btnFiltroLivres.setOnClickListener(v -> setFiltro(2));
+            btnFiltroLivres.setOnClickListener(v -> setFiltro(3));
         }
 
         // Polling automático a cada 10 segundos para buscar novidades e checar alarme de 15m
@@ -285,12 +297,17 @@ public class MainActivity extends AppCompatActivity {
         btnFiltroTodas.setBackgroundResource(filtro == 0 ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
         btnFiltroTodas.setTextColor(Color.parseColor(filtro == 0 ? "#FFFFFF" : (isDark ? "#94A3B8" : "#0F172A")));
 
-        btnFiltroAbertas.setBackgroundResource(filtro == 1 ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
-        btnFiltroAbertas.setTextColor(Color.parseColor(filtro == 1 ? "#FFFFFF" : "#065F46"));
+        if (btnFiltroMinhas != null) {
+            btnFiltroMinhas.setBackgroundResource(filtro == 1 ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
+            btnFiltroMinhas.setTextColor(Color.parseColor(filtro == 1 ? "#FFFFFF" : "#D97706"));
+        }
+
+        btnFiltroAbertas.setBackgroundResource(filtro == 2 ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
+        btnFiltroAbertas.setTextColor(Color.parseColor(filtro == 2 ? "#FFFFFF" : "#065F46"));
 
         if (btnFiltroLivres != null) {
-            btnFiltroLivres.setBackgroundResource(filtro == 2 ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
-            btnFiltroLivres.setTextColor(Color.parseColor(filtro == 2 ? "#FFFFFF" : "#64748B"));
+            btnFiltroLivres.setBackgroundResource(filtro == 3 ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
+            btnFiltroLivres.setTextColor(Color.parseColor(filtro == 3 ? "#FFFFFF" : "#64748B"));
         }
 
         atualizarListaExibicao();
@@ -427,8 +444,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         for (Mesa m : manager.getMesas()) {
-            if (filtroSelecionado == 1 && !m.isAberta()) continue;
-            if (filtroSelecionado == 2 && m.isAberta()) continue;
+            if (filtroSelecionado == 1 && !manager.isMesaMinha(m)) continue;
+            if (filtroSelecionado == 2 && !m.isAberta()) continue;
+            if (filtroSelecionado == 3 && m.isAberta()) continue;
 
             if (!buscaNorm.isEmpty()) {
                 String numMesa = String.valueOf(m.getNumero());
@@ -1044,6 +1062,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private android.content.BroadcastReceiver receiverAlertas = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, Intent intent) {
+            atualizarBadgeAvisos();
+        }
+    };
+
     private android.content.BroadcastReceiver pedidosReceiver = new android.content.BroadcastReceiver() {
         @Override
         public void onReceive(android.content.Context context, Intent intent) {
@@ -1052,6 +1077,7 @@ public class MainActivity extends AppCompatActivity {
             atualizarFilaPedidos();
             atualizarResumo();
             atualizarChipsMinhasComandas();
+            atualizarBadgeAvisos();
         }
     };
 
@@ -1082,10 +1108,13 @@ public class MainActivity extends AppCompatActivity {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(pedidosReceiver, new android.content.IntentFilter(MesaManager.ACTION_PEDIDOS_ATUALIZADOS), android.content.Context.RECEIVER_NOT_EXPORTED);
+            registerReceiver(receiverAlertas, new android.content.IntentFilter(AlertaHistoricoManager.ACTION_HISTORICO_ALERTAS_ATUALIZADO), android.content.Context.RECEIVER_NOT_EXPORTED);
         } else {
             registerReceiver(pedidosReceiver, new android.content.IntentFilter(MesaManager.ACTION_PEDIDOS_ATUALIZADOS));
+            registerReceiver(receiverAlertas, new android.content.IntentFilter(AlertaHistoricoManager.ACTION_HISTORICO_ALERTAS_ATUALIZADO));
         }
 
+        atualizarBadgeAvisos();
         verificarEPedirTodasPermissoes();
     }
 
@@ -1250,6 +1279,9 @@ public class MainActivity extends AppCompatActivity {
         try {
             unregisterReceiver(pedidosReceiver);
         } catch (Exception ignored) {}
+        try {
+            unregisterReceiver(receiverAlertas);
+        } catch (Exception ignored) {}
     }
 
     private void atualizarResumo() {
@@ -1265,6 +1297,9 @@ public class MainActivity extends AppCompatActivity {
         if (btnFiltroTodas != null) {
             btnFiltroTodas.setText("TODAS (" + manager.getMesas().size() + ")");
         }
+        if (btnFiltroMinhas != null) {
+            btnFiltroMinhas.setText("⭐ MINHAS (" + manager.getQtdMinhasMesas() + ")");
+        }
         if (btnFiltroAbertas != null) {
             btnFiltroAbertas.setText("EM ATENDIMENTO (" + abertas + ")");
         }
@@ -1274,6 +1309,92 @@ public class MainActivity extends AppCompatActivity {
         if (tvTabMesasTitulo != null) {
             tvTabMesasTitulo.setText("🪑 MESAS DO SALÃO (" + manager.getMesas().size() + ")");
         }
+        atualizarBadgeAvisos();
+    }
+
+    private void atualizarBadgeAvisos() {
+        if (tvBadgeAvisos == null) return;
+        int naoLidos = AlertaHistoricoManager.getQtdNaoLidos(this);
+        if (naoLidos > 0) {
+            tvBadgeAvisos.setVisibility(View.VISIBLE);
+            tvBadgeAvisos.setText(naoLidos > 99 ? "99+" : String.valueOf(naoLidos));
+        } else {
+            tvBadgeAvisos.setVisibility(View.GONE);
+        }
+    }
+
+    private void exibirModalCentralAvisos() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_central_avisos);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+            dialog.getWindow().setLayout(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+        }
+
+        TextView btnFechar = dialog.findViewById(R.id.btnFecharCentralAvisos);
+        TextView btnLimpar = dialog.findViewById(R.id.btnLimparHistoricoAvisos);
+        TextView tvSubtitulo = dialog.findViewById(R.id.tvSubtituloAvisos);
+        RecyclerView rvAlertas = dialog.findViewById(R.id.rvAlertasHistorico);
+        View layoutVazio = dialog.findViewById(R.id.layoutAvisosVazio);
+
+        // Marca todos como lidos ao abrir a central
+        AlertaHistoricoManager.marcarTodosComoLidos(this);
+        atualizarBadgeAvisos();
+
+        List<AlertaHistorico> lista = AlertaHistoricoManager.getAlertas(this);
+
+        rvAlertas.setLayoutManager(new LinearLayoutManager(this));
+        AlertaHistoricoAdapter alertaAdapter = new AlertaHistoricoAdapter(lista, alerta -> {
+            dialog.dismiss();
+            if (alerta.getNumeroMesa() > 0) {
+                Intent intent = new Intent(MainActivity.this, MesaDetailActivity.class);
+                intent.putExtra("NUMERO_MESA", alerta.getNumeroMesa());
+                startActivity(intent);
+            }
+        });
+        rvAlertas.setAdapter(alertaAdapter);
+
+        Runnable atualizarVisibilidade = () -> {
+            if (lista.isEmpty()) {
+                rvAlertas.setVisibility(View.GONE);
+                layoutVazio.setVisibility(View.VISIBLE);
+                if (tvSubtitulo != null) tvSubtitulo.setText("Nenhum aviso registrado");
+                if (btnLimpar != null) btnLimpar.setVisibility(View.GONE);
+            } else {
+                rvAlertas.setVisibility(View.VISIBLE);
+                layoutVazio.setVisibility(View.GONE);
+                if (tvSubtitulo != null) tvSubtitulo.setText(lista.size() + " aviso(s) recente(s)");
+                if (btnLimpar != null) btnLimpar.setVisibility(View.VISIBLE);
+            }
+        };
+        atualizarVisibilidade.run();
+
+        if (btnFechar != null) {
+            btnFechar.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        if (btnLimpar != null) {
+            btnLimpar.setOnClickListener(v -> {
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Limpar Histórico")
+                        .setMessage("Deseja apagar todos os avisos registrados?")
+                        .setPositiveButton("Sim, Limpar", (d, w) -> {
+                            AlertaHistoricoManager.limparTudo(this);
+                            lista.clear();
+                            alertaAdapter.atualizar(lista);
+                            atualizarVisibilidade.run();
+                            atualizarBadgeAvisos();
+                        })
+                        .setNegativeButton("Cancelar", null)
+                        .show();
+            });
+        }
+
+        dialog.show();
     }
 
     private void aplicarKeepScreenOn(boolean keepOn) {

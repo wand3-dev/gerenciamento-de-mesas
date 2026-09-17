@@ -69,15 +69,52 @@
             </LinearLayout>
         </RelativeLayout>
 
-        <!-- Faixa do Garçom: Nome Completo no Meio -->
+        <!-- Faixa do Garçom: Nome Completo no Meio + Sino de Alertas à Esquerda + Sair à Direita -->
         <RelativeLayout
             android:id="@+id/layoutUsuarioLogado"
             android:layout_width="match_parent"
-            android:layout_height="36dp"
+            android:layout_height="38dp"
             android:layout_marginTop="10dp"
             android:background="#162235"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp">
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp">
+
+            <!-- Botão Central de Avisos com Sino e Badge de Contagem -->
+            <LinearLayout
+                android:id="@+id/btnAvisosRecentes"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingEnd="6dp">
+
+                <TextView
+                    android:id="@+id/tvIconeSino"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🔔"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/tvBadgeAvisos"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="3dp"
+                    android:background="@drawable/bg_badge_notif"
+                    android:paddingStart="5dp"
+                    android:paddingEnd="5dp"
+                    android:paddingTop="1dp"
+                    android:paddingBottom="1dp"
+                    android:text="0"
+                    android:textColor="#FFFFFF"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvNomeUsuarioLogado"
@@ -365,61 +402,84 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Chips de Filtro Modernos -->
-        <LinearLayout
+        <!-- Chips de Filtro Modernos com rolagem suave -->
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:scrollbars="none"
+            android:fillViewport="true"
+            android:layout_marginTop="8dp">
 
-            <TextView
-                android:id="@+id/btnFiltroTodas"
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:background="@drawable/bg_filter_chip_active"
-                android:text="TODAS (34)"
-                android:textColor="#FFFFFF"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:layout_marginEnd="6dp"
-                android:clickable="true"
-                android:focusable="true" />
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/btnFiltroAbertas"
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:background="@drawable/bg_filter_chip_inactive"
-                android:text="EM ATENDIMENTO"
-                android:textColor="#065F46"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:layout_marginEnd="6dp"
-                android:clickable="true"
-                android:focusable="true" />
+                <TextView
+                    android:id="@+id/btnFiltroTodas"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:background="@drawable/bg_filter_chip_active"
+                    android:text="TODAS (34)"
+                    android:textColor="#FFFFFF"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:layout_marginEnd="6dp"
+                    android:clickable="true"
+                    android:focusable="true" />
 
-            <TextView
-                android:id="@+id/btnFiltroLivres"
-                android:layout_width="wrap_content"
-                android:layout_height="30dp"
-                android:background="@drawable/bg_filter_chip_inactive"
-                android:text="LIVRES"
-                android:textColor="#64748B"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:clickable="true"
-                android:focusable="true" />
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/btnFiltroMinhas"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:background="@drawable/bg_filter_chip_inactive"
+                    android:text="⭐ MINHAS (0)"
+                    android:textColor="#D97706"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:layout_marginEnd="6dp"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/btnFiltroAbertas"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:background="@drawable/bg_filter_chip_inactive"
+                    android:text="EM ATENDIMENTO"
+                    android:textColor="#065F46"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:layout_marginEnd="6dp"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/btnFiltroLivres"
+                    android:layout_width="wrap_content"
+                    android:layout_height="30dp"
+                    android:background="@drawable/bg_filter_chip_inactive"
+                    android:text="LIVRES"
+                    android:textColor="#64748B"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </LinearLayout>
+        </HorizontalScrollView>
     </LinearLayout>
 
     <!-- ═══════════════════════════════════════════════════════════════

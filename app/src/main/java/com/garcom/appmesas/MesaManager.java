@@ -137,6 +137,31 @@ public class MesaManager {
         sp.edit().putStringSet(KEY_MINHAS_COMANDAS, new HashSet<>(minhasComandas)).apply();
     }
 
+    public synchronized boolean isMesaMinha(Mesa mesa) {
+        if (mesa == null) return false;
+        String numMesaStr = String.valueOf(mesa.getNumero());
+        if (minhasComandas.contains(numMesaStr)) return true;
+        for (String c : mesa.getComandasUnicas()) {
+            if (minhasComandas.contains(c.trim())) return true;
+        }
+        if (mesa.getPedidos() != null) {
+            for (PedidoItem p : mesa.getPedidos()) {
+                if (p.getComanda() != null && minhasComandas.contains(p.getComanda().trim())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public synchronized int getQtdMinhasMesas() {
+        int count = 0;
+        for (Mesa m : mesas) {
+            if (isMesaMinha(m)) count++;
+        }
+        return count;
+    }
+
     public synchronized List<Mesa> getMesas() {
         return mesas;
     }
