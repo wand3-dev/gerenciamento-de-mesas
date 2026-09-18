@@ -213,7 +213,9 @@ public class MesaDetailActivity extends AppCompatActivity {
                     .setPositiveButton("Sim, Fechar", (d, w) -> {
                         String totalStr = mesa.getValorTotalFormatado();
                         mesa.setAberta(false);
+                        mesa.getPedidos().clear();
                         manager.salvarMesas(MesaDetailActivity.this);
+                        manager.removerMesaDinamicaSeVazia(MesaDetailActivity.this, numeroMesa);
                         NotificationHelper.cancelarAlertaAtraso(MesaDetailActivity.this, numeroMesa);
                         NotificationHelper.notificarMesaLiberada(MesaDetailActivity.this, numeroMesa, totalStr);
                         sendBroadcast(new Intent(MesaManager.ACTION_PEDIDOS_ATUALIZADOS));
@@ -729,22 +731,19 @@ public class MesaDetailActivity extends AppCompatActivity {
     }
 
     private boolean processarAtualizacaoItensServidor(List<JSONObject> itensServidor) {
+        if (itensServidor == null) return false;
         boolean houveNovidade = false;
         java.util.Set<String> idsAtivosServidor = new java.util.HashSet<>();
         List<String> comandasMonitoradas = mesa.getComandasUnicas();
-
-        // Se a mesa ainda não possui comandas vinculadas manualmente pelo garçom,
-        // não puxa todas as comandas do servidor automaticamente.
-        if (comandasMonitoradas.isEmpty()) {
-            return false;
-        }
+        boolean filtrarPorComandas = !comandasMonitoradas.isEmpty();
 
         for (JSONObject objServidor : itensServidor) {
             PedidoItem itemServ = PedidoItem.fromServerJson(objServidor);
             String comandaItem = itemServ.getComanda();
 
-            // Apenas processa se a comanda deste item já foi puxada para esta mesa
-            if (!comandasMonitoradas.contains(comandaItem)) {
+            // Se a mesa já possui comandas vinculadas, respeita o filtro
+            // Se estava vazia, aceita todos os itens que o servidor retornou para esta mesa
+            if (filtrarPorComandas && !comandasMonitoradas.contains(comandaItem) && !comandaItem.equals(String.valueOf(numeroMesa))) {
                 continue;
             }
 
@@ -765,7 +764,7 @@ public class MesaDetailActivity extends AppCompatActivity {
             }
 
             if (!encontrado) {
-                // Item novinho lançado na comanda já monitorada nesta mesa!
+                // Item novinho lançado na mesa/comanda!
                 mesa.adicionarPedido(itemServ);
                 houveNovidade = true;
                 NotificationHelper.notificarNovoItem(this, "Novo Item!",
@@ -774,18 +773,23 @@ public class MesaDetailActivity extends AppCompatActivity {
             }
         }
 
-        // Remove itens das comandas monitoradas que não existem mais no servidor (estornados/pagos)
+        // Remove itens do servidor que não existem mais (estornados/pagos)
+        // IMPORTANTE: apenas remove itens que vieram do servidor (autonum preenchido).
+        // Itens manuais inseridos pelo garçom (autonum vazio) são preservados!
         for (int i = mesa.getPedidos().size() - 1; i >= 0; i--) {
             PedidoItem it = mesa.getPedidos().get(i);
-            if (!idsAtivosServidor.contains(it.getId())) {
-                mesa.getPedidos().remove(i);
-                houveNovidade = true;
+            if (it.getAutonum() != null && !it.getAutonum().isEmpty()) {
+                if (!idsAtivosServidor.contains(it.getId())) {
+                    mesa.getPedidos().remove(i);
+                    houveNovidade = true;
+                }
             }
         }
 
         // Se todos os itens sumiram, fecha a mesa
         if (mesa.getPedidos().isEmpty() && mesa.isAberta()) {
             mesa.setAberta(false);
+            manager.removerMesaDinamicaSeVazia(this, numeroMesa);
             houveNovidade = true;
             Toast.makeText(this, "✓ Mesa " + numeroMesa + " liberada automaticamente!", Toast.LENGTH_SHORT).show();
         }
@@ -938,8 +942,13 @@ public class MesaDetailActivity extends AppCompatActivity {
                             .setMessage("Transferir " + comandas.size() + " comanda(s) para a Mesa " + destino.getNumero() + "?")
                             .setPositiveButton("Transferir", (d, w) -> {
                                 for (String comanda : comandas) mesa.transferirComandaPara(destino, comanda);
+                                if (mesa.getPedidos().isEmpty()) {
+                                    mesa.setAberta(false);
+                                    manager.removerMesaDinamicaSeVazia(this, numeroMesa);
+                                }
                                 manager.salvarMesas(this);
                                 manager.registrarTroca(this, "Mesa " + numeroMesa + " para Mesa " + destino.getNumero() + ": " + comandas);
+                                sendBroadcast(new Intent(MesaManager.ACTION_PEDIDOS_ATUALIZADOS));
                                 atualizarUI();
                                 Toast.makeText(this, "Comanda(s) transferida(s) para a Mesa " + destino.getNumero() + "!", Toast.LENGTH_SHORT).show();
                             })

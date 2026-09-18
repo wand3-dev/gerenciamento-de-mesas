@@ -878,6 +878,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void sincronizarComandasAbertasAutomatico() {
         if (sincronizandoAgora) return;
+        // Se o serviço em primeiro plano já está monitorando, evita duplicação de requisições e toasts
+        if (MonitorMesasService.isRodando()) return;
 
         List<Mesa> mesasAbertas = new ArrayList<>();
         for (Mesa m : manager.getMesas()) {
@@ -941,18 +943,22 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
 
-                    // Remove itens que foram estornados / finalizados
+                    // Remove apenas itens do servidor que foram estornados / finalizados
+                    // Preserva itens inseridos manualmente pelo garçom (autonum vazio)
                     for (int i = mesa.getPedidos().size() - 1; i >= 0; i--) {
                         PedidoItem it = mesa.getPedidos().get(i);
-                        if (!idsAtivos.contains(it.getId())) {
-                            mesa.getPedidos().remove(i);
-                            houveNovidade = true;
+                        if (it.getAutonum() != null && !it.getAutonum().isEmpty()) {
+                            if (!idsAtivos.contains(it.getId())) {
+                                mesa.getPedidos().remove(i);
+                                houveNovidade = true;
+                            }
                         }
                     }
 
                     if (mesa.getPedidos().isEmpty()) {
                         mesa.setAberta(false);
                         houveNovidade = true;
+                        manager.removerMesaDinamicaSeVazia(MainActivity.this, numMesa);
                         Toast.makeText(MainActivity.this, "✓ Mesa " + numMesa + " liberada no caixa da padaria.", Toast.LENGTH_SHORT).show();
                     }
 

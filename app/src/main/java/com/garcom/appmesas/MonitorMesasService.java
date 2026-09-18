@@ -131,6 +131,7 @@ public class MonitorMesasService extends Service {
                     boolean houveNovidade = false;
                     List<PedidoItem> novosItens = new ArrayList<>();
                     Set<String> comandasServidor = new HashSet<>();
+                    Set<String> idsAtivosServidor = new HashSet<>();
 
                     for (JSONObject objServidor : itens) {
                         PedidoItem itemServ = PedidoItem.fromServerJson(objServidor);
@@ -146,10 +147,18 @@ public class MonitorMesasService extends Service {
                             continue;
                         }
 
+                        idsAtivosServidor.add(itemServ.getId());
+
                         boolean encontrado = false;
                         for (PedidoItem local : mesa.getPedidos()) {
                             if (local.getId().equals(itemServ.getId())) {
                                 encontrado = true;
+                                if (local.getQuantidade() != itemServ.getQuantidade() || !local.getValorTotal().equals(itemServ.getValorTotal())) {
+                                    local.setQuantidade(itemServ.getQuantidade());
+                                    local.setValorTotal(itemServ.getValorTotal());
+                                    local.setDescricao(itemServ.getDescricao());
+                                    houveNovidade = true;
+                                }
                                 break;
                             }
                         }
@@ -158,6 +167,26 @@ public class MonitorMesasService extends Service {
                             novosItens.add(itemServ);
                             houveNovidade = true;
                         }
+                    }
+
+                    // Remove apenas itens do servidor que foram estornados / pagos no caixa
+                    // Preserva itens inseridos manualmente pelo garçom (autonum vazio)
+                    for (int i = mesa.getPedidos().size() - 1; i >= 0; i--) {
+                        PedidoItem it = mesa.getPedidos().get(i);
+                        if (it.getAutonum() != null && !it.getAutonum().isEmpty()) {
+                            String c = it.getComanda();
+                            if ((comandasMonitoradas.isEmpty() || comandasMonitoradas.contains(c) || c.equals(String.valueOf(numMesa)))
+                                    && !idsAtivosServidor.contains(it.getId())) {
+                                mesa.getPedidos().remove(i);
+                                houveNovidade = true;
+                            }
+                        }
+                    }
+
+                    if (mesa.getPedidos().isEmpty() && mesa.isAberta()) {
+                        mesa.setAberta(false);
+                        manager.removerMesaDinamicaSeVazia(MonitorMesasService.this, numMesa);
+                        houveNovidade = true;
                     }
 
                     if (houveNovidade) {

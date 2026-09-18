@@ -16,14 +16,14 @@ public class Mesa {
         this.numero = numero;
         this.aberta = false;
         this.aberturaTimestamp = 0;
-        this.pedidos = new ArrayList<>();
+        this.pedidos = java.util.Collections.synchronizedList(new ArrayList<>());
     }
 
     public Mesa(JSONObject obj) throws JSONException {
         this.numero = obj.optInt("numero", 1);
         this.aberta = obj.optBoolean("aberta", false);
         this.aberturaTimestamp = obj.optLong("aberturaTimestamp", 0);
-        this.pedidos = new ArrayList<>();
+        this.pedidos = java.util.Collections.synchronizedList(new ArrayList<>());
         JSONArray arr = obj.optJSONArray("pedidos");
         if (arr != null) {
             for (int i = 0; i < arr.length(); i++) {
@@ -38,8 +38,10 @@ public class Mesa {
         obj.put("aberta", aberta);
         obj.put("aberturaTimestamp", aberturaTimestamp);
         JSONArray arr = new JSONArray();
-        for (PedidoItem item : pedidos) {
-            arr.put(item.toJSON());
+        synchronized (pedidos) {
+            for (PedidoItem item : pedidos) {
+                arr.put(item.toJSON());
+            }
         }
         obj.put("pedidos", arr);
         return obj;
@@ -53,7 +55,9 @@ public class Mesa {
             aberturaTimestamp = System.currentTimeMillis();
         } else if (!aberta) {
             aberturaTimestamp = 0;
-            pedidos.clear();
+            synchronized (pedidos) {
+                pedidos.clear();
+            }
         }
     }
 
@@ -65,97 +69,121 @@ public class Mesa {
             aberta = true;
             aberturaTimestamp = System.currentTimeMillis();
         }
-        pedidos.add(0, item);
+        synchronized (pedidos) {
+            pedidos.add(0, item);
+        }
     }
 
     public void removerPedido(String id) {
-        for (int i = 0; i < pedidos.size(); i++) {
-            if (pedidos.get(i).getId().equals(id)) {
-                pedidos.remove(i);
-                break;
+        synchronized (pedidos) {
+            for (int i = 0; i < pedidos.size(); i++) {
+                if (pedidos.get(i).getId().equals(id)) {
+                    pedidos.remove(i);
+                    break;
+                }
             }
-        }
-        if (pedidos.isEmpty()) {
-            aberta = false;
-            aberturaTimestamp = 0;
+            if (pedidos.isEmpty()) {
+                aberta = false;
+                aberturaTimestamp = 0;
+            }
         }
     }
 
     public int contarPedidosDaComanda(String comanda) {
         int total = 0;
-        for (PedidoItem pedido : pedidos) {
-            if (comanda.equals(pedido.getComanda())) total++;
+        synchronized (pedidos) {
+            for (PedidoItem pedido : pedidos) {
+                if (comanda.equals(pedido.getComanda())) total++;
+            }
         }
         return total;
     }
 
     public void alterarComanda(String comandaAtual, String novaComanda) {
-        for (PedidoItem pedido : pedidos) {
-            if (comandaAtual.equals(pedido.getComanda())) pedido.setComanda(novaComanda);
+        synchronized (pedidos) {
+            for (PedidoItem pedido : pedidos) {
+                if (comandaAtual.equals(pedido.getComanda())) pedido.setComanda(novaComanda);
+            }
         }
     }
 
     public void removerComanda(String comanda) {
-        for (int i = pedidos.size() - 1; i >= 0; i--) {
-            if (comanda.equals(pedidos.get(i).getComanda())) pedidos.remove(i);
-        }
-        if (pedidos.isEmpty()) {
-            aberta = false;
-            aberturaTimestamp = 0;
+        synchronized (pedidos) {
+            for (int i = pedidos.size() - 1; i >= 0; i--) {
+                if (comanda.equals(pedidos.get(i).getComanda())) pedidos.remove(i);
+            }
+            if (pedidos.isEmpty()) {
+                aberta = false;
+                aberturaTimestamp = 0;
+            }
         }
     }
 
     public void marcarComandaEntregue(String comanda) {
-        for (PedidoItem pedido : pedidos) {
-            if (comanda.equals(pedido.getComanda())) pedido.setEntregue(true);
+        synchronized (pedidos) {
+            for (PedidoItem pedido : pedidos) {
+                if (comanda.equals(pedido.getComanda())) pedido.setEntregue(true);
+            }
         }
     }
 
     public void transferirPedidosPara(Mesa destino) {
-        if (destino == null || destino == this || pedidos.isEmpty()) return;
+        if (destino == null || destino == this) return;
 
-        if (!destino.aberta) {
-            destino.aberta = true;
-            destino.aberturaTimestamp = aberturaTimestamp > 0
-                    ? aberturaTimestamp
-                    : System.currentTimeMillis();
+        synchronized (pedidos) {
+            if (pedidos.isEmpty()) return;
+            if (!destino.aberta) {
+                destino.aberta = true;
+                destino.aberturaTimestamp = aberturaTimestamp > 0
+                        ? aberturaTimestamp
+                        : System.currentTimeMillis();
+            }
+            synchronized (destino.pedidos) {
+                destino.pedidos.addAll(0, pedidos);
+            }
+            pedidos.clear();
+            aberta = false;
+            aberturaTimestamp = 0;
         }
-        destino.pedidos.addAll(0, pedidos);
-        pedidos.clear();
-        aberta = false;
-        aberturaTimestamp = 0;
     }
 
     public void transferirComandaPara(Mesa destino, String comanda) {
-        if (destino == null || destino == this || pedidos.isEmpty()) return;
+        if (destino == null || destino == this) return;
 
         List<PedidoItem> pedidosTransferidos = new ArrayList<>();
-        for (int i = pedidos.size() - 1; i >= 0; i--) {
-            PedidoItem pedido = pedidos.get(i);
-            if (comanda.equals(pedido.getComanda())) {
-                pedidosTransferidos.add(0, pedido);
-                pedidos.remove(i);
+        synchronized (pedidos) {
+            if (pedidos.isEmpty()) return;
+            for (int i = pedidos.size() - 1; i >= 0; i--) {
+                PedidoItem pedido = pedidos.get(i);
+                if (comanda.equals(pedido.getComanda())) {
+                    pedidosTransferidos.add(0, pedido);
+                    pedidos.remove(i);
+                }
             }
-        }
-        if (pedidosTransferidos.isEmpty()) return;
+            if (pedidosTransferidos.isEmpty()) return;
 
-        if (!destino.aberta) {
-            destino.aberta = true;
-            destino.aberturaTimestamp = aberturaTimestamp > 0
-                    ? aberturaTimestamp
-                    : System.currentTimeMillis();
-        }
-        destino.pedidos.addAll(0, pedidosTransferidos);
-        if (pedidos.isEmpty()) {
-            aberta = false;
-            aberturaTimestamp = 0;
+            if (!destino.aberta) {
+                destino.aberta = true;
+                destino.aberturaTimestamp = aberturaTimestamp > 0
+                        ? aberturaTimestamp
+                        : System.currentTimeMillis();
+            }
+            synchronized (destino.pedidos) {
+                destino.pedidos.addAll(0, pedidosTransferidos);
+            }
+            if (pedidos.isEmpty()) {
+                aberta = false;
+                aberturaTimestamp = 0;
+            }
         }
     }
 
     public double getTotalValor() {
         double total = 0.0;
-        for (PedidoItem item : pedidos) {
-            total += item.getValorTotalNumerico();
+        synchronized (pedidos) {
+            for (PedidoItem item : pedidos) {
+                total += item.getValorTotalNumerico();
+            }
         }
         return total;
     }
@@ -167,10 +195,12 @@ public class Mesa {
 
     public List<String> getComandasUnicas() {
         List<String> comandas = new ArrayList<>();
-        for (PedidoItem item : pedidos) {
-            String c = item.getComanda();
-            if (c != null && !c.trim().isEmpty() && !comandas.contains(c.trim())) {
-                comandas.add(c.trim());
+        synchronized (pedidos) {
+            for (PedidoItem item : pedidos) {
+                String c = item.getComanda();
+                if (c != null && !c.trim().isEmpty() && !comandas.contains(c.trim())) {
+                    comandas.add(c.trim());
+                }
             }
         }
         return comandas;
@@ -194,8 +224,10 @@ public class Mesa {
 
     public double getValorTotal() {
         double total = 0.0;
-        for (PedidoItem item : pedidos) {
-            total += item.getValorTotalNumerico();
+        synchronized (pedidos) {
+            for (PedidoItem item : pedidos) {
+                total += item.getValorTotalNumerico();
+            }
         }
         return total;
     }
