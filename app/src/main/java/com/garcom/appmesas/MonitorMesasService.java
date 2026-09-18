@@ -27,6 +27,8 @@ public class MonitorMesasService extends Service {
     private ServerComandasClient serverClient;
     private boolean sincronizando = false;
     private static boolean servicoRodando = false;
+    private static final java.util.Map<String, Integer> comandaUltimaMesaConhecida = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Set<String> comandasEmChecagem = java.util.Collections.synchronizedSet(new HashSet<>());
 
     public static boolean isRodando() {
         return servicoRodando;
@@ -81,11 +83,16 @@ public class MonitorMesasService extends Service {
     private void sincronizarMesasServidor() {
         if (sincronizando || manager == null || serverClient == null) return;
 
-        // Garante que todas as 'Minhas Comandas' numéricas tenham suas mesas ativas
+        // Só abre mesa física pelo número se ela NÃO estiver já alocada em outra mesa aberta
         for (String cmd : manager.getMinhasComandas()) {
             try {
-                int numCmd = Integer.parseInt(cmd.trim());
-                if (numCmd > 0) {
+                String cmdLimpa = cmd.trim();
+                Mesa mesaOndeEsta = manager.buscarMesaComComanda(cmdLimpa, -1);
+                if (mesaOndeEsta != null && mesaOndeEsta.isAberta()) {
+                    continue; // já está alocada em uma mesa aberta (ex: Mesa 12)
+                }
+                int numCmd = Integer.parseInt(cmdLimpa);
+                if (numCmd > 0 && numCmd <= 34) {
                     Mesa m = manager.getOuCriarMesa(numCmd);
                     if (!m.isAberta()) m.setAberta(true);
                 }
@@ -105,9 +112,12 @@ public class MonitorMesasService extends Service {
             final int numMesa = mesa.getNumero();
             final List<String> comandasMonitoradas = mesa.getComandasUnicas();
 
-            // Se for mesa criada pelo número da comanda (ex: mesa 239), monitora também a própria comanda 239
+            // Se for mesa criada pelo número da comanda (ex: mesa 239), monitora se não estiver em outra mesa
             if (comandasMonitoradas.isEmpty() && manager.isMinhaComanda(String.valueOf(numMesa))) {
-                comandasMonitoradas.add(String.valueOf(numMesa));
+                Mesa mesaComEssaComanda = manager.buscarMesaComComanda(String.valueOf(numMesa), numMesa);
+                if (mesaComEssaComanda == null) {
+                    comandasMonitoradas.add(String.valueOf(numMesa));
+                }
             }
 
             if (comandasMonitoradas.isEmpty() && mesa.getPedidos().isEmpty()) {
@@ -125,7 +135,11 @@ public class MonitorMesasService extends Service {
                     for (JSONObject objServidor : itens) {
                         PedidoItem itemServ = PedidoItem.fromServerJson(objServidor);
                         String comandaItem = itemServ.getComanda();
-                        if (!comandaItem.isEmpty()) comandasServidor.add(comandaItem);
+                        if (!comandaItem.isEmpty()) {
+                            comandasServidor.add(comandaItem);
+                            // Registra que a comanda está atualmente nesta mesa
+                            comandaUltimaMesaConhecida.put(comandaItem, numMesa);
+                        }
 
                         // Se monitora comandas específicas, filtra; caso contrário (mesa aberta), aceita os itens
                         if (!comandasMonitoradas.isEmpty() && !comandasMonitoradas.contains(comandaItem) && !comandaItem.equals(String.valueOf(numMesa))) {
@@ -167,15 +181,7 @@ public class MonitorMesasService extends Service {
                     // verifica se ela foi transferida para outra mesa no sistema
                     for (String cmdLocal : comandasMonitoradas) {
                         if (!comandasServidor.contains(cmdLocal)) {
-                            new Thread(() -> {
-                                int novaMesa = serverClient.detectarNovaMesaDaComandaSync(cmdLocal, numMesa);
-                                if (novaMesa != -1 && novaMesa != numMesa) {
-                                    handler.post(() -> {
-                                        manager.transferirComanda(MonitorMesasService.this, cmdLocal, numMesa, novaMesa);
-                                        NotificationHelper.notificarMudancaMesa(MonitorMesasService.this, cmdLocal, numMesa, novaMesa);
-                                    });
-                                }
-                            }).start();
+                            verificarTransferenciaComanda(cmdLocal, numMesa);
                         }
                     }
 
@@ -186,15 +192,7 @@ public class MonitorMesasService extends Service {
                 public void onEmpty() {
                     // Se a mesa ficou vazia no servidor, checa se as comandas que estavam nela mudaram de mesa
                     for (String cmdLocal : comandasMonitoradas) {
-                        new Thread(() -> {
-                            int novaMesa = serverClient.detectarNovaMesaDaComandaSync(cmdLocal, numMesa);
-                            if (novaMesa != -1 && novaMesa != numMesa) {
-                                handler.post(() -> {
-                                    manager.transferirComanda(MonitorMesasService.this, cmdLocal, numMesa, novaMesa);
-                                    NotificationHelper.notificarMudancaMesa(MonitorMesasService.this, cmdLocal, numMesa, novaMesa);
-                                });
-                            }
-                        }).start();
+                        verificarTransferenciaComanda(cmdLocal, numMesa);
                     }
 
                     if (pendentes.decrementAndGet() <= 0) sincronizando = false;
@@ -206,6 +204,38 @@ public class MonitorMesasService extends Service {
                 }
             });
         }
+    }
+
+    private void verificarTransferenciaComanda(String comanda, int mesaOrigem) {
+        if (comanda == null || comanda.trim().isEmpty()) return;
+        final String cmd = comanda.trim();
+
+        // Evita disparar múltiplas threads para a mesma comanda
+        if (!comandasEmChecagem.add(cmd)) {
+            return;
+        }
+
+        new Thread(() -> {
+            try {
+                int novaMesa = serverClient.detectarNovaMesaDaComandaSync(cmd, mesaOrigem);
+                if (novaMesa != -1 && novaMesa != mesaOrigem) {
+                    Integer ultimaMesa = comandaUltimaMesaConhecida.get(cmd);
+                    if (ultimaMesa != null && ultimaMesa == novaMesa) {
+                        // Já sabemos que está na novaMesa! Não dispara notificação repetida.
+                        return;
+                    }
+
+                    comandaUltimaMesaConhecida.put(cmd, novaMesa);
+
+                    handler.post(() -> {
+                        manager.transferirComanda(MonitorMesasService.this, cmd, mesaOrigem, novaMesa);
+                        NotificationHelper.notificarMudancaMesa(MonitorMesasService.this, cmd, mesaOrigem, novaMesa);
+                    });
+                }
+            } finally {
+                comandasEmChecagem.remove(cmd);
+            }
+        }).start();
     }
 
     private void verificarAlertasAtraso() {

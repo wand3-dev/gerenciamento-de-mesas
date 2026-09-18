@@ -32,6 +32,7 @@ public class NotificationHelper {
     private static final int ID_BASE_LIBERADA = 3000;
     private static final AtomicInteger notifCounter = new AtomicInteger(100);
     private static boolean canaisCriados = false;
+    private static final java.util.Map<String, Long> tempoUltimaTransferenciaNotificada = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Cria os canais de notificação para Android 8.0 (API 26) ou superior
@@ -394,8 +395,18 @@ public class NotificationHelper {
      * Notifica quando uma comanda mudou de mesa no servidor (transferência de mesa)
      */
     public static void notificarMudancaMesa(Context context, String comanda, int mesaOrigem, int mesaDestino) {
-        if (context == null) return;
+        if (context == null || comanda == null || comanda.trim().isEmpty() || mesaOrigem == mesaDestino) return;
+        final String cmd = comanda.trim();
         final Context appContext = context.getApplicationContext();
+
+        // Evita repetições excessivas da mesma transferência nos últimos 3 minutos
+        String chave = cmd + "_" + mesaOrigem + "->" + mesaDestino;
+        Long ultimoTempo = tempoUltimaTransferenciaNotificada.get(chave);
+        long agora = System.currentTimeMillis();
+        if (ultimoTempo != null && (agora - ultimoTempo) < 180000) {
+            return; // Já notificado recentemente, ignora repetição!
+        }
+        tempoUltimaTransferenciaNotificada.put(chave, agora);
 
         criarCanaisNotificacao(appContext);
         if (!podeEnviarNotificacoes(appContext)) return;
@@ -405,7 +416,8 @@ public class NotificationHelper {
             intent.putExtra("NUMERO_MESA", mesaDestino);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
-            int notifId = notifCounter.incrementAndGet();
+            // Usa ID determinístico por comanda para atualizar a mesma notificação em vez de empilhar
+            int notifId = 4000 + Math.abs(cmd.hashCode() % 1000);
             PendingIntent pendingIntent = PendingIntent.getActivity(
                     appContext,
                     notifId,
@@ -413,7 +425,7 @@ public class NotificationHelper {
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
 
-            String titulo = String.format(Locale.getDefault(), "🔄 Comanda #%s Transferida!", comanda);
+            String titulo = String.format(Locale.getDefault(), "🔄 Comanda #%s Transferida!", cmd);
             String texto = String.format(Locale.getDefault(), "Atenção: transferida da Mesa %02d ➔ Mesa %02d!", mesaOrigem, mesaDestino);
 
             NotificationCompat.Builder builder = new NotificationCompat.Builder(appContext, CHANNEL_ATRASOS)
@@ -429,7 +441,7 @@ public class NotificationHelper {
                     .setFullScreenIntent(pendingIntent, true);
 
             NotificationManagerCompat.from(appContext).notify(notifId, builder.build());
-            AlertaHistoricoManager.registrarAlerta(appContext, new AlertaHistorico("TRANSFERENCIA", titulo, texto, mesaDestino, comanda));
+            AlertaHistoricoManager.registrarAlerta(appContext, new AlertaHistorico("TRANSFERENCIA", titulo, texto, mesaDestino, cmd));
 
             // Toca som de sino duplo e vibração forte de alerta
             tocarAudio(appContext, R.raw.sino_pedido, 2);
