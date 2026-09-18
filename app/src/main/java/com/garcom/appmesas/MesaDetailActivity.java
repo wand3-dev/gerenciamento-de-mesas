@@ -203,7 +203,7 @@ public class MesaDetailActivity extends AppCompatActivity {
         btnComandas.setOnClickListener(v -> exibirGerenciadorComandas());
 
         btnFecharMesa.setOnClickListener(v -> {
-            if (!mesa.isAberta()) {
+            if (mesa == null || !mesa.isAberta()) {
                 Toast.makeText(this, "Esta mesa já está livre!", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -211,11 +211,22 @@ public class MesaDetailActivity extends AppCompatActivity {
                     .setTitle("Fechar Mesa " + numeroMesa)
                     .setMessage("Deseja fechar esta mesa e liberar o atendimento?")
                     .setPositiveButton("Sim, Fechar", (d, w) -> {
-                        String totalStr = mesa.getValorTotalFormatado();
-                        mesa.setAberta(false);
-                        mesa.getPedidos().clear();
+                        String totalStr = (mesa != null) ? mesa.getValorTotalFormatado() : "R$ 0,00";
+                        if (mesa != null) {
+                            mesa.setAberta(false);
+                            mesa.getPedidos().clear();
+                        }
+
+                        // Desregistra o receiver antes de disparar o broadcast para evitar NullPointerException na UI em finalização
+                        try {
+                            unregisterReceiver(pedidosReceiver);
+                        } catch (Exception ignored) {}
+
                         manager.salvarMesas(MesaDetailActivity.this);
                         manager.removerMesaDinamicaSeVazia(MesaDetailActivity.this, numeroMesa);
+                        if (numeroMesa > 34) {
+                            manager.removerMinhaComanda(MesaDetailActivity.this, String.valueOf(numeroMesa));
+                        }
                         NotificationHelper.cancelarAlertaAtraso(MesaDetailActivity.this, numeroMesa);
                         NotificationHelper.notificarMesaLiberada(MesaDetailActivity.this, numeroMesa, totalStr);
                         sendBroadcast(new Intent(MesaManager.ACTION_PEDIDOS_ATUALIZADOS));
@@ -229,6 +240,7 @@ public class MesaDetailActivity extends AppCompatActivity {
         timerRunnable = new Runnable() {
             @Override
             public void run() {
+                if (mesa == null || isFinishing() || isDestroyed()) return;
                 atualizarTempos();
                 sincronizarComandasDaMesaSilencioso();
                 timerHandler.postDelayed(this, 10000); // 10 segundos
@@ -239,7 +251,12 @@ public class MesaDetailActivity extends AppCompatActivity {
     private android.content.BroadcastReceiver pedidosReceiver = new android.content.BroadcastReceiver() {
         @Override
         public void onReceive(android.content.Context context, Intent intent) {
+            if (isFinishing() || isDestroyed()) return;
             mesa = manager.getMesa(numeroMesa);
+            if (mesa == null) {
+                finish();
+                return;
+            }
             atualizarUI();
         }
     };
@@ -248,6 +265,10 @@ public class MesaDetailActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mesa = manager.getMesa(numeroMesa);
+        if (mesa == null) {
+            finish();
+            return;
+        }
         atualizarUI();
         timerHandler.post(timerRunnable);
 
@@ -293,6 +314,7 @@ public class MesaDetailActivity extends AppCompatActivity {
     }
 
     private void filtrarEAtualizarLista() {
+        if (mesa == null || mesa.getPedidos() == null) return;
         listaExibicaoPedidos.clear();
 
         if (filtroSetor == 0) {
@@ -435,7 +457,10 @@ public class MesaDetailActivity extends AppCompatActivity {
     }
 
     private void atualizarUI() {
-        if (mesa.getPedidos().isEmpty()) {
+        if (mesa == null || isFinishing() || isDestroyed()) {
+            return;
+        }
+        if (mesa.getPedidos() == null || mesa.getPedidos().isEmpty()) {
             tvEmptyState.setVisibility(View.VISIBLE);
             if (layoutAbasSetor != null) layoutAbasSetor.setVisibility(View.GONE);
             if (layoutAcaoLoteSetor != null) layoutAcaoLoteSetor.setVisibility(View.GONE);
@@ -454,18 +479,21 @@ public class MesaDetailActivity extends AppCompatActivity {
 
         int totalBebidasPendentes = 0;
         int totalComidasPendentes = 0;
-        for (PedidoItem it : mesa.getPedidos()) {
-            if (!it.isEntregue()) {
-                if (it.isBebida()) totalBebidasPendentes++;
-                else totalComidasPendentes++;
+        if (mesa.getPedidos() != null) {
+            for (PedidoItem it : mesa.getPedidos()) {
+                if (!it.isEntregue()) {
+                    if (it.isBebida()) totalBebidasPendentes++;
+                    else totalComidasPendentes++;
+                }
             }
         }
 
         if (tvTabBebidasTitulo != null) tvTabBebidasTitulo.setText("☕ BEBIDAS (" + totalBebidasPendentes + ")");
         if (tvTabComidasTitulo != null) tvTabComidasTitulo.setText("🍳 COMIDAS (" + totalComidasPendentes + ")");
-        if (tvTabTodosTitulo != null) tvTabTodosTitulo.setText("TODOS (" + mesa.getPedidos().size() + ")");
+        int totalItens = (mesa.getPedidos() != null) ? mesa.getPedidos().size() : 0;
+        if (tvTabTodosTitulo != null) tvTabTodosTitulo.setText("TODOS (" + totalItens + ")");
 
-        if (!filtroInicialDefinido && !mesa.getPedidos().isEmpty()) {
+        if (!filtroInicialDefinido && mesa.getPedidos() != null && !mesa.getPedidos().isEmpty()) {
             filtroInicialDefinido = true;
             if (totalBebidasPendentes > 0) {
                 filtroSetor = 0;
@@ -483,6 +511,7 @@ public class MesaDetailActivity extends AppCompatActivity {
     }
 
     private void atualizarContadores() {
+        if (mesa == null || mesa.getPedidos() == null) return;
         int pendentes = 0;
         int entregues = 0;
         for (PedidoItem it : mesa.getPedidos()) {
@@ -494,6 +523,7 @@ public class MesaDetailActivity extends AppCompatActivity {
     }
 
     private void atualizarTempos() {
+        if (mesa == null || mesa.getPedidos() == null) return;
         if (mesa.isAberta()) {
             tvMesaTempoTotal.setText(mesa.getTempoMesaFormatado());
 

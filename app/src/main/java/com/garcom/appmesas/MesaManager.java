@@ -163,7 +163,7 @@ public class MesaManager {
     }
 
     public synchronized List<Mesa> getMesas() {
-        return mesas;
+        return new ArrayList<>(mesas);
     }
 
     public synchronized Mesa getMesa(int numero) {
