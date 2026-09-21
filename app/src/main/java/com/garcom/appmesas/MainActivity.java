@@ -1609,7 +1609,7 @@ public class MainActivity extends AppCompatActivity {
             btnFiltroLivres.setText("LIVRES (" + fechadas + ")");
         }
         if (tvTabMesasTitulo != null) {
-            tvTabMesasTitulo.setText("🪑 MESAS DO SALÃO (" + manager.getMesas().size() + ")");
+            tvTabMesasTitulo.setText("🪑 SALÃO (" + manager.getMesas().size() + ")");
         }
         atualizarBadgeAvisos();
     }
