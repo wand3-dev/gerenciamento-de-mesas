@@ -77,7 +77,89 @@ public class ServerComandasClient {
     }
 
     /**
-     * Requisição Única Principal do Sistema:
+     * API 1 do Sistema de Monitoramento:
+     * GET /datasnap/rest/tpreatend/func_MostrarComandasAbertas/T
+     * ou com filtro:
+     * GET /datasnap/rest/tpreatend/func_MostrarComandasAbertas/T/cmd_nota.NUM_COMANDA%20between%201%20and%2010000
+     */
+    public List<JSONObject> buscarComandasAbertasSync() throws Exception {
+        Exception ultimoErro = null;
+        String[] urlsParaTentar = new String[]{
+                getBaseUrl() + "/func_MostrarComandasAbertas/T",
+                getBaseUrl() + "/func_MostrarComandasAbertas/T/cmd_nota.NUM_COMANDA%20between%201%20and%2010000"
+        };
+
+        for (String urlStr : urlsParaTentar) {
+            HttpURLConnection conn = null;
+            BufferedReader reader = null;
+            try {
+                URL url = new URL(urlStr);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(4500);
+                conn.setReadTimeout(4500);
+                conn.setRequestProperty("Authorization", AUTH_HEADER);
+                conn.setRequestProperty("User-Agent", "Dart/3.5 (dart:io)");
+                conn.setRequestProperty("Accept", "application/json, text/html, */*");
+
+                int statusCode = conn.getResponseCode();
+                if (statusCode == 200) {
+                    String charset = "ISO-8859-1";
+                    String contentType = conn.getContentType();
+                    if (contentType != null && contentType.toLowerCase().contains("charset=utf-8")) {
+                        charset = "UTF-8";
+                    }
+
+                    reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), charset));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        response.append(line);
+                    }
+
+                    String respStr = response.toString().trim();
+                    if (respStr.isEmpty() || respStr.equalsIgnoreCase("null") || respStr.equals("[]")) {
+                        return new ArrayList<>();
+                    }
+
+                    JSONArray arr;
+                    if (respStr.startsWith("[")) {
+                        arr = new JSONArray(respStr);
+                    } else if (respStr.startsWith("{")) {
+                        arr = new JSONArray();
+                        arr.put(new JSONObject(respStr));
+                    } else {
+                        return new ArrayList<>();
+                    }
+
+                    List<JSONObject> lista = new ArrayList<>();
+                    for (int i = 0; i < arr.length(); i++) {
+                        lista.add(arr.getJSONObject(i));
+                    }
+                    return lista;
+                } else if (statusCode == 404) {
+                    return new ArrayList<>();
+                } else {
+                    ultimoErro = new Exception("Erro HTTP " + statusCode);
+                }
+            } catch (Exception e) {
+                ultimoErro = e;
+            } finally {
+                if (reader != null) {
+                    try { reader.close(); } catch (Exception ignored) {}
+                }
+                if (conn != null) {
+                    conn.disconnect();
+                }
+            }
+        }
+
+        if (ultimoErro != null) throw ultimoErro;
+        return new ArrayList<>();
+    }
+
+    /**
+     * API 2 do Sistema de Monitoramento:
      * GET /datasnap/rest/tpreatend/func_MostrarComandasItens/T/mesa={numeroMesa}
      */
     public List<JSONObject> buscarItensDaMesaSync(int numeroMesa) throws Exception {

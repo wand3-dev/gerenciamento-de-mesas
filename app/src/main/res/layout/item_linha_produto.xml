@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp">
+
+    <TextView
+        android:id="@+id/tvDescricaoPreco"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="1x PF FRANGO GRELHADO UND — R$ 22,99"
+        android:textColor="#1E293B"
+        android:textSize="13.5sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvObs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="1dp"
+        android:text="↳ Obs: ..."
+        android:textColor="#B45309"
+        android:textSize="11.5sp"
+        android:textStyle="italic"
+        android:visibility="gone" />
+
+</LinearLayout>

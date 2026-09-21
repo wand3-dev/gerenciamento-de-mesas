@@ -256,21 +256,119 @@
     </LinearLayout>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         2. BARRA DE ABAS PRINCIPAIS: MESAS vs FILA DE PEDIDOS
+         1.1 BARRA DE CONTROLE DO SERVIDOR (OFFLINE / CONNECTING / ONLINE / ERROR)
+    ═══════════════════════════════════════════════════════════════ -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardControleServidor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="4dp"
+        app:cardCornerRadius="10dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="#E2E8F0"
+        app:cardBackgroundColor="#FFFFFF">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp">
+
+            <!-- Status do Servidor + Última Sincronização -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tvStatusServidorPill"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_dashboard_card_slate"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="2dp"
+                        android:paddingBottom="2dp"
+                        android:text="● OFFLINE"
+                        android:textColor="#94A3B8"
+                        android:textSize="10.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btnConfigIpPorta"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:text="⚙️ IP"
+                        android:textColor="#64748B"
+                        android:textSize="10.5sp"
+                        android:textStyle="bold"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:padding="2dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvUltimaSincronizacao"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Servidor desligado. Nenhuma requisição ativa."
+                    android:textColor="#64748B"
+                    android:textSize="10sp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <!-- Botão Central LIGAR / DESLIGAR SERVIDOR -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLigarServidor"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="LIGAR SERVIDOR"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                app:cornerRadius="8dp"
+                android:backgroundTint="#10B981"
+                android:textColor="#FFFFFF"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         2. BARRA DE ABAS PRINCIPAIS: MONITOR vs MESAS vs FILA
     ═══════════════════════════════════════════════════════════════ -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="44dp"
+        android:layout_height="42dp"
         android:orientation="horizontal"
         android:background="#0F172A"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
         android:paddingTop="4dp"
         android:paddingBottom="4dp">
 
-        <!-- Aba 1: MESAS -->
+        <!-- Aba 1: MONITOR DE COMANDAS -->
         <LinearLayout
-            android:id="@+id/tabMesas"
+            android:id="@+id/tabMonitor"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -279,19 +377,42 @@
             android:background="@drawable/bg_pill_comanda"
             android:clickable="true"
             android:focusable="true"
-            android:layout_marginEnd="4dp">
+            android:layout_marginEnd="3dp">
+
+            <TextView
+                android:id="@+id/tvTabMonitorTitulo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📋 COMANDAS (0)"
+                android:textColor="#92400E"
+                android:textSize="10.5sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Aba 2: MESAS -->
+        <LinearLayout
+            android:id="@+id/tabMesas"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="#1E293B"
+            android:clickable="true"
+            android:focusable="true"
+            android:layout_marginEnd="3dp">
 
             <TextView
                 android:id="@+id/tvTabMesasTitulo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🪑 MESAS DO SALÃO (34)"
-                android:textColor="#92400E"
-                android:textSize="11.5sp"
+                android:text="🪑 MESAS (34)"
+                android:textColor="#94A3B8"
+                android:textSize="10.5sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- Aba 2: FILA DE PEDIDOS -->
+        <!-- Aba 3: FILA DE PEDIDOS -->
         <LinearLayout
             android:id="@+id/tabFilaPedidos"
             android:layout_width="0dp"
@@ -301,16 +422,15 @@
             android:gravity="center"
             android:background="#1E293B"
             android:clickable="true"
-            android:focusable="true"
-            android:layout_marginStart="4dp">
+            android:focusable="true">
 
             <TextView
                 android:id="@+id/tvTabFilaTitulo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="⏱️ FILA DE ESPERA (0)"
+                android:text="⏱️ FILA (0)"
                 android:textColor="#94A3B8"
-                android:textSize="11.5sp"
+                android:textSize="10.5sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
@@ -656,7 +776,8 @@
         android:paddingEnd="6dp"
         android:paddingTop="6dp"
         android:paddingBottom="14dp"
-        android:clipToPadding="false" />
+        android:clipToPadding="false"
+        android:visibility="gone" />
 
     <!-- ═══════════════════════════════════════════════════════════════
          5. LISTA DA FILA DE PEDIDOS
@@ -669,6 +790,112 @@
         android:paddingStart="6dp"
         android:paddingEnd="6dp"
         android:paddingTop="6dp"
+        android:paddingBottom="14dp"
+        android:clipToPadding="false"
+        android:visibility="gone" />
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         6. ESTADO VAZIO / SERVIDOR DESCONECTADO (OFFLINE)
+    ═══════════════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:id="@+id/layoutEmptyServidor"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp"
+        android:visibility="visible">
+
+        <TextView
+            android:id="@+id/tvEmptyServidorIcone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔌"
+            android:textSize="52sp" />
+
+        <TextView
+            android:id="@+id/tvEmptyServidorTitulo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Servidor Desconectado"
+            android:textColor="#1E293B"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvEmptyServidorDesc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:text="Nenhuma requisição de rede é feita até que você ligue o servidor.\nClique no botão abaixo para iniciar o monitoramento em tempo real."
+            android:textColor="#64748B"
+            android:textSize="13sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEmptyLigarServidor"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginTop="16dp"
+            android:text="▶ LIGAR SERVIDOR"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:cornerRadius="10dp"
+            android:backgroundTint="#059669"
+            android:textColor="#FFFFFF"
+            android:paddingStart="22dp"
+            android:paddingEnd="22dp" />
+    </LinearLayout>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         7. TELA DE CARREGAMENTO / CONECTANDO AO SERVIDOR
+    ═══════════════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:id="@+id/layoutConnectingServidor"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:indeterminateTint="#0284C7" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="Descobrindo Comandas Abertas..."
+            android:textColor="#0F172A"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Consultando DataSnap e buscando itens das mesas"
+            android:textColor="#64748B"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         8. RECYCLERVIEW DAS COMANDAS MONITORADAS EM TEMPO REAL
+    ═══════════════════════════════════════════════════════════════ -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvComandasMonitoradas"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:paddingTop="4dp"
         android:paddingBottom="14dp"
         android:clipToPadding="false"
         android:visibility="gone" />

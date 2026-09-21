@@ -38,9 +38,30 @@ import android.content.pm.PackageManager;
 import android.os.PowerManager;
 import androidx.annotation.NonNull;
 
+import com.google.android.material.card.MaterialCardView;
+import android.content.res.ColorStateList;
+
 public class MainActivity extends AppCompatActivity {
     private static final int REQ_NOTIFICACOES = 102;
     private static final int REQ_BATERIA = 103;
+
+    // Monitor de Comandas em Tempo Real
+    private MaterialCardView cardControleServidor;
+    private TextView tvStatusServidorPill, tvUltimaSincronizacao, btnConfigIpPorta;
+    private MaterialButton btnLigarServidor;
+    private View layoutEmptyServidor, layoutConnectingServidor;
+    private MaterialButton btnEmptyLigarServidor;
+    private TextView tvEmptyServidorTitulo, tvEmptyServidorDesc;
+    private RecyclerView rvComandasMonitoradas;
+    private ComandasMonitoradasAdapter adapterComandas;
+    private final List<ComandaCardModel> listaComandasMonitoradas = new ArrayList<>();
+    private final List<ComandaCardModel> listaComandasFiltradas = new ArrayList<>();
+    private MonitorComandasEngine monitorEngine;
+    private View tabMonitor;
+    private TextView tvTabMonitorTitulo;
+    private int abaAtual = 0; // 0 = Monitor, 1 = Mesas, 2 = Fila
+    private Handler timer1sHandler = new Handler(Looper.getMainLooper());
+    private Runnable runnableTimer1s;
 
     private RecyclerView rvMesas, rvFilaPedidos;
     private MesasAdapter adapter;
@@ -92,12 +113,11 @@ public class MainActivity extends AppCompatActivity {
 
         manager = MesaManager.getInstance(this);
         serverClient = ServerComandasClient.getInstance(this);
+        monitorEngine = MonitorComandasEngine.getInstance(this);
         updateChecker = new UpdateChecker(this);
-        checarAtualizacaoFirebaseSilencioso();
 
         // Inicializa os canais de notificação do sistema e verifica permissões necessárias
         NotificationHelper.criarCanaisNotificacao(this);
-        MonitorMesasService.iniciar(this);
         verificarEPedirTodasPermissoes();
 
         android.content.SharedPreferences spSettings = getSharedPreferences("app_settings", MODE_PRIVATE);
@@ -160,6 +180,23 @@ public class MainActivity extends AppCompatActivity {
         btnFilaFiltroBebidas = findViewById(R.id.btnFilaFiltroBebidas);
         btnFilaFiltroComidas = findViewById(R.id.btnFilaFiltroComidas);
 
+        // Views do Monitor de Comandas em Tempo Real
+        cardControleServidor = findViewById(R.id.cardControleServidor);
+        tvStatusServidorPill = findViewById(R.id.tvStatusServidorPill);
+        tvUltimaSincronizacao = findViewById(R.id.tvUltimaSincronizacao);
+        btnConfigIpPorta = findViewById(R.id.btnConfigIpPorta);
+        btnLigarServidor = findViewById(R.id.btnLigarServidor);
+
+        tabMonitor = findViewById(R.id.tabMonitor);
+        tvTabMonitorTitulo = findViewById(R.id.tvTabMonitorTitulo);
+
+        layoutEmptyServidor = findViewById(R.id.layoutEmptyServidor);
+        layoutConnectingServidor = findViewById(R.id.layoutConnectingServidor);
+        tvEmptyServidorTitulo = findViewById(R.id.tvEmptyServidorTitulo);
+        tvEmptyServidorDesc = findViewById(R.id.tvEmptyServidorDesc);
+        btnEmptyLigarServidor = findViewById(R.id.btnEmptyLigarServidor);
+        rvComandasMonitoradas = findViewById(R.id.rvComandasMonitoradas);
+
         if (btnFilaFiltroTodas != null) btnFilaFiltroTodas.setOnClickListener(v -> setFiltroSetorFila(0));
         if (btnFilaFiltroBebidas != null) btnFilaFiltroBebidas.setOnClickListener(v -> setFiltroSetorFila(1));
         if (btnFilaFiltroComidas != null) btnFilaFiltroComidas.setOnClickListener(v -> setFiltroSetorFila(2));
@@ -175,6 +212,7 @@ public class MainActivity extends AppCompatActivity {
                     if (btnClearSearch != null) {
                         btnClearSearch.setVisibility(queryBusca.isEmpty() ? View.GONE : View.VISIBLE);
                     }
+                    filtrarEAtualizarComandas();
                     atualizarListaExibicao();
                     if (adapter != null) adapter.notifyDataSetChanged();
                     atualizarFilaPedidos();
@@ -247,9 +285,60 @@ public class MainActivity extends AppCompatActivity {
         });
         rvFilaPedidos.setAdapter(filaAdapter);
 
-        // Listeners das Abas
-        tabMesas.setOnClickListener(v -> selecionarAba(false));
-        tabFilaPedidos.setOnClickListener(v -> selecionarAba(true));
+        // Configuração do RecyclerView de Comandas Monitoradas
+        adapterComandas = new ComandasMonitoradasAdapter(this, listaComandasFiltradas, comanda -> {
+            if (comanda.getMesa() > 0) {
+                Intent intent = new Intent(MainActivity.this, MesaDetailActivity.class);
+                intent.putExtra("NUMERO_MESA", comanda.getMesa());
+                startActivity(intent);
+            }
+        });
+        rvComandasMonitoradas.setLayoutManager(new LinearLayoutManager(this));
+        rvComandasMonitoradas.setHasFixedSize(false);
+        rvComandasMonitoradas.setAdapter(adapterComandas);
+
+        // Ações dos botões Ligar/Desligar Servidor
+        View.OnClickListener listenerToggleServidor = v -> {
+            if (monitorEngine != null && monitorEngine.isAtivo()) {
+                monitorEngine.desligarServidor();
+                Toast.makeText(MainActivity.this, "Servidor desligado.", Toast.LENGTH_SHORT).show();
+            } else if (monitorEngine != null) {
+                monitorEngine.ligarServidor();
+                Toast.makeText(MainActivity.this, "Conectando ao servidor...", Toast.LENGTH_SHORT).show();
+            }
+        };
+
+        if (btnLigarServidor != null) btnLigarServidor.setOnClickListener(listenerToggleServidor);
+        if (btnEmptyLigarServidor != null) btnEmptyLigarServidor.setOnClickListener(listenerToggleServidor);
+        if (btnConfigIpPorta != null) btnConfigIpPorta.setOnClickListener(v -> exibirModalConfigServidor());
+
+        // Registrar Callback do Motor de Monitoramento
+        if (monitorEngine != null) {
+            monitorEngine.registrarCallback(new MonitorComandasEngine.MonitorCallback() {
+                @Override
+                public void onEstadoAlterado(EstadoServidor novoEstado, String mensagem) {
+                    runOnUiThread(() -> atualizarUiEstadoServidor(novoEstado, mensagem));
+                }
+
+                @Override
+                public void onComandasAtualizadas(List<ComandaCardModel> comandas, String ultimaSync) {
+                    runOnUiThread(() -> {
+                        listaComandasMonitoradas.clear();
+                        listaComandasMonitoradas.addAll(comandas);
+                        filtrarEAtualizarComandas();
+                        if (tvUltimaSincronizacao != null && !ultimaSync.isEmpty()) {
+                            tvUltimaSincronizacao.setText("Última sync: " + ultimaSync + " (" + comandas.size() + " abertas)");
+                        }
+                        atualizarResumo();
+                    });
+                }
+            });
+        }
+
+        // Listeners das Abas Principais
+        if (tabMonitor != null) tabMonitor.setOnClickListener(v -> selecionarAba(0));
+        if (tabMesas != null) tabMesas.setOnClickListener(v -> selecionarAba(1));
+        if (tabFilaPedidos != null) tabFilaPedidos.setOnClickListener(v -> selecionarAba(2));
 
         btnLimparEntreguesFila.setOnClickListener(v -> {
             ocultarEntreguesFila = !ocultarEntreguesFila;
@@ -275,19 +364,24 @@ public class MainActivity extends AppCompatActivity {
             btnFiltroLivres.setOnClickListener(v -> setFiltro(3));
         }
 
-        // Polling automático a cada 10 segundos para buscar novidades e checar alarme de 15m
+        // Polling automático a cada 10 segundos para checar novidades internas e alarme de 15m
         timerRunnable = new Runnable() {
             @Override
             public void run() {
                 atualizarListaExibicao();
-                adapter.notifyDataSetChanged();
+                if (adapter != null) adapter.notifyDataSetChanged();
                 atualizarFilaPedidos();
                 atualizarResumo();
                 verificarPedidosAtrasados15Minutos();
-                sincronizarComandasAbertasAutomatico();
+                if (monitorEngine != null && monitorEngine.isAtivo()) {
+                    sincronizarComandasAbertasAutomatico();
+                }
                 timerHandler.postDelayed(this, 10000); // 10 segundos exatos
             }
         };
+
+        // Inicia na aba de Monitor de Comandas por padrão
+        selecionarAba(0);
     }
 
     private void setFiltro(int filtro) {
@@ -312,40 +406,222 @@ public class MainActivity extends AppCompatActivity {
 
         atualizarListaExibicao();
         if (adapter != null) adapter.notifyDataSetChanged();
+        filtrarEAtualizarComandas();
     }
 
     private void selecionarAba(boolean mostrarFila) {
-        abaFilaSelecionada = mostrarFila;
+        selecionarAba(mostrarFila ? 2 : 1);
+    }
+
+    private void selecionarAba(int aba) {
+        abaAtual = aba;
+        abaFilaSelecionada = (aba == 2);
         boolean isDark = ThemeManager.isDarkMode(this);
 
-        if (mostrarFila) {
-            tabFilaPedidos.setBackgroundResource(R.drawable.bg_pill_comanda);
-            tvTabFilaTitulo.setTextColor(Color.parseColor("#92400E"));
-
+        if (tabMonitor != null) {
+            tabMonitor.setBackgroundColor(Color.parseColor(isDark ? "#131E2E" : "#1E293B"));
+            if (tvTabMonitorTitulo != null) tvTabMonitorTitulo.setTextColor(Color.parseColor("#94A3B8"));
+        }
+        if (tabMesas != null) {
             tabMesas.setBackgroundColor(Color.parseColor(isDark ? "#131E2E" : "#1E293B"));
-            tvTabMesasTitulo.setTextColor(Color.parseColor("#94A3B8"));
-
-            layoutFiltrosMesas.setVisibility(View.GONE);
-            rvMesas.setVisibility(View.GONE);
-
-            layoutHeaderFila.setVisibility(View.VISIBLE);
-            rvFilaPedidos.setVisibility(View.VISIBLE);
-            atualizarFilaPedidos();
-        } else {
-            tabMesas.setBackgroundResource(R.drawable.bg_pill_comanda);
-            tvTabMesasTitulo.setTextColor(Color.parseColor("#92400E"));
-
+            if (tvTabMesasTitulo != null) tvTabMesasTitulo.setTextColor(Color.parseColor("#94A3B8"));
+        }
+        if (tabFilaPedidos != null) {
             tabFilaPedidos.setBackgroundColor(Color.parseColor(isDark ? "#131E2E" : "#1E293B"));
-            tvTabFilaTitulo.setTextColor(Color.parseColor("#94A3B8"));
+            if (tvTabFilaTitulo != null) tvTabFilaTitulo.setTextColor(Color.parseColor("#94A3B8"));
+        }
 
-            layoutHeaderFila.setVisibility(View.GONE);
-            rvFilaPedidos.setVisibility(View.GONE);
+        if (aba == 0) { // Monitor de Comandas
+            if (tabMonitor != null) tabMonitor.setBackgroundResource(R.drawable.bg_pill_comanda);
+            if (tvTabMonitorTitulo != null) tvTabMonitorTitulo.setTextColor(Color.parseColor("#92400E"));
 
-            layoutFiltrosMesas.setVisibility(View.VISIBLE);
-            rvMesas.setVisibility(View.VISIBLE);
+            if (layoutFiltrosMesas != null) layoutFiltrosMesas.setVisibility(View.VISIBLE);
+            if (layoutHeaderFila != null) layoutHeaderFila.setVisibility(View.GONE);
+            if (rvMesas != null) rvMesas.setVisibility(View.GONE);
+            if (rvFilaPedidos != null) rvFilaPedidos.setVisibility(View.GONE);
+
+            atualizarVisibilidadeMonitor();
+        } else if (aba == 1) { // Mesas
+            if (tabMesas != null) tabMesas.setBackgroundResource(R.drawable.bg_pill_comanda);
+            if (tvTabMesasTitulo != null) tvTabMesasTitulo.setTextColor(Color.parseColor("#92400E"));
+
+            if (layoutEmptyServidor != null) layoutEmptyServidor.setVisibility(View.GONE);
+            if (layoutConnectingServidor != null) layoutConnectingServidor.setVisibility(View.GONE);
+            if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.GONE);
+
+            if (layoutHeaderFila != null) layoutHeaderFila.setVisibility(View.GONE);
+            if (rvFilaPedidos != null) rvFilaPedidos.setVisibility(View.GONE);
+
+            if (layoutFiltrosMesas != null) layoutFiltrosMesas.setVisibility(View.VISIBLE);
+            if (rvMesas != null) rvMesas.setVisibility(View.VISIBLE);
             atualizarListaExibicao();
             if (adapter != null) adapter.notifyDataSetChanged();
+        } else { // Fila
+            if (tabFilaPedidos != null) tabFilaPedidos.setBackgroundResource(R.drawable.bg_pill_comanda);
+            if (tvTabFilaTitulo != null) tvTabFilaTitulo.setTextColor(Color.parseColor("#92400E"));
+
+            if (layoutEmptyServidor != null) layoutEmptyServidor.setVisibility(View.GONE);
+            if (layoutConnectingServidor != null) layoutConnectingServidor.setVisibility(View.GONE);
+            if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.GONE);
+            if (rvMesas != null) rvMesas.setVisibility(View.GONE);
+
+            if (layoutFiltrosMesas != null) layoutFiltrosMesas.setVisibility(View.GONE);
+            if (layoutHeaderFila != null) layoutHeaderFila.setVisibility(View.VISIBLE);
+            if (rvFilaPedidos != null) rvFilaPedidos.setVisibility(View.VISIBLE);
+            atualizarFilaPedidos();
         }
+    }
+
+    private void atualizarUiEstadoServidor(EstadoServidor novoEstado, String msg) {
+        if (tvStatusServidorPill == null || btnLigarServidor == null) return;
+
+        switch (novoEstado) {
+            case OFFLINE:
+                tvStatusServidorPill.setText("● OFFLINE");
+                tvStatusServidorPill.setTextColor(Color.parseColor("#94A3B8"));
+                tvStatusServidorPill.setBackgroundResource(R.drawable.bg_dashboard_card_slate);
+                btnLigarServidor.setText("LIGAR SERVIDOR");
+                btnLigarServidor.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#10B981")));
+                if (tvUltimaSincronizacao != null) {
+                    tvUltimaSincronizacao.setText("Servidor desligado. Nenhuma requisição ativa.");
+                }
+                break;
+            case CONNECTING:
+                tvStatusServidorPill.setText("◌ CONECTANDO...");
+                tvStatusServidorPill.setTextColor(Color.parseColor("#38BDF8"));
+                tvStatusServidorPill.setBackgroundResource(R.drawable.bg_dashboard_card_slate);
+                btnLigarServidor.setText("CONECTANDO...");
+                btnLigarServidor.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#0284C7")));
+                if (tvUltimaSincronizacao != null) {
+                    tvUltimaSincronizacao.setText("Consultando DataSnap Padaria...");
+                }
+                break;
+            case ONLINE:
+                tvStatusServidorPill.setText("● ONLINE");
+                tvStatusServidorPill.setTextColor(Color.parseColor("#86EFAC"));
+                tvStatusServidorPill.setBackgroundResource(R.drawable.bg_dashboard_card_emerald);
+                btnLigarServidor.setText("DESLIGAR");
+                btnLigarServidor.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EF4444")));
+                break;
+            case ERROR:
+                tvStatusServidorPill.setText("✕ ERRO");
+                tvStatusServidorPill.setTextColor(Color.parseColor("#FCA5A5"));
+                tvStatusServidorPill.setBackgroundResource(R.drawable.bg_dashboard_card_amber);
+                btnLigarServidor.setText("RECONECTAR");
+                btnLigarServidor.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#F59E0B")));
+                if (tvUltimaSincronizacao != null && msg != null && !msg.isEmpty()) {
+                    tvUltimaSincronizacao.setText(msg);
+                }
+                break;
+        }
+
+        atualizarVisibilidadeMonitor();
+    }
+
+    private void atualizarVisibilidadeMonitor() {
+        if (abaAtual != 0) return;
+
+        EstadoServidor estado = monitorEngine != null ? monitorEngine.getEstado() : EstadoServidor.OFFLINE;
+
+        if (estado == EstadoServidor.OFFLINE) {
+            if (layoutConnectingServidor != null) layoutConnectingServidor.setVisibility(View.GONE);
+            if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.GONE);
+            if (layoutEmptyServidor != null) {
+                layoutEmptyServidor.setVisibility(View.VISIBLE);
+                if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Servidor Desconectado");
+                if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Nenhuma requisição de rede é feita até que você ligue o servidor.\nClique no botão abaixo para iniciar o monitoramento em tempo real.");
+                if (btnEmptyLigarServidor != null) {
+                    btnEmptyLigarServidor.setVisibility(View.VISIBLE);
+                    btnEmptyLigarServidor.setText("▶ LIGAR SERVIDOR");
+                    btnEmptyLigarServidor.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#059669")));
+                }
+            }
+        } else if (estado == EstadoServidor.CONNECTING) {
+            if (layoutEmptyServidor != null) layoutEmptyServidor.setVisibility(View.GONE);
+            if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.GONE);
+            if (layoutConnectingServidor != null) layoutConnectingServidor.setVisibility(View.VISIBLE);
+        } else if (estado == EstadoServidor.ONLINE) {
+            if (layoutConnectingServidor != null) layoutConnectingServidor.setVisibility(View.GONE);
+            if (listaComandasFiltradas.isEmpty()) {
+                if (layoutEmptyServidor != null) {
+                    layoutEmptyServidor.setVisibility(View.VISIBLE);
+                    if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Nenhuma Comanda Aberta");
+                    if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Não há comandas abertas nas últimas 10 horas registradas no servidor.");
+                    if (btnEmptyLigarServidor != null) btnEmptyLigarServidor.setVisibility(View.GONE);
+                }
+                if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.GONE);
+            } else {
+                if (layoutEmptyServidor != null) layoutEmptyServidor.setVisibility(View.GONE);
+                if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.VISIBLE);
+            }
+        } else if (estado == EstadoServidor.ERROR) {
+            if (layoutConnectingServidor != null) layoutConnectingServidor.setVisibility(View.GONE);
+            if (listaComandasFiltradas.isEmpty()) {
+                if (layoutEmptyServidor != null) {
+                    layoutEmptyServidor.setVisibility(View.VISIBLE);
+                    if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Falha na Conexão");
+                    if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Não foi possível comunicar com o servidor DataSnap. Verifique o IP e Porta.");
+                    if (btnEmptyLigarServidor != null) {
+                        btnEmptyLigarServidor.setVisibility(View.VISIBLE);
+                        btnEmptyLigarServidor.setText("🔄 TENTAR NOVAMENTE");
+                        btnEmptyLigarServidor.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#DC2626")));
+                    }
+                }
+                if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.GONE);
+            } else {
+                // Req 11: Em caso de erro, PRESERVA os cards atuais sem apagar!
+                if (layoutEmptyServidor != null) layoutEmptyServidor.setVisibility(View.GONE);
+                if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.VISIBLE);
+            }
+        }
+    }
+
+    private void filtrarEAtualizarComandas() {
+        listaComandasFiltradas.clear();
+        String busca = StringHelper.normalizar(queryBusca.trim());
+
+        for (ComandaCardModel card : listaComandasMonitoradas) {
+            if (filtroSelecionado == 1) {
+                boolean ehMinha = manager.isMinhaComanda(card.getNumComanda());
+                if (!ehMinha && card.getMesa() > 0) {
+                    Mesa mMesa = manager.getMesa(card.getMesa());
+                    if (mMesa != null && manager.isMesaMinha(mMesa)) {
+                        ehMinha = true;
+                    }
+                }
+                if (!ehMinha) {
+                    continue;
+                }
+            }
+
+            if (busca.isEmpty()) {
+                listaComandasFiltradas.add(card);
+            } else {
+                boolean matchMesa = String.valueOf(card.getMesa()).contains(busca);
+                boolean matchComanda = card.getNumComanda().contains(busca);
+                boolean matchDoc = card.getDocumento() != null && card.getDocumento().contains(busca);
+                boolean matchItem = false;
+                for (ItemComandaModel it : card.getItens()) {
+                    if (StringHelper.normalizar(it.getDescricao()).contains(busca)) {
+                        matchItem = true;
+                        break;
+                    }
+                }
+                if (matchMesa || matchComanda || matchDoc || matchItem) {
+                    listaComandasFiltradas.add(card);
+                }
+            }
+        }
+
+        if (adapterComandas != null) {
+            adapterComandas.notifyDataSetChanged();
+        }
+
+        if (tvTabMonitorTitulo != null) {
+            tvTabMonitorTitulo.setText("📋 COMANDAS (" + listaComandasMonitoradas.size() + ")");
+        }
+
+        atualizarVisibilidadeMonitor();
     }
 
     private void setFiltroSetorFila(int setor) {
@@ -1112,6 +1388,21 @@ public class MainActivity extends AppCompatActivity {
         verificarPedidosAtrasados15Minutos();
         timerHandler.post(timerRunnable);
 
+        // Inicia contador individual de segundos para os cards de comandas
+        if (runnableTimer1s == null) {
+            runnableTimer1s = new Runnable() {
+                @Override
+                public void run() {
+                    if (adapterComandas != null && monitorEngine != null && monitorEngine.isAtivo()) {
+                        adapterComandas.atualizarContadoresSegundos();
+                    }
+                    timer1sHandler.postDelayed(this, 1000);
+                }
+            };
+        }
+        timer1sHandler.removeCallbacks(runnableTimer1s);
+        timer1sHandler.post(runnableTimer1s);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(pedidosReceiver, new android.content.IntentFilter(MesaManager.ACTION_PEDIDOS_ATUALIZADOS), android.content.Context.RECEIVER_NOT_EXPORTED);
             registerReceiver(receiverAlertas, new android.content.IntentFilter(AlertaHistoricoManager.ACTION_HISTORICO_ALERTAS_ATUALIZADO), android.content.Context.RECEIVER_NOT_EXPORTED);
@@ -1282,6 +1573,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         timerHandler.removeCallbacks(timerRunnable);
+        timer1sHandler.removeCallbacks(runnableTimer1s);
         try {
             unregisterReceiver(pedidosReceiver);
         } catch (Exception ignored) {}
@@ -1297,7 +1589,11 @@ public class MainActivity extends AppCompatActivity {
             if (m.isAberta()) abertas++;
             else fechadas++;
         }
-        tvResumoAbertas.setText(String.valueOf(abertas));
+        if (monitorEngine != null && monitorEngine.isAtivo() && !listaComandasMonitoradas.isEmpty()) {
+            tvResumoAbertas.setText(String.valueOf(listaComandasMonitoradas.size()));
+        } else {
+            tvResumoAbertas.setText(String.valueOf(abertas));
+        }
         tvResumoFechadas.setText(String.valueOf(fechadas));
 
         if (btnFiltroTodas != null) {
