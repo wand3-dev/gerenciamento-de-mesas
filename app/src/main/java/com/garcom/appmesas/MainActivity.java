@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView btnFilaFiltroTodas, btnFilaFiltroBebidas, btnFilaFiltroComidas;
     private int filtroSetorFila = 0; // 0 = Todos, 1 = Bebidas, 2 = Comidas
 
-    private TextView tvNomeUsuarioLogado, btnSairSessao;
+    private TextView tvNomeUsuarioLogado;
     private View btnAdicionarMesaServidor, btnConfigServidor;
     private View btnAddMinhaComandaRapida;
     private android.widget.LinearLayout layoutChipsMinhasComandas;
@@ -133,7 +133,6 @@ public class MainActivity extends AppCompatActivity {
         tvResumoAlertas15m = findViewById(R.id.tvResumoAlertas15m);
         tvServerStatusTag = findViewById(R.id.tvServerStatusTag);
         tvNomeUsuarioLogado = findViewById(R.id.tvNomeUsuarioLogado);
-        btnSairSessao = findViewById(R.id.btnSairSessao);
         btnAdicionarMesaServidor = findViewById(R.id.btnAdicionarMesaServidor);
         btnConfigServidor = findViewById(R.id.btnConfigServidor);
         btnAddMinhaComandaRapida = findViewById(R.id.btnAddMinhaComandaRapida);
@@ -156,16 +155,8 @@ public class MainActivity extends AppCompatActivity {
         }
         atualizarChipsMinhasComandas();
 
-        if (btnSairSessao != null) {
-            btnSairSessao.setOnClickListener(v -> confirmarLogout());
-        }
         if (tvNomeUsuarioLogado != null) {
-            tvNomeUsuarioLogado.setOnClickListener(v -> confirmarLogout());
-            // Acesso técnico secreto via clique longo caso o administrador precise configurar a rede
-            tvNomeUsuarioLogado.setOnLongClickListener(v -> {
-                exibirModalConfigServidor();
-                return true;
-            });
+            tvNomeUsuarioLogado.setOnClickListener(v -> exibirModalConfigServidor());
         }
         atualizarDadosUsuario();
 
@@ -1367,15 +1358,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        // Se não estiver logado, redireciona para a tela de login
-        if (!SessionManager.isLoggedIn(this)) {
-            Intent intent = new Intent(this, LoginActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
-            return;
-        }
-
         atualizarDadosUsuario();
         atualizarStatusServidorTag();
         aplicarTemaVisual();
@@ -1421,8 +1403,6 @@ public class MainActivity extends AppCompatActivity {
      * 2. Execução em segundo plano sem corte de bateria
      */
     private void verificarEPedirTodasPermissoes() {
-        if (!SessionManager.isLoggedIn(this)) return;
-
         android.content.SharedPreferences sp = getSharedPreferences("app_settings", MODE_PRIVATE);
 
         // 1. Notificações: verifica se estão ativas globalmente no sistema
@@ -1529,38 +1509,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void atualizarDadosUsuario() {
         if (tvNomeUsuarioLogado != null) {
-            String nome = SessionManager.getNomeUsuario(this);
-            String email = SessionManager.getEmailUsuario(this);
-            String cod = SessionManager.getCodFunc(this);
-            if (!nome.isEmpty()) {
-                tvNomeUsuarioLogado.setText("👤 " + nome);
-            } else if (!email.isEmpty()) {
-                tvNomeUsuarioLogado.setText("👤 " + email);
-            } else if (!cod.isEmpty()) {
-                tvNomeUsuarioLogado.setText("👤 GARÇOM #" + cod);
-            } else {
-                tvNomeUsuarioLogado.setText("👤 GARÇOM");
-            }
+            tvNomeUsuarioLogado.setText("Monitor de Comandas");
         }
-    }
-
-    private void confirmarLogout() {
-        String nome = SessionManager.getNomeUsuario(this);
-        if (nome.isEmpty()) nome = SessionManager.getEmailUsuario(this);
-        if (nome.isEmpty()) nome = "Garçom #" + SessionManager.getCodFunc(this);
-
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Encerrar Turno")
-                .setMessage("Deseja sair do perfil de " + nome + "?")
-                .setPositiveButton("Sim, Sair", (dialog, which) -> {
-                    SessionManager.encerrarSessao(MainActivity.this);
-                    Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
     }
 
     private void atualizarStatusServidorTag() {

@@ -120,18 +120,6 @@
                     android:textSize="15sp"
                     android:clickable="true"
                     android:focusable="true" />
-
-                <!-- Botão Sair Discreto -->
-                <TextView
-                    android:id="@+id/btnSairSessao"
-                    android:layout_width="30dp"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="2dp"
-                    android:gravity="center"
-                    android:text="🚪"
-                    android:textSize="14sp"
-                    android:clickable="true"
-                    android:focusable="true" />
             </LinearLayout>
         </RelativeLayout>
     </LinearLayout>

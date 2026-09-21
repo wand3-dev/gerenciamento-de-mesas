@@ -72,13 +72,7 @@ public class SplashActivity extends AppCompatActivity {
         if (proximaTelaAberta) return;
         proximaTelaAberta = true;
 
-        Intent intent;
-        if (SessionManager.isLoggedIn(this)) {
-            intent = new Intent(SplashActivity.this, MainActivity.class);
-        } else {
-            intent = new Intent(SplashActivity.this, LoginActivity.class);
-        }
-
+        Intent intent = new Intent(SplashActivity.this, MainActivity.class);
         startActivity(intent);
         finish();
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
