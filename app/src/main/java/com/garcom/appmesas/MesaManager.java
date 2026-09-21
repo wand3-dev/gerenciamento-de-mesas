@@ -280,6 +280,84 @@ public class MesaManager {
         return resultado;
     }
 
+    /**
+     * Sincroniza as mesas abertas e organiza os itens do servidor dentro de cada mesa.
+     * 1. GET /func_MostrarComandasAbertas/T -> descobre quais mesas estão abertas.
+     * 2. GET /func_MostrarComandasItens/T/mesa= -> popula e organiza os produtos dentro da mesa.
+     */
+    public synchronized int sincronizarMesasEItensDoServidor(Context context, Set<Integer> mesasAbertasServidor, java.util.Map<Integer, List<JSONObject>> itensPorMesaJson) {
+        int novosItensAdicionados = 0;
+        boolean houveAlteracao = false;
+
+        // 1. Atualiza ou abre as mesas que têm comanda aberta no servidor
+        for (int numMesa : mesasAbertasServidor) {
+            Mesa m = getOuCriarMesa(numMesa);
+            if (!m.isAberta()) {
+                m.setAberta(true);
+                houveAlteracao = true;
+            }
+
+            List<JSONObject> itensServidor = (itensPorMesaJson != null) ? itensPorMesaJson.get(numMesa) : null;
+            if (itensServidor != null) {
+                Set<String> idsItensAtivosNoServidor = new HashSet<>();
+
+                for (JSONObject obj : itensServidor) {
+                    PedidoItem novoItem = PedidoItem.fromServerJson(obj);
+                    idsItensAtivosNoServidor.add(novoItem.getId());
+
+                    // Verifica se já existe na mesa
+                    PedidoItem existente = null;
+                    for (PedidoItem p : m.getPedidos()) {
+                        if (p.getId().equals(novoItem.getId())) {
+                            existente = p;
+                            break;
+                        }
+                    }
+
+                    if (existente == null) {
+                        m.adicionarPedido(novoItem);
+                        novosItensAdicionados++;
+                        houveAlteracao = true;
+                    } else {
+                        // Atualiza valores/quantidades, preservando se o garçom já marcou entregue
+                        if (existente.getQuantidade() != novoItem.getQuantidade() ||
+                            !String.valueOf(existente.getValorTotal()).equals(String.valueOf(novoItem.getValorTotal()))) {
+                            existente.setQuantidade(novoItem.getQuantidade());
+                            existente.setValorTotal(novoItem.getValorTotal());
+                            existente.setDescricao(novoItem.getDescricao());
+                            houveAlteracao = true;
+                        }
+                    }
+                }
+
+                // Remove da mesa itens que foram cancelados/estornados no servidor
+                java.util.Iterator<PedidoItem> it = m.getPedidos().iterator();
+                while (it.hasNext()) {
+                    PedidoItem p = it.next();
+                    if (p.getAutonum() != null && !p.getAutonum().isEmpty() && !idsItensAtivosNoServidor.contains(p.getId())) {
+                        it.remove();
+                        houveAlteracao = true;
+                    }
+                }
+            }
+        }
+
+        // 2. Libera mesas que não estão mais abertas no servidor
+        for (Mesa m : mesas) {
+            if (m.isAberta() && !mesasAbertasServidor.contains(m.getNumero())) {
+                m.setAberta(false);
+                m.getPedidos().clear();
+                houveAlteracao = true;
+            }
+        }
+
+        if (houveAlteracao) {
+            salvarMesas(context);
+        }
+
+        return novosItensAdicionados;
+    }
+
     public List<Product> buscarProdutos(String query) {
         List<Product> result = new ArrayList<>();
         if (query == null || query.trim().isEmpty()) return result;

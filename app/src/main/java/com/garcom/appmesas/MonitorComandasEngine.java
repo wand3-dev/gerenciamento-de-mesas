@@ -136,9 +136,11 @@ public class MonitorComandasEngine {
 
                 // 3. API 2: Otimização (Req 13 e 14) - Buscar itens de cada mesa ÚNICA uma única vez
                 Map<Integer, List<ItemComandaModel>> itensPorMesa = new HashMap<>();
+                Map<Integer, List<JSONObject>> rawItensPorMesaJson = new HashMap<>();
                 for (int numMesa : mesasParaBuscarItens) {
                     try {
                         List<JSONObject> itensMesaJson = serverClient.buscarItensDaMesaSync(numMesa);
+                        rawItensPorMesaJson.put(numMesa, itensMesaJson);
                         List<ItemComandaModel> listaItensMesa = new ArrayList<>();
                         for (JSONObject itObj : itensMesaJson) {
                             listaItensMesa.add(new ItemComandaModel(itObj));
@@ -146,6 +148,7 @@ public class MonitorComandasEngine {
                         itensPorMesa.put(numMesa, listaItensMesa);
                     } catch (Exception e) {
                         itensPorMesa.put(numMesa, new ArrayList<>());
+                        rawItensPorMesaJson.put(numMesa, new ArrayList<>());
                     }
                 }
 
@@ -200,6 +203,16 @@ public class MonitorComandasEngine {
                             it.remove();
                         }
                     }
+                }
+
+                // 5. Sincroniza também as mesas e organiza os produtos no MesaManager
+                MesaManager mesaMgr = MesaManager.getInstance(context);
+                if (mesaMgr != null) {
+                    int novosItens = mesaMgr.sincronizarMesasEItensDoServidor(context, mesasParaBuscarItens, rawItensPorMesaJson);
+                    if (novosItens > 0) {
+                        NotificationHelper.notificarNovoItem(context, "Novos Pedidos!", novosItens + " novo(s) item(ns) lançado(s) nas mesas.");
+                    }
+                    context.sendBroadcast(new android.content.Intent(MesaManager.ACTION_PEDIDOS_ATUALIZADOS));
                 }
 
                 // Sincronização concluída com sucesso!
