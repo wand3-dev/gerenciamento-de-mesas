@@ -1,6 +1,7 @@
 package com.garcom.appmesas;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,6 +10,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import java.util.List;
 import java.util.Locale;
@@ -20,13 +22,14 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     private final Context context;
     private final List<ComandaCardModel> listaComandas;
     private final LayoutInflater inflater;
-    private OnComandaClickListener listener;
+    private OnComandaActionListener listener;
 
-    public interface OnComandaClickListener {
+    public interface OnComandaActionListener {
         void onComandaClick(ComandaCardModel comanda);
+        void onEntregueClick(ComandaCardModel comanda, int position);
     }
 
-    public ComandasMonitoradasAdapter(Context context, List<ComandaCardModel> listaComandas, OnComandaClickListener listener) {
+    public ComandasMonitoradasAdapter(Context context, List<ComandaCardModel> listaComandas, OnComandaActionListener listener) {
         this.context = context;
         this.listaComandas = listaComandas;
         this.listener = listener;
@@ -43,7 +46,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     @Override
     public void onBindViewHolder(@NonNull ComandaViewHolder holder, int position, @NonNull List<Object> payloads) {
         if (!payloads.isEmpty() && payloads.contains(PAYLOAD_TEMPO)) {
-            // Atualização ultra-rápida do contador de segundos sem recriar views
+            // Atualização suave do contador de segundos sem reconstruir a view
             ComandaCardModel item = listaComandas.get(position);
             holder.tvCardTempo.setText("Tempo: " + item.getTempoFormatado());
             return;
@@ -55,7 +58,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     public void onBindViewHolder(@NonNull ComandaViewHolder holder, int position) {
         ComandaCardModel item = listaComandas.get(position);
 
-        // Cabeçalho
+        // Cabeçalho: Mesa e Comanda
         if (item.getMesa() > 0) {
             holder.tvCardMesaNumero.setText(String.format(Locale.getDefault(), "MESA %02d", item.getMesa()));
         } else {
@@ -99,9 +102,30 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
             }
         }
 
-        // Rodapé
+        // Rodapé: Totais
         holder.tvCardQtdeItens.setText(item.getItensCountFormatado());
         holder.tvCardTotalValor.setText(item.getTotalFormatado());
+
+        // Botão Entregue e diferenciação visual (aberta vs entregue)
+        if (holder.btnCardEntregue != null) {
+            if (item.isEntregue()) {
+                holder.btnCardEntregue.setText("✓ ENTREGUE");
+                holder.btnCardEntregue.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#475569")));
+                holder.cardComanda.setStrokeColor(Color.parseColor("#94A3B8"));
+                holder.cardComanda.setAlpha(0.72f);
+            } else {
+                holder.btnCardEntregue.setText("ENTREGAR");
+                holder.btnCardEntregue.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#059669")));
+                holder.cardComanda.setStrokeColor(Color.parseColor("#CBD5E1"));
+                holder.cardComanda.setAlpha(1.0f);
+            }
+
+            holder.btnCardEntregue.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onEntregueClick(item, holder.getAdapterPosition());
+                }
+            });
+        }
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
@@ -133,6 +157,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
         LinearLayout layoutItensContainer;
         TextView tvCardQtdeItens;
         TextView tvCardTotalValor;
+        MaterialButton btnCardEntregue;
 
         public ComandaViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -144,6 +169,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
             layoutItensContainer = itemView.findViewById(R.id.layoutItensContainer);
             tvCardQtdeItens = itemView.findViewById(R.id.tvCardQtdeItens);
             tvCardTotalValor = itemView.findViewById(R.id.tvCardTotalValor);
+            btnCardEntregue = itemView.findViewById(R.id.btnCardEntregue);
         }
     }
 }

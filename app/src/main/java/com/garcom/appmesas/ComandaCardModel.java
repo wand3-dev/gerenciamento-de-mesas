@@ -20,6 +20,7 @@ public class ComandaCardModel {
     private double totalValor;
     private String contato;
     private String cnpjCpf;
+    private boolean entregue = false;
     private final List<ItemComandaModel> itens = new ArrayList<>();
 
     public ComandaCardModel(JSONObject objAbertas) {
@@ -34,11 +35,13 @@ public class ComandaCardModel {
         }
         this.mesa = m;
 
-        // Chave única estável recomendada pelo usuário: DOCUMENTO + "_" + NUM_COMANDA
-        if (!documento.isEmpty()) {
-            this.id = documento + "_" + numComanda;
+        // Chave única por número da comanda para evitar que se repitam
+        if (!numComanda.isEmpty()) {
+            this.id = normalizarIdComanda(numComanda);
+        } else if (!documento.isEmpty()) {
+            this.id = "DOC_" + documento;
         } else {
-            this.id = mesa + "_" + numComanda;
+            this.id = "MESA_" + mesa;
         }
 
         this.dataStr = objAbertas.optString("DATA", "").trim();
@@ -65,6 +68,16 @@ public class ComandaCardModel {
         }
     }
 
+    public static String normalizarIdComanda(String numComanda) {
+        if (numComanda == null) return "";
+        String limpo = numComanda.trim();
+        try {
+            return "CMD_" + Integer.parseInt(limpo);
+        } catch (Exception e) {
+            return "CMD_" + limpo;
+        }
+    }
+
     public String getId() { return id; }
     public int getMesa() { return mesa; }
     public void setMesa(int mesa) { this.mesa = mesa; }
@@ -75,6 +88,8 @@ public class ComandaCardModel {
     public int getQtdeItens() { return qtdeItens; }
     public double getTotalValor() { return totalValor; }
     public List<ItemComandaModel> getItens() { return itens; }
+    public boolean isEntregue() { return entregue; }
+    public void setEntregue(boolean entregue) { this.entregue = entregue; }
 
     public void atualizarDados(JSONObject objAbertas) {
         String totalStr = objAbertas.optString("Total", "0.00").trim().replace(",", ".");

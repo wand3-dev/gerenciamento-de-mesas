@@ -192,62 +192,43 @@
     </LinearLayout>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         3. SELETOR DISCRETO DE VISÃO (COMANDAS vs SALÃO)
+         3. CABEÇALHO DAS COMANDAS (SALÃO REMOVIDO)
     ═══════════════════════════════════════════════════════════════ -->
     <LinearLayout
+        android:id="@+id/tabMonitor"
         android:layout_width="match_parent"
         android:layout_height="36dp"
         android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@drawable/bg_pill_comanda"
         android:paddingStart="12dp"
         android:paddingEnd="12dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
         android:layout_marginTop="2dp"
         android:layout_marginBottom="4dp">
 
-        <!-- Aba 1: Comandas Abertas -->
-        <LinearLayout
-            android:id="@+id/tabMonitor"
+        <TextView
+            android:id="@+id/tvTabMonitorTitulo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📋 COMANDAS ABERTAS (0)"
+            android:textColor="#92400E"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Referência oculta para compatibilidade -->
+    <LinearLayout
+        android:id="@+id/tabMesas"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/tvTabMesasTitulo"
             android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@drawable/bg_pill_comanda"
-            android:clickable="true"
-            android:focusable="true"
-            android:layout_marginEnd="4dp">
-
-            <TextView
-                android:id="@+id/tvTabMonitorTitulo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="📋 COMANDAS ABERTAS (0)"
-                android:textColor="#92400E"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- Aba 2: Mesas do Salão -->
-        <LinearLayout
-            android:id="@+id/tabMesas"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="#1E293B"
-            android:clickable="true"
-            android:focusable="true"
-            android:layout_marginStart="4dp">
-
-            <TextView
-                android:id="@+id/tvTabMesasTitulo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🪑 SALÃO (34)"
-                android:textColor="#94A3B8"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+            android:layout_height="0dp"
+            android:visibility="gone" />
     </LinearLayout>
 
     <!-- ═══════════════════════════════════════════════════════════════

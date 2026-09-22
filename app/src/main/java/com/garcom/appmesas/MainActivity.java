@@ -277,11 +277,22 @@ public class MainActivity extends AppCompatActivity {
         rvFilaPedidos.setAdapter(filaAdapter);
 
         // Configuração do RecyclerView de Comandas Monitoradas
-        adapterComandas = new ComandasMonitoradasAdapter(this, listaComandasFiltradas, comanda -> {
-            if (comanda.getMesa() > 0) {
-                Intent intent = new Intent(MainActivity.this, MesaDetailActivity.class);
-                intent.putExtra("NUMERO_MESA", comanda.getMesa());
-                startActivity(intent);
+        adapterComandas = new ComandasMonitoradasAdapter(this, listaComandasFiltradas, new ComandasMonitoradasAdapter.OnComandaActionListener() {
+            @Override
+            public void onComandaClick(ComandaCardModel comanda) {
+                if (comanda.getMesa() > 0) {
+                    Intent intent = new Intent(MainActivity.this, MesaDetailActivity.class);
+                    intent.putExtra("NUMERO_MESA", comanda.getMesa());
+                    startActivity(intent);
+                }
+            }
+
+            @Override
+            public void onEntregueClick(ComandaCardModel comanda, int position) {
+                VibrationHelper.vibrateSuccess(MainActivity.this);
+                if (monitorEngine != null) {
+                    monitorEngine.alternarEntregueComanda(comanda.getId());
+                }
             }
         });
         rvComandasMonitoradas.setLayoutManager(new LinearLayoutManager(this));
@@ -571,7 +582,14 @@ public class MainActivity extends AppCompatActivity {
         listaComandasFiltradas.clear();
         String busca = StringHelper.normalizar(queryBusca.trim());
 
+        Set<String> chavesInseridas = new HashSet<>();
         for (ComandaCardModel card : listaComandasMonitoradas) {
+            String chave = card.getId();
+            if (chavesInseridas.contains(chave)) {
+                continue; // Não deixa comandas repetirem
+            }
+            chavesInseridas.add(chave);
+
             if (filtroSelecionado == 1) {
                 boolean ehMinha = manager.isMinhaComanda(card.getNumComanda());
                 if (!ehMinha && card.getMesa() > 0) {
@@ -603,6 +621,14 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+
+        // Garante que comandas abertas fiquem no topo (lá pra cima) e entregues no fim (lá pra baixo)
+        Collections.sort(listaComandasFiltradas, (c1, c2) -> {
+            if (c1.isEntregue() != c2.isEntregue()) {
+                return c1.isEntregue() ? 1 : -1;
+            }
+            return Long.compare(c1.getDetectedAt(), c2.getDetectedAt());
+        });
 
         if (adapterComandas != null) {
             adapterComandas.notifyDataSetChanged();
@@ -1559,7 +1585,7 @@ public class MainActivity extends AppCompatActivity {
             btnFiltroLivres.setText("LIVRES (" + fechadas + ")");
         }
         if (tvTabMesasTitulo != null) {
-            tvTabMesasTitulo.setText("🪑 SALÃO (" + manager.getMesas().size() + ")");
+            tvTabMesasTitulo.setText("");
         }
         atualizarBadgeAvisos();
     }

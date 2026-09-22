@@ -36,8 +36,12 @@ public class MonitorComandasEngine {
     private boolean ativo = false;
     private boolean pollingEmExecucao = false;
 
-    // Mapa das comandas monitoradas ativas com chave única: DOCUMENTO + "_" + NUM_COMANDA
+    // Mapa das comandas monitoradas ativas com chave única por comanda
     private final Map<String, ComandaCardModel> mapaComandas = new LinkedHashMap<>();
+
+    private static final String PREF_MONITOR = "monitor_comandas_prefs";
+    private static final String KEY_ENTREGUES = "key_comandas_entregues";
+    private final Set<String> comandasEntregues = new HashSet<>();
 
     private final List<MonitorCallback> callbacks = new ArrayList<>();
     private Runnable runnablePolling;
@@ -45,6 +49,41 @@ public class MonitorComandasEngine {
     private MonitorComandasEngine(Context context) {
         this.context = context.getApplicationContext();
         this.serverClient = ServerComandasClient.getInstance(this.context);
+        carregarComandasEntregues();
+    }
+
+    private void carregarComandasEntregues() {
+        android.content.SharedPreferences sp = context.getSharedPreferences(PREF_MONITOR, Context.MODE_PRIVATE);
+        Set<String> salvos = sp.getStringSet(KEY_ENTREGUES, null);
+        if (salvos != null) {
+            comandasEntregues.addAll(salvos);
+        }
+    }
+
+    private void salvarComandasEntregues() {
+        android.content.SharedPreferences sp = context.getSharedPreferences(PREF_MONITOR, Context.MODE_PRIVATE);
+        sp.edit().putStringSet(KEY_ENTREGUES, new HashSet<>(comandasEntregues)).apply();
+    }
+
+    public synchronized void alternarEntregueComanda(String idComanda) {
+        if (idComanda == null || idComanda.isEmpty()) return;
+        if (comandasEntregues.contains(idComanda)) {
+            comandasEntregues.remove(idComanda);
+        } else {
+            comandasEntregues.add(idComanda);
+        }
+        ComandaCardModel card = mapaComandas.get(idComanda);
+        if (card != null) {
+            card.setEntregue(comandasEntregues.contains(idComanda));
+        }
+        salvarComandasEntregues();
+
+        List<ComandaCardModel> listaFinal = getListaComandas();
+        mainHandler.post(() -> {
+            for (MonitorCallback cb : callbacks) {
+                cb.onComandasAtualizadas(listaFinal, ultimaSincronizacao);
+            }
+        });
     }
 
     public static synchronized MonitorComandasEngine getInstance(Context context) {
@@ -70,8 +109,22 @@ public class MonitorComandasEngine {
     public String getUltimaSincronizacao() { return ultimaSincronizacao; }
     public boolean isAtivo() { return ativo; }
 
+    /**
+     * Retorna a lista de comandas com:
+     * - Comandas abertas (não entregues) no topo (lá pra cima)
+     * - Comandas entregues no fim da lista (lá pra baixo)
+     */
     public synchronized List<ComandaCardModel> getListaComandas() {
-        return new ArrayList<>(mapaComandas.values());
+        List<ComandaCardModel> lista = new ArrayList<>(mapaComandas.values());
+        java.util.Collections.sort(lista, (c1, c2) -> {
+            // 1. Não entregues primeiro, entregues por último
+            if (c1.isEntregue() != c2.isEntregue()) {
+                return c1.isEntregue() ? 1 : -1;
+            }
+            // 2. Se ambos têm o mesmo status, ordena pelo tempo de detecção (mais antigas primeiro)
+            return Long.compare(c1.getDetectedAt(), c2.getDetectedAt());
+        });
+        return lista;
     }
 
     public synchronized void ligarServidor() {
@@ -162,18 +215,27 @@ public class MonitorComandasEngine {
                             try { m = Integer.parseInt(objCmd.optString("MESA", "0").trim()); } catch (Exception ignored) {}
                         }
 
-                        // Chave única estável recomendada pelo usuário: DOCUMENTO + "_" + NUM_COMANDA
-                        String chave = (!doc.isEmpty()) ? (doc + "_" + numCmd) : (m + "_" + numCmd);
+                        // Chave única e exclusiva por comanda para não se repetirem
+                        String chave;
+                        if (!numCmd.isEmpty()) {
+                            chave = ComandaCardModel.normalizarIdComanda(numCmd);
+                        } else if (!doc.isEmpty()) {
+                            chave = "DOC_" + doc;
+                        } else {
+                            chave = "MESA_" + m;
+                        }
                         chavesAtivasNestaConsulta.add(chave);
 
                         ComandaCardModel card = mapaComandas.get(chave);
                         if (card == null) {
                             // Nova comanda! detectedAt é inicializado com horário atual (começa em 00:00:00)
                             card = new ComandaCardModel(objCmd);
+                            card.setEntregue(comandasEntregues.contains(chave));
                             mapaComandas.put(chave, card);
                         } else {
                             // Comanda já existente: preserva detectedAt original e atualiza dados
                             card.atualizarDados(objCmd);
+                            card.setEntregue(comandasEntregues.contains(chave));
                         }
 
                         // Filtra itens para esta comanda específica (Req 5 e 15)
@@ -182,9 +244,9 @@ public class MonitorComandasEngine {
                         if (todosItensMesa != null) {
                             for (ItemComandaModel item : todosItensMesa) {
                                 boolean match = false;
-                                if (!doc.isEmpty() && doc.equals(item.getDocumento())) {
+                                if (!numCmd.isEmpty() && numCmd.equals(item.getNumComanda())) {
                                     match = true;
-                                } else if (!numCmd.isEmpty() && numCmd.equals(item.getNumComanda())) {
+                                } else if (!doc.isEmpty() && doc.equals(item.getDocumento())) {
                                     match = true;
                                 }
                                 if (match) {
@@ -200,9 +262,11 @@ public class MonitorComandasEngine {
                     while (it.hasNext()) {
                         Map.Entry<String, ComandaCardModel> entry = it.next();
                         if (!chavesAtivasNestaConsulta.contains(entry.getKey())) {
+                            comandasEntregues.remove(entry.getKey());
                             it.remove();
                         }
                     }
+                    salvarComandasEntregues();
                 }
 
                 // 5. Sincroniza também as mesas e organiza os produtos no MesaManager
