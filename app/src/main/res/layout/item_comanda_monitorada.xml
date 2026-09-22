@@ -1,173 +1,125 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/cardComandaMonitorada"
+    android:id="@+id/layoutComandaItem"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="8dp"
-    android:layout_marginEnd="8dp"
-    android:layout_marginTop="6dp"
-    android:layout_marginBottom="6dp"
-    app:cardCornerRadius="14dp"
-    app:cardElevation="3dp"
-    app:strokeWidth="1.5dp"
-    app:strokeColor="#CBD5E1"
-    app:cardBackgroundColor="#FFFFFF">
+    android:orientation="vertical"
+    android:background="#FFFFFF">
 
+    <!-- Linha principal da comanda (sem cards) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
 
-        <!-- ═══════════════════════════════════════════════════════════
-             1. CABEÇALHO DO CARD (MESA, COMANDA, TEMPO)
-        ═══════════════════════════════════════════════════════════ -->
+        <!-- Informações da Comanda -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="#F8FAFC"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp">
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-            <!-- Linha 1: COMANDA EM DESTAQUE PRINCIPAL (SEM MESAS) -->
+            <!-- Linha Superior: Número da Comanda + Tempo de Espera -->
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
                 <TextView
-                    android:id="@+id/tvCardComandaBadge"
-                    android:layout_width="0dp"
+                    android:id="@+id/tvComandaNumero"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="COMANDA #57"
                     android:textColor="#0F172A"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:letterSpacing="0.02" />
 
-                <!-- Oculto para não exibir mesas -->
                 <TextView
-                    android:id="@+id/tvCardMesaNumero"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:visibility="gone" />
+                    android:id="@+id/tvComandaTempo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="⏱ 00:03:27"
+                    android:textColor="#475569"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:fontFamily="monospace" />
             </LinearLayout>
 
-            <!-- Linha 2: TEMPO INDIVIDUAL (00:03:27) -->
+            <!-- Linha Inferior: Quantidade de Itens + Total em Reais -->
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginTop="5dp">
+                android:layout_marginTop="3dp">
 
                 <TextView
-                    android:id="@+id/tvCardTempo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Tempo: 00:03:27"
-                    android:textColor="#475569"
-                    android:textSize="12.5sp"
-                    android:textStyle="bold"
-                    android:fontFamily="monospace" />
-
-                <TextView
-                    android:id="@+id/tvCardDocumento"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="end"
-                    android:text="Doc: 691386"
-                    android:textColor="#94A3B8"
-                    android:textSize="10.5sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Linha divisória fina -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#E2E8F0" />
-
-        <!-- ═══════════════════════════════════════════════════════════
-             2. CORPO DOS ITENS DA COMANDA
-        ═══════════════════════════════════════════════════════════ -->
-        <LinearLayout
-            android:id="@+id/layoutItensContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp" />
-
-        <!-- Linha divisória fina -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#E2E8F0" />
-
-        <!-- ═══════════════════════════════════════════════════════════
-             3. RODAPÉ DO CARD (QUANTIDADE DE ITENS + TOTAL)
-        ═══════════════════════════════════════════════════════════ -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:background="#F8FAFC"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvCardQtdeItens"
+                    android:id="@+id/tvComandaQtdeItens"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="2 itens"
                     android:textColor="#64748B"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
+                    android:textSize="13sp" />
 
                 <TextView
-                    android:id="@+id/tvCardTotalValor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" • "
+                    android:textColor="#94A3B8"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvComandaTotalValor"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="R$ 27,68"
                     android:textColor="#059669"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
-            </LinearLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCardEntregue"
-                android:layout_width="wrap_content"
-                android:layout_height="38dp"
-                android:text="ENTREGAR"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:minWidth="95dp"
-                app:backgroundTint="#059669"
-                app:cornerRadius="8dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp" />
+                <TextView
+                    android:id="@+id/tvComandaDocumento"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Doc: 691386"
+                    android:textColor="#94A3B8"
+                    android:textSize="11sp" />
+            </LinearLayout>
         </LinearLayout>
 
+        <!-- Botão de Entrega da Comanda -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnComandaEntregue"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:text="ENTREGAR"
+            android:textColor="#FFFFFF"
+            android:textSize="12.5sp"
+            android:textStyle="bold"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:minWidth="102dp"
+            app:backgroundTint="#059669"
+            app:cornerRadius="8dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp" />
     </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
+
+    <!-- Linha divisória fina entre as comandas -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E2E8F0" />
+
+</LinearLayout>

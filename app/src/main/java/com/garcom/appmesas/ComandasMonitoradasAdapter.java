@@ -11,9 +11,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.card.MaterialCardView;
 import java.util.List;
-import java.util.Locale;
 
 public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMonitoradasAdapter.ComandaViewHolder> {
 
@@ -46,9 +44,8 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     @Override
     public void onBindViewHolder(@NonNull ComandaViewHolder holder, int position, @NonNull List<Object> payloads) {
         if (!payloads.isEmpty() && payloads.contains(PAYLOAD_TEMPO)) {
-            // Atualização suave do contador de segundos sem reconstruir a view
             ComandaCardModel item = listaComandas.get(position);
-            holder.tvCardTempo.setText("Tempo: " + item.getTempoFormatado());
+            holder.tvComandaTempo.setText("⏱ " + item.getTempoFormatado());
             return;
         }
         super.onBindViewHolder(holder, position, payloads);
@@ -58,71 +55,41 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     public void onBindViewHolder(@NonNull ComandaViewHolder holder, int position) {
         ComandaCardModel item = listaComandas.get(position);
 
-        // Cabeçalho: Apenas Comanda (sem mesas)
-        if (holder.tvCardMesaNumero != null) {
-            holder.tvCardMesaNumero.setVisibility(View.GONE);
-        }
-        holder.tvCardComandaBadge.setText("COMANDA #" + item.getNumComanda());
-        holder.tvCardTempo.setText("Tempo: " + item.getTempoFormatado());
+        // Identificação limpa e direta da comanda (sem cards)
+        holder.tvComandaNumero.setText("COMANDA #" + item.getNumComanda());
 
-        if (item.getDocumento() != null && !item.getDocumento().isEmpty()) {
-            holder.tvCardDocumento.setVisibility(View.VISIBLE);
-            holder.tvCardDocumento.setText("Doc: " + item.getDocumento());
+        // Cronômetro de espera em tempo real
+        holder.tvComandaTempo.setText("⏱ " + item.getTempoFormatado());
+
+        // Resumo rápido de itens e valor
+        holder.tvComandaQtdeItens.setText(item.getItensCountFormatado());
+        holder.tvComandaTotalValor.setText(item.getTotalFormatado());
+
+        if (item.getDocumento() != null && !item.getDocumento().trim().isEmpty()) {
+            holder.tvComandaDocumento.setVisibility(View.VISIBLE);
+            holder.tvComandaDocumento.setText("Doc: " + item.getDocumento().trim());
         } else {
-            holder.tvCardDocumento.setVisibility(View.GONE);
+            holder.tvComandaDocumento.setVisibility(View.GONE);
         }
 
-        // Itens
-        holder.layoutItensContainer.removeAllViews();
-        List<ItemComandaModel> itens = item.getItens();
-        if (itens == null || itens.isEmpty()) {
-            TextView tvVazio = new TextView(context);
-            tvVazio.setText("Carregando itens do servidor...");
-            tvVazio.setTextColor(Color.parseColor("#94A3B8"));
-            tvVazio.setTextSize(12f);
-            tvVazio.setPadding(0, 4, 0, 4);
-            holder.layoutItensContainer.addView(tvVazio);
+        // Estado do botão de entrega e visual da linha (aberta no topo vs entregue no final)
+        if (item.isEntregue()) {
+            holder.btnComandaEntregue.setText("✓ ENTREGUE");
+            holder.btnComandaEntregue.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#475569")));
+            holder.layoutComandaItem.setAlpha(0.65f);
+            holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#F8FAFC"));
         } else {
-            for (ItemComandaModel prod : itens) {
-                View linhaView = inflater.inflate(R.layout.item_linha_produto, holder.layoutItensContainer, false);
-                TextView tvDescricaoPreco = linhaView.findViewById(R.id.tvDescricaoPreco);
-                TextView tvObs = linhaView.findViewById(R.id.tvObs);
-
-                tvDescricaoPreco.setText(prod.getTextoLinha());
-                if (prod.hasObs()) {
-                    tvObs.setVisibility(View.VISIBLE);
-                    tvObs.setText("↳ Obs: " + prod.getObs());
-                } else {
-                    tvObs.setVisibility(View.GONE);
-                }
-                holder.layoutItensContainer.addView(linhaView);
-            }
+            holder.btnComandaEntregue.setText("ENTREGAR");
+            holder.btnComandaEntregue.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#059669")));
+            holder.layoutComandaItem.setAlpha(1.0f);
+            holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#FFFFFF"));
         }
 
-        // Rodapé: Totais
-        holder.tvCardQtdeItens.setText(item.getItensCountFormatado());
-        holder.tvCardTotalValor.setText(item.getTotalFormatado());
-
-        // Botão Entregue e diferenciação visual (aberta vs entregue)
-        if (holder.btnCardEntregue != null) {
-            if (item.isEntregue()) {
-                holder.btnCardEntregue.setText("✓ ENTREGUE");
-                holder.btnCardEntregue.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#475569")));
-                holder.cardComanda.setStrokeColor(Color.parseColor("#94A3B8"));
-                holder.cardComanda.setAlpha(0.72f);
-            } else {
-                holder.btnCardEntregue.setText("ENTREGAR");
-                holder.btnCardEntregue.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#059669")));
-                holder.cardComanda.setStrokeColor(Color.parseColor("#CBD5E1"));
-                holder.cardComanda.setAlpha(1.0f);
+        holder.btnComandaEntregue.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onEntregueClick(item, holder.getAdapterPosition());
             }
-
-            holder.btnCardEntregue.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onEntregueClick(item, holder.getAdapterPosition());
-                }
-            });
-        }
+        });
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
@@ -146,27 +113,23 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     }
 
     public static class ComandaViewHolder extends RecyclerView.ViewHolder {
-        MaterialCardView cardComanda;
-        TextView tvCardMesaNumero;
-        TextView tvCardComandaBadge;
-        TextView tvCardTempo;
-        TextView tvCardDocumento;
-        LinearLayout layoutItensContainer;
-        TextView tvCardQtdeItens;
-        TextView tvCardTotalValor;
-        MaterialButton btnCardEntregue;
+        LinearLayout layoutComandaItem;
+        TextView tvComandaNumero;
+        TextView tvComandaTempo;
+        TextView tvComandaQtdeItens;
+        TextView tvComandaTotalValor;
+        TextView tvComandaDocumento;
+        MaterialButton btnComandaEntregue;
 
         public ComandaViewHolder(@NonNull View itemView) {
             super(itemView);
-            cardComanda = itemView.findViewById(R.id.cardComandaMonitorada);
-            tvCardMesaNumero = itemView.findViewById(R.id.tvCardMesaNumero);
-            tvCardComandaBadge = itemView.findViewById(R.id.tvCardComandaBadge);
-            tvCardTempo = itemView.findViewById(R.id.tvCardTempo);
-            tvCardDocumento = itemView.findViewById(R.id.tvCardDocumento);
-            layoutItensContainer = itemView.findViewById(R.id.layoutItensContainer);
-            tvCardQtdeItens = itemView.findViewById(R.id.tvCardQtdeItens);
-            tvCardTotalValor = itemView.findViewById(R.id.tvCardTotalValor);
-            btnCardEntregue = itemView.findViewById(R.id.btnCardEntregue);
+            layoutComandaItem = itemView.findViewById(R.id.layoutComandaItem);
+            tvComandaNumero = itemView.findViewById(R.id.tvComandaNumero);
+            tvComandaTempo = itemView.findViewById(R.id.tvComandaTempo);
+            tvComandaQtdeItens = itemView.findViewById(R.id.tvComandaQtdeItens);
+            tvComandaTotalValor = itemView.findViewById(R.id.tvComandaTotalValor);
+            tvComandaDocumento = itemView.findViewById(R.id.tvComandaDocumento);
+            btnComandaEntregue = itemView.findViewById(R.id.btnComandaEntregue);
         }
     }
 }

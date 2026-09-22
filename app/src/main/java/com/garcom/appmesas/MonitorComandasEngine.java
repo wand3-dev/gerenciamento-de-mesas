@@ -7,7 +7,6 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -157,55 +156,25 @@ public class MonitorComandasEngine {
 
         executor.execute(() -> {
             try {
-                // 1. API 1: Buscar comandas abertas
+                // 1. Consulta leve e direta das comandas abertas via DataSnap
                 List<JSONObject> comandasJson = serverClient.buscarComandasAbertasSync();
 
-                // 2. Processar e filtrar > 10 horas
+                // 2. Processar e filtrar comandas > 10 horas
                 List<JSONObject> comandasValidas = new ArrayList<>();
-                Set<Integer> mesasParaBuscarItens = new HashSet<>();
                 Set<String> chavesAtivasNestaConsulta = new HashSet<>();
 
                 for (JSONObject obj : comandasJson) {
                     String dataStr = obj.optString("DATA", "").trim();
                     String horaStr = obj.optString("HORA", "").trim();
 
-                    // Regra 8: Ignora comandas com mais de 10 horas
+                    // Ignora comandas com mais de 10 horas
                     if (!ComandaCardModel.isValidaMenosDe10Horas(dataStr, horaStr)) {
                         continue;
                     }
-
                     comandasValidas.add(obj);
-
-                    int m = obj.optInt("MESA", 0);
-                    if (m == 0) {
-                        try {
-                            m = Integer.parseInt(obj.optString("MESA", "0").trim());
-                        } catch (Exception ignored) {}
-                    }
-                    if (m > 0) {
-                        mesasParaBuscarItens.add(m);
-                    }
                 }
 
-                // 3. API 2: Otimização (Req 13 e 14) - Buscar itens de cada mesa ÚNICA uma única vez
-                Map<Integer, List<ItemComandaModel>> itensPorMesa = new HashMap<>();
-                Map<Integer, List<JSONObject>> rawItensPorMesaJson = new HashMap<>();
-                for (int numMesa : mesasParaBuscarItens) {
-                    try {
-                        List<JSONObject> itensMesaJson = serverClient.buscarItensDaMesaSync(numMesa);
-                        rawItensPorMesaJson.put(numMesa, itensMesaJson);
-                        List<ItemComandaModel> listaItensMesa = new ArrayList<>();
-                        for (JSONObject itObj : itensMesaJson) {
-                            listaItensMesa.add(new ItemComandaModel(itObj));
-                        }
-                        itensPorMesa.put(numMesa, listaItensMesa);
-                    } catch (Exception e) {
-                        itensPorMesa.put(numMesa, new ArrayList<>());
-                        rawItensPorMesaJson.put(numMesa, new ArrayList<>());
-                    }
-                }
-
-                // 4. Distribuir itens e sincronizar mapa de cards (Req 4, 5, 6, 7, 9, 10, 11)
+                // 3. Atualizar diretamente o mapa de comandas (sem lógica de cards internos)
                 synchronized (this) {
                     for (JSONObject objCmd : comandasValidas) {
                         String doc = objCmd.optString("DOCUMENTO", "").trim();
@@ -228,36 +197,18 @@ public class MonitorComandasEngine {
 
                         ComandaCardModel card = mapaComandas.get(chave);
                         if (card == null) {
-                            // Nova comanda! detectedAt é inicializado com horário atual (começa em 00:00:00)
+                            // Nova comanda: inicializa timer individual
                             card = new ComandaCardModel(objCmd);
                             card.setEntregue(comandasEntregues.contains(chave));
                             mapaComandas.put(chave, card);
                         } else {
-                            // Comanda já existente: preserva detectedAt original e atualiza dados
+                            // Comanda já existente: preserva detectedAt e atualiza valores/itens
                             card.atualizarDados(objCmd);
                             card.setEntregue(comandasEntregues.contains(chave));
                         }
-
-                        // Filtra itens para esta comanda específica (Req 5 e 15)
-                        List<ItemComandaModel> todosItensMesa = itensPorMesa.get(m);
-                        List<ItemComandaModel> itensDestaComanda = new ArrayList<>();
-                        if (todosItensMesa != null) {
-                            for (ItemComandaModel item : todosItensMesa) {
-                                boolean match = false;
-                                if (!numCmd.isEmpty() && numCmd.equals(item.getNumComanda())) {
-                                    match = true;
-                                } else if (!doc.isEmpty() && doc.equals(item.getDocumento())) {
-                                    match = true;
-                                }
-                                if (match) {
-                                    itensDestaComanda.add(item);
-                                }
-                            }
-                        }
-                        card.setItens(itensDestaComanda);
                     }
 
-                    // Remoção automática de comandas que não existem mais (Req 11)
+                    // Remoção automática de comandas que já foram fechadas no servidor
                     Iterator<Map.Entry<String, ComandaCardModel>> it = mapaComandas.entrySet().iterator();
                     while (it.hasNext()) {
                         Map.Entry<String, ComandaCardModel> entry = it.next();
@@ -269,17 +220,7 @@ public class MonitorComandasEngine {
                     salvarComandasEntregues();
                 }
 
-                // 5. Sincroniza também as mesas e organiza os produtos no MesaManager
-                MesaManager mesaMgr = MesaManager.getInstance(context);
-                if (mesaMgr != null) {
-                    int novosItens = mesaMgr.sincronizarMesasEItensDoServidor(context, mesasParaBuscarItens, rawItensPorMesaJson);
-                    if (novosItens > 0) {
-                        NotificationHelper.notificarNovoItem(context, "Novos Pedidos!", novosItens + " novo(s) item(ns) lançado(s) nas mesas.");
-                    }
-                    context.sendBroadcast(new android.content.Intent(MesaManager.ACTION_PEDIDOS_ATUALIZADOS));
-                }
-
-                // Sincronização concluída com sucesso!
+                // Sincronização concluída com sucesso
                 ultimaSincronizacao = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
                 setEstado(EstadoServidor.ONLINE, "● SERVIDOR ONLINE");
 
@@ -291,12 +232,12 @@ public class MonitorComandasEngine {
                 });
 
             } catch (Exception erro) {
-                // Req 11: Em caso de erro de rede, NÃO remove nada! Preserva dados atuais.
+                // Em caso de erro temporário de rede, preserva dados atuais
                 String msgErro = erro.getMessage() != null ? erro.getMessage() : "Sem resposta";
                 setEstado(EstadoServidor.ERROR, "ERRO DE CONEXÃO: " + msgErro);
             } finally {
                 pollingEmExecucao = false;
-                // Agenda o próximo ciclo de polling para daqui a 10 segundos (Req 6 e 13)
+                // Agenda o próximo ciclo de polling para daqui a 10 segundos
                 if (ativo) {
                     runnablePolling = () -> executarCicloPolling();
                     mainHandler.postDelayed(runnablePolling, 10000);
