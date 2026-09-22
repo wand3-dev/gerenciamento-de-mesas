@@ -159,7 +159,7 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:background="@null"
-                android:hint="Buscar comanda ou produto..."
+                android:hint="Buscar número da comanda ou doc..."
                 android:textColor="#0F172A"
                 android:textColorHint="#94A3B8"
                 android:textSize="13sp"
@@ -192,7 +192,7 @@
     </LinearLayout>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         3. CABEÇALHO DAS COMANDAS (SALÃO REMOVIDO)
+         3. IDENTIFICADOR DA LISTA DE COMANDAS
     ═══════════════════════════════════════════════════════════════ -->
     <LinearLayout
         android:id="@+id/tabMonitor"
@@ -216,19 +216,6 @@
             android:textColor="#92400E"
             android:textSize="12sp"
             android:textStyle="bold" />
-    </LinearLayout>
-
-    <!-- Referência oculta para compatibilidade -->
-    <LinearLayout
-        android:id="@+id/tabMesas"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="gone">
-        <TextView
-            android:id="@+id/tvTabMesasTitulo"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:visibility="gone" />
     </LinearLayout>
 
     <!-- ═══════════════════════════════════════════════════════════════
@@ -272,7 +259,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:gravity="center"
-                android:text="Nenhuma requisição de rede é feita até que você ligue o servidor.\nToque no botão abaixo para iniciar o monitoramento em tempo real."
+                android:text="Toque no botão abaixo para iniciar o monitoramento das comandas em tempo real."
                 android:textColor="#64748B"
                 android:textSize="13sp" />
 
@@ -310,7 +297,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Descobrindo Comandas Abertas..."
+                android:text="Consultando Comandas..."
                 android:textColor="#0F172A"
                 android:textSize="15sp"
                 android:textStyle="bold" />
@@ -319,84 +306,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Consultando DataSnap Padaria..."
+                android:text="Buscando no DataSnap..."
                 android:textColor="#64748B"
                 android:textSize="12sp" />
         </LinearLayout>
 
-        <!-- Lista de Comandas Monitoradas em Tempo Real -->
+        <!-- Lista de Comandas Monitoradas em Linha (Sem cards, Sem mesas) -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvComandasMonitoradas"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"
-            android:paddingTop="2dp"
-            android:paddingBottom="14dp"
             android:clipToPadding="false"
+            android:paddingBottom="14dp"
             android:visibility="gone" />
 
-        <!-- Grade de Mesas do Salão (quando alternado para Salão) -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvMesas"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"
-            android:paddingTop="2dp"
-            android:paddingBottom="14dp"
-            android:clipToPadding="false"
-            android:visibility="gone" />
-
-        <!-- Fila de Pedidos (disponível se necessário) -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvFilaPedidos"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"
-            android:paddingTop="2dp"
-            android:paddingBottom="14dp"
-            android:clipToPadding="false"
-            android:visibility="gone" />
     </FrameLayout>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         ELEMENTOS OCULTOS DE COMPATIBILIDADE (Evita crashes com código legado)
-    ═══════════════════════════════════════════════════════════════ -->
-    <LinearLayout
-        android:id="@+id/layoutElementosLegadosCompatibilidade"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:visibility="gone">
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardControleServidor"
-            android:layout_width="0dp"
-            android:layout_height="0dp" />
-
-        <TextView android:id="@+id/tvResumoAbertas" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/tvResumoFechadas" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/tvResumoAlertas15m" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/tvServerStatusTag" android:layout_width="0dp" android:layout_height="0dp" />
-        <LinearLayout android:id="@+id/btnConfigServidor" android:layout_width="0dp" android:layout_height="0dp" />
-        <LinearLayout android:id="@+id/btnAdicionarMesaServidor" android:layout_width="0dp" android:layout_height="0dp" />
-        <LinearLayout android:id="@+id/btnAddMinhaComandaRapida" android:layout_width="0dp" android:layout_height="0dp" />
-        <LinearLayout android:id="@+id/layoutChipsMinhasComandas" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/btnFiltroTodas" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/btnFiltroMinhas" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/btnFiltroAbertas" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/btnFiltroLivres" android:layout_width="0dp" android:layout_height="0dp" />
-        <LinearLayout android:id="@+id/btnAvisosRecentes" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/tvBadgeAvisos" android:layout_width="0dp" android:layout_height="0dp" />
-        <LinearLayout android:id="@+id/layoutFiltrosMesas" android:layout_width="0dp" android:layout_height="0dp" />
-        <LinearLayout android:id="@+id/layoutHeaderFila" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/btnLimparEntreguesFila" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/btnFilaFiltroTodas" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/btnFilaFiltroBebidas" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/btnFilaFiltroComidas" android:layout_width="0dp" android:layout_height="0dp" />
-        <LinearLayout android:id="@+id/tabFilaPedidos" android:layout_width="0dp" android:layout_height="0dp" />
-        <TextView android:id="@+id/tvTabFilaTitulo" android:layout_width="0dp" android:layout_height="0dp" />
-    </LinearLayout>
 
 </LinearLayout>

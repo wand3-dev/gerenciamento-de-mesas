@@ -10,8 +10,8 @@ android {
         applicationId 'com.garcom.appmesas'
         minSdk 24
         targetSdk 34
-        versionCode 46
-        versionName '5.8'
+        versionCode 47
+        versionName '5.9'
     }
 
     buildTypes {
