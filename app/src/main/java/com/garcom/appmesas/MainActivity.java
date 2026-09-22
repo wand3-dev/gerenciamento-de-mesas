@@ -280,11 +280,7 @@ public class MainActivity extends AppCompatActivity {
         adapterComandas = new ComandasMonitoradasAdapter(this, listaComandasFiltradas, new ComandasMonitoradasAdapter.OnComandaActionListener() {
             @Override
             public void onComandaClick(ComandaCardModel comanda) {
-                if (comanda.getMesa() > 0) {
-                    Intent intent = new Intent(MainActivity.this, MesaDetailActivity.class);
-                    intent.putExtra("NUMERO_MESA", comanda.getMesa());
-                    startActivity(intent);
-                }
+                // Foco 100% nas comandas (sem tela de mesas)
             }
 
             @Override

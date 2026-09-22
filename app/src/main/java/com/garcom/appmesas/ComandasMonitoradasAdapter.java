@@ -58,14 +58,11 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     public void onBindViewHolder(@NonNull ComandaViewHolder holder, int position) {
         ComandaCardModel item = listaComandas.get(position);
 
-        // Cabeçalho: Mesa e Comanda
-        if (item.getMesa() > 0) {
-            holder.tvCardMesaNumero.setText(String.format(Locale.getDefault(), "MESA %02d", item.getMesa()));
-        } else {
-            holder.tvCardMesaNumero.setText("BALCÃO");
+        // Cabeçalho: Apenas Comanda (sem mesas)
+        if (holder.tvCardMesaNumero != null) {
+            holder.tvCardMesaNumero.setVisibility(View.GONE);
         }
-
-        holder.tvCardComandaBadge.setText("Comanda #" + item.getNumComanda());
+        holder.tvCardComandaBadge.setText("COMANDA #" + item.getNumComanda());
         holder.tvCardTempo.setText("Tempo: " + item.getTempoFormatado());
 
         if (item.getDocumento() != null && !item.getDocumento().isEmpty()) {
