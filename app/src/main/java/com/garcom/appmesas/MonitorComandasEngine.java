@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -156,11 +157,12 @@ public class MonitorComandasEngine {
 
         executor.execute(() -> {
             try {
-                // 1. Consulta leve e direta das comandas abertas via DataSnap
+                // 1. Consulta leve das comandas abertas via DataSnap
                 List<JSONObject> comandasJson = serverClient.buscarComandasAbertasSync();
 
                 // 2. Processar e filtrar comandas > 10 horas
                 List<JSONObject> comandasValidas = new ArrayList<>();
+                Set<Integer> mesasParaConsultar = new HashSet<>();
                 Set<String> chavesAtivasNestaConsulta = new HashSet<>();
 
                 for (JSONObject obj : comandasJson) {
@@ -172,9 +174,32 @@ public class MonitorComandasEngine {
                         continue;
                     }
                     comandasValidas.add(obj);
+
+                    int m = obj.optInt("MESA", 0);
+                    if (m == 0) {
+                        try { m = Integer.parseInt(obj.optString("MESA", "0").trim()); } catch (Exception ignored) {}
+                    }
+                    if (m > 0) {
+                        mesasParaConsultar.add(m);
+                    }
                 }
 
-                // 3. Atualizar diretamente o mapa de comandas (sem lógica de cards internos)
+                // 3. Buscar os itens das mesas para exibir diretamente em cada comanda no Home
+                Map<Integer, List<ItemComandaModel>> itensPorMesa = new HashMap<>();
+                for (int numMesa : mesasParaConsultar) {
+                    try {
+                        List<JSONObject> itensMesaJson = serverClient.buscarItensDaMesaSync(numMesa);
+                        List<ItemComandaModel> listaItensMesa = new ArrayList<>();
+                        for (JSONObject itObj : itensMesaJson) {
+                            listaItensMesa.add(new ItemComandaModel(itObj));
+                        }
+                        itensPorMesa.put(numMesa, listaItensMesa);
+                    } catch (Exception e) {
+                        itensPorMesa.put(numMesa, new ArrayList<>());
+                    }
+                }
+
+                // 4. Atualizar o mapa de comandas e associar os itens de cada comanda
                 synchronized (this) {
                     for (JSONObject objCmd : comandasValidas) {
                         String doc = objCmd.optString("DOCUMENTO", "").trim();
@@ -206,6 +231,29 @@ public class MonitorComandasEngine {
                             card.atualizarDados(objCmd);
                             card.setEntregue(comandasEntregues.contains(chave));
                         }
+
+                        // Associar os produtos desta comanda específica
+                        List<ItemComandaModel> todosItensMesa = itensPorMesa.get(m);
+                        List<ItemComandaModel> itensDestaComanda = new ArrayList<>();
+                        if (todosItensMesa != null) {
+                            for (ItemComandaModel item : todosItensMesa) {
+                                boolean match = false;
+                                if (!numCmd.isEmpty() && numCmd.equals(item.getNumComanda())) {
+                                    match = true;
+                                } else if (!doc.isEmpty() && doc.equals(item.getDocumento())) {
+                                    match = true;
+                                }
+                                if (match) {
+                                    itensDestaComanda.add(item);
+                                }
+                            }
+
+                            // Fallback caso itens na mesa não tragam numComanda explícito
+                            if (itensDestaComanda.isEmpty() && !todosItensMesa.isEmpty()) {
+                                itensDestaComanda.addAll(todosItensMesa);
+                            }
+                        }
+                        card.setItens(itensDestaComanda);
                     }
 
                     // Remoção automática de comandas que já foram fechadas no servidor

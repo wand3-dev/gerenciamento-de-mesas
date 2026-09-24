@@ -193,8 +193,16 @@ public class MainActivity extends AppCompatActivity {
                 listaComandasFiltradas.add(card);
             } else {
                 boolean matchComanda = card.getNumComanda().contains(busca);
+                boolean matchMesa = card.getMesa() > 0 && String.valueOf(card.getMesa()).contains(busca);
                 boolean matchDoc = card.getDocumento() != null && card.getDocumento().contains(busca);
-                if (matchComanda || matchDoc) {
+                boolean matchItem = false;
+                for (ItemComandaModel it : card.getItens()) {
+                    if (StringHelper.normalizar(it.getDescricao()).contains(busca)) {
+                        matchItem = true;
+                        break;
+                    }
+                }
+                if (matchComanda || matchMesa || matchDoc || matchItem) {
                     listaComandasFiltradas.add(card);
                 }
             }

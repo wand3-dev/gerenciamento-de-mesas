@@ -55,13 +55,55 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     public void onBindViewHolder(@NonNull ComandaViewHolder holder, int position) {
         ComandaCardModel item = listaComandas.get(position);
 
-        // Identificação limpa e direta da comanda (sem cards)
-        holder.tvComandaNumero.setText("COMANDA #" + item.getNumComanda());
+        // 1. Número da Mesa (em destaque)
+        if (item.getMesa() > 0) {
+            holder.tvComandaMesa.setVisibility(View.VISIBLE);
+            holder.tvComandaMesa.setText(String.format(java.util.Locale.getDefault(), "MESA %02d", item.getMesa()));
+        } else {
+            holder.tvComandaMesa.setVisibility(View.GONE);
+        }
 
-        // Cronômetro de espera em tempo real
+        // 2. Número da Comanda
+        holder.tvComandaNumero.setText("CMD #" + item.getNumComanda());
+
+        // 3. Cronômetro de espera em tempo real
         holder.tvComandaTempo.setText("⏱ " + item.getTempoFormatado());
 
-        // Resumo rápido de itens e valor
+        // 4. Itens / Produtos da Comanda (exibidos diretamente no Home)
+        holder.layoutItensComanda.removeAllViews();
+        List<ItemComandaModel> itens = item.getItens();
+        if (itens != null && !itens.isEmpty()) {
+            holder.layoutItensComanda.setVisibility(View.VISIBLE);
+            for (ItemComandaModel prod : itens) {
+                View linhaView = inflater.inflate(R.layout.item_linha_produto, holder.layoutItensComanda, false);
+                TextView tvDescricaoPreco = linhaView.findViewById(R.id.tvDescricaoPreco);
+                TextView tvObs = linhaView.findViewById(R.id.tvObs);
+
+                tvDescricaoPreco.setText(prod.getTextoLinha());
+                if (prod.hasObs()) {
+                    tvObs.setVisibility(View.VISIBLE);
+                    tvObs.setText("↳ Obs: " + prod.getObs());
+                } else {
+                    tvObs.setVisibility(View.GONE);
+                }
+                holder.layoutItensComanda.addView(linhaView);
+            }
+        } else {
+            // Se ainda não carregou ou não possui lista detalhada de itens
+            if (item.getQtdeItens() > 0) {
+                holder.layoutItensComanda.setVisibility(View.VISIBLE);
+                TextView tvSimples = new TextView(context);
+                tvSimples.setText(item.getQtdeItens() + " item(ns) lançado(s)");
+                tvSimples.setTextColor(Color.parseColor("#64748B"));
+                tvSimples.setTextSize(12f);
+                tvSimples.setPadding(0, 2, 0, 2);
+                holder.layoutItensComanda.addView(tvSimples);
+            } else {
+                holder.layoutItensComanda.setVisibility(View.GONE);
+            }
+        }
+
+        // 5. Resumo de Quantidade e Valor Total
         holder.tvComandaQtdeItens.setText(item.getItensCountFormatado());
         holder.tvComandaTotalValor.setText(item.getTotalFormatado());
 
@@ -72,7 +114,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
             holder.tvComandaDocumento.setVisibility(View.GONE);
         }
 
-        // Estado do botão de entrega e visual da linha (aberta no topo vs entregue no final)
+        // 6. Botão de Entrega e estilo visual (Aberta vs Entregue)
         if (item.isEntregue()) {
             holder.btnComandaEntregue.setText("✓ ENTREGUE");
             holder.btnComandaEntregue.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#475569")));
@@ -114,8 +156,10 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
 
     public static class ComandaViewHolder extends RecyclerView.ViewHolder {
         LinearLayout layoutComandaItem;
+        TextView tvComandaMesa;
         TextView tvComandaNumero;
         TextView tvComandaTempo;
+        LinearLayout layoutItensComanda;
         TextView tvComandaQtdeItens;
         TextView tvComandaTotalValor;
         TextView tvComandaDocumento;
@@ -124,8 +168,10 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
         public ComandaViewHolder(@NonNull View itemView) {
             super(itemView);
             layoutComandaItem = itemView.findViewById(R.id.layoutComandaItem);
+            tvComandaMesa = itemView.findViewById(R.id.tvComandaMesa);
             tvComandaNumero = itemView.findViewById(R.id.tvComandaNumero);
             tvComandaTempo = itemView.findViewById(R.id.tvComandaTempo);
+            layoutItensComanda = itemView.findViewById(R.id.layoutItensComanda);
             tvComandaQtdeItens = itemView.findViewById(R.id.tvComandaQtdeItens);
             tvComandaTotalValor = itemView.findViewById(R.id.tvComandaTotalValor);
             tvComandaDocumento = itemView.findViewById(R.id.tvComandaDocumento);
