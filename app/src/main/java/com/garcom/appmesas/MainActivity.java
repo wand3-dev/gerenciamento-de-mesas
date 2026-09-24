@@ -34,11 +34,12 @@ public class MainActivity extends AppCompatActivity {
 
     // Monitor de Comandas em Tempo Real
     private TextView tvStatusServidorPill, tvUltimaSincronizacao, btnConfigIpPorta, btnToggleSomAlerta;
+    private TextView btnFiltroTodas, btnFiltroPendentes, tvMetricaResumo;
+    private boolean ocultarEntregues = false;
     private MaterialButton btnLigarServidor;
     private View layoutEmptyServidor, layoutConnectingServidor;
     private MaterialButton btnEmptyLigarServidor;
     private TextView tvEmptyServidorTitulo, tvEmptyServidorDesc;
-    private TextView tvTabMonitorTitulo;
     private RecyclerView rvComandasMonitoradas;
     private ComandasMonitoradasAdapter adapterComandas;
     private final List<ComandaCardModel> listaComandasMonitoradas = new ArrayList<>();
@@ -80,7 +81,6 @@ public class MainActivity extends AppCompatActivity {
         btnToggleSomAlerta = findViewById(R.id.btnToggleSomAlerta);
         btnLigarServidor = findViewById(R.id.btnLigarServidor);
         tvNomeUsuarioLogado = findViewById(R.id.tvNomeUsuarioLogado);
-        tvTabMonitorTitulo = findViewById(R.id.tvTabMonitorTitulo);
 
         if (btnToggleSomAlerta != null) {
             boolean somAtivo = spSettings.getBoolean("som_nova_comanda", true);
@@ -95,6 +95,31 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     Toast.makeText(this, "🔕 Som de nova comanda DESATIVADO", Toast.LENGTH_SHORT).show();
                 }
+            });
+        }
+
+        btnFiltroTodas = findViewById(R.id.btnFiltroTodas);
+        btnFiltroPendentes = findViewById(R.id.btnFiltroPendentes);
+        tvMetricaResumo = findViewById(R.id.tvMetricaResumo);
+
+        ocultarEntregues = spSettings.getBoolean("ocultar_entregues", false);
+        atualizarVisualFiltroChips();
+
+        if (btnFiltroTodas != null) {
+            btnFiltroTodas.setOnClickListener(v -> {
+                ocultarEntregues = false;
+                spSettings.edit().putBoolean("ocultar_entregues", false).apply();
+                atualizarVisualFiltroChips();
+                filtrarEAtualizarComandas();
+            });
+        }
+
+        if (btnFiltroPendentes != null) {
+            btnFiltroPendentes.setOnClickListener(v -> {
+                ocultarEntregues = true;
+                spSettings.edit().putBoolean("ocultar_entregues", true).apply();
+                atualizarVisualFiltroChips();
+                filtrarEAtualizarComandas();
             });
         }
 
@@ -151,6 +176,26 @@ public class MainActivity extends AppCompatActivity {
                 VibrationHelper.vibrateTick(MainActivity.this);
                 if (monitorEngine != null) {
                     monitorEngine.alternarItemChecado(comanda.getId(), item.getItemKey(comanda.getId()));
+
+                    // Auto-concluir comanda se todos os itens forem checados
+                    List<ItemComandaModel> itens = comanda.getItens();
+                    if (itens != null && !itens.isEmpty()) {
+                        boolean todosChecados = true;
+                        for (ItemComandaModel it : itens) {
+                            if (!it.isChecado()) {
+                                todosChecados = false;
+                                break;
+                            }
+                        }
+                        if (todosChecados && !comanda.isEntregue()) {
+                            monitorEngine.alternarEntregueComanda(comanda.getId());
+                            VibrationHelper.vibrateSuccess(MainActivity.this);
+                            Toast.makeText(MainActivity.this, "⚡ Comanda #" + comanda.getNumComanda() + " concluída!", Toast.LENGTH_SHORT).show();
+                        } else if (!todosChecados && comanda.isEntregue()) {
+                            monitorEngine.alternarEntregueComanda(comanda.getId());
+                            Toast.makeText(MainActivity.this, "Comanda #" + comanda.getNumComanda() + " reaberta.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
                 }
             }
         });
@@ -202,12 +247,53 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void atualizarVisualFiltroChips() {
+        if (btnFiltroTodas != null) {
+            btnFiltroTodas.setBackgroundResource(ocultarEntregues ? R.drawable.bg_filter_chip_inactive : R.drawable.bg_filter_chip_active);
+            btnFiltroTodas.setTextColor(Color.parseColor(ocultarEntregues ? "#64748B" : "#FFFFFF"));
+        }
+        if (btnFiltroPendentes != null) {
+            btnFiltroPendentes.setBackgroundResource(ocultarEntregues ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
+            btnFiltroPendentes.setTextColor(Color.parseColor(ocultarEntregues ? "#FFFFFF" : "#64748B"));
+        }
+    }
+
     private void filtrarEAtualizarComandas() {
         listaComandasFiltradas.clear();
         String busca = StringHelper.normalizar(queryBusca.trim());
 
+        int totalPendentes = 0;
+        int totalEntregues = 0;
+        long somaMinutosPendentes = 0;
+
+        for (ComandaCardModel card : listaComandasMonitoradas) {
+            if (card.isEntregue()) {
+                totalEntregues++;
+            } else {
+                totalPendentes++;
+                somaMinutosPendentes += card.getMinutosDecorridos();
+            }
+        }
+
+        long mediaMinutos = totalPendentes > 0 ? (somaMinutosPendentes / totalPendentes) : 0;
+        if (tvMetricaResumo != null) {
+            tvMetricaResumo.setText(String.format(java.util.Locale.getDefault(), "⏱️ Média: %02dm • ✓ %d", mediaMinutos, totalEntregues));
+        }
+
+        if (btnFiltroTodas != null) {
+            btnFiltroTodas.setText("📋 TODAS (" + listaComandasMonitoradas.size() + ")");
+        }
+        if (btnFiltroPendentes != null) {
+            btnFiltroPendentes.setText("⏳ PENDENTES (" + totalPendentes + ")");
+        }
+
         Set<String> chavesInseridas = new HashSet<>();
         for (ComandaCardModel card : listaComandasMonitoradas) {
+            // Se o filtro de ocultar entregues estiver ativo, ignora as entregues
+            if (ocultarEntregues && card.isEntregue()) {
+                continue;
+            }
+
             String chave = card.getId();
             if (chavesInseridas.contains(chave)) {
                 continue; // Não deixa comandas repetirem
@@ -243,10 +329,6 @@ public class MainActivity extends AppCompatActivity {
 
         if (adapterComandas != null) {
             adapterComandas.notifyDataSetChanged();
-        }
-
-        if (tvTabMonitorTitulo != null) {
-            tvTabMonitorTitulo.setText("📋 COMANDAS ABERTAS (" + listaComandasMonitoradas.size() + ")");
         }
 
         atualizarVisibilidadeMonitor();
