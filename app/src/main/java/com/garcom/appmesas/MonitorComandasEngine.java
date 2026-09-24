@@ -29,6 +29,8 @@ public class MonitorComandasEngine {
     private final Context context;
     private final ServerComandasClient serverClient;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final java.util.concurrent.ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private java.util.concurrent.ScheduledFuture<?> scheduledPollingTask;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private EstadoServidor estado = EstadoServidor.OFFLINE;
@@ -166,15 +168,20 @@ public class MonitorComandasEngine {
     public synchronized void ligarServidor() {
         if (ativo && estado == EstadoServidor.ONLINE) return;
         ativo = true;
+        MonitorComandasService.iniciar(context);
         setEstado(EstadoServidor.CONNECTING, "CONECTANDO...");
         executarCicloPolling();
     }
 
     public synchronized void desligarServidor() {
         ativo = false;
+        if (scheduledPollingTask != null) {
+            scheduledPollingTask.cancel(false);
+        }
         if (runnablePolling != null) {
             mainHandler.removeCallbacks(runnablePolling);
         }
+        MonitorComandasService.parar(context);
         setEstado(EstadoServidor.OFFLINE, "LIGAR SERVIDOR");
     }
 
@@ -324,14 +331,16 @@ public class MonitorComandasEngine {
                     salvarComandasEntregues();
                 }
 
-                // Toca som de sino de pedido e vibração se novas comandas foram abertas
+                // Toca som de sino de pedido, vibração e notificação no sistema se novas comandas foram abertas
                 if (!primeiraConsulta && novasComandasDetectadas > 0) {
                     final int qtdNovas = novasComandasDetectadas;
                     final String descNova = descricaoPrimeiraNova;
                     mainHandler.post(() -> {
                         NotificationHelper.tocarSinoNovaComanda(context);
-                        String msg = (qtdNovas == 1) ? ("🔔 Nova comanda: " + descNova) : ("🔔 " + qtdNovas + " novas comandas abertas!");
-                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show();
+                        String titulo = (qtdNovas == 1) ? ("🔔 Nova comanda: " + descNova) : ("🔔 " + qtdNovas + " novas comandas abertas!");
+                        String texto = "Toque para abrir e verificar os itens no monitor.";
+                        NotificationHelper.notificarNovaComandaAberta(context, titulo, texto);
+                        android.widget.Toast.makeText(context, titulo, android.widget.Toast.LENGTH_SHORT).show();
                     });
                 }
                 primeiraConsulta = false;
@@ -353,10 +362,17 @@ public class MonitorComandasEngine {
                 setEstado(EstadoServidor.ERROR, "ERRO DE CONEXÃO: " + msgErro);
             } finally {
                 pollingEmExecucao = false;
-                // Agenda o próximo ciclo de polling para daqui a 10 segundos
+                // Agenda o próximo ciclo de verificação para exatamente 10 segundos em segundo plano
                 if (ativo) {
-                    runnablePolling = () -> executarCicloPolling();
-                    mainHandler.postDelayed(runnablePolling, 10000);
+                    try {
+                        if (scheduledPollingTask != null && !scheduledPollingTask.isDone()) {
+                            scheduledPollingTask.cancel(false);
+                        }
+                        scheduledPollingTask = scheduler.schedule(this::executarCicloPolling, 10, java.util.concurrent.TimeUnit.SECONDS);
+                    } catch (Exception e) {
+                        runnablePolling = this::executarCicloPolling;
+                        mainHandler.postDelayed(runnablePolling, 10000);
+                    }
                 }
             }
         });

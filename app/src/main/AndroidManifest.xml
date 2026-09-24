@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:name=".AppMesasApplication"
@@ -57,7 +58,7 @@
             android:parentActivityName=".MainActivity" />
 
         <service
-            android:name=".MonitorMesasService"
+            android:name=".MonitorComandasService"
             android:foregroundServiceType="dataSync"
             android:exported="false" />
 

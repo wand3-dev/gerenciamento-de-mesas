@@ -1,6 +1,7 @@
 package com.garcom.appmesas;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -9,6 +10,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -246,9 +248,11 @@ public class MainActivity extends AppCompatActivity {
             monitorEngine.registrarCallback(monitorCallback);
         }
 
-        // Inicia automaticamente o monitoramento de comandas ao abrir o app
+        // Inicia automaticamente o monitoramento de comandas e o serviço em segundo plano ao abrir o app
         if (monitorEngine != null && !monitorEngine.isAtivo()) {
             monitorEngine.ligarServidor();
+        } else {
+            MonitorComandasService.iniciar(this);
         }
     }
 
@@ -596,6 +600,23 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFICACOES);
+            }
+        }
+
+        // Permite funcionamento ininterrupto em segundo plano (isenção de otimização de bateria do sistema)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            android.content.SharedPreferences sp = getSharedPreferences("app_settings", MODE_PRIVATE);
+            boolean jaPediuBateria = sp.getBoolean("pediu_otimizacao_bateria", false);
+            if (!jaPediuBateria) {
+                sp.edit().putBoolean("pediu_otimizacao_bateria", true).apply();
+                try {
+                    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                    if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                        Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                        intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+                        startActivity(intent);
+                    }
+                } catch (Exception ignored) {}
             }
         }
     }
