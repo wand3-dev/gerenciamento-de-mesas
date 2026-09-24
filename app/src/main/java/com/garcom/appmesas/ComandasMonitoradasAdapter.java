@@ -3,6 +3,7 @@ package com.garcom.appmesas;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +26,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     public interface OnComandaActionListener {
         void onComandaClick(ComandaCardModel comanda);
         void onEntregueClick(ComandaCardModel comanda, int position);
+        void onItemCheckClick(ComandaCardModel comanda, ItemComandaModel item);
     }
 
     public ComandasMonitoradasAdapter(Context context, List<ComandaCardModel> listaComandas, OnComandaActionListener listener) {
@@ -45,7 +47,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     public void onBindViewHolder(@NonNull ComandaViewHolder holder, int position, @NonNull List<Object> payloads) {
         if (!payloads.isEmpty() && payloads.contains(PAYLOAD_TEMPO)) {
             ComandaCardModel item = listaComandas.get(position);
-            holder.tvComandaTempo.setText("⏱ " + item.getTempoFormatado());
+            atualizarVisualTempo(holder, item);
             return;
         }
         super.onBindViewHolder(holder, position, payloads);
@@ -66,30 +68,54 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
         // 2. Número da Comanda
         holder.tvComandaNumero.setText("CMD #" + item.getNumComanda());
 
-        // 3. Cronômetro de espera em tempo real
-        holder.tvComandaTempo.setText("⏱ " + item.getTempoFormatado());
+        // 3. Cronômetro de espera em tempo real com semáforo de cores
+        atualizarVisualTempo(holder, item);
 
-        // 4. Itens / Produtos da Comanda (exibidos diretamente no Home)
+        // 4. Itens / Produtos da Comanda com baixa individual (Checkbox / Risco)
         holder.layoutItensComanda.removeAllViews();
         List<ItemComandaModel> itens = item.getItens();
         if (itens != null && !itens.isEmpty()) {
             holder.layoutItensComanda.setVisibility(View.VISIBLE);
             for (ItemComandaModel prod : itens) {
                 View linhaView = inflater.inflate(R.layout.item_linha_produto, holder.layoutItensComanda, false);
+                TextView tvItemCheck = linhaView.findViewById(R.id.tvItemCheck);
                 TextView tvDescricaoPreco = linhaView.findViewById(R.id.tvDescricaoPreco);
                 TextView tvObs = linhaView.findViewById(R.id.tvObs);
 
                 tvDescricaoPreco.setText(prod.getTextoLinha());
+
+                // Estado de checado (entrega parcial)
+                if (prod.isChecado()) {
+                    tvItemCheck.setText("✓");
+                    tvItemCheck.setTextColor(Color.parseColor("#059669"));
+                    tvDescricaoPreco.setPaintFlags(tvDescricaoPreco.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                    tvDescricaoPreco.setTextColor(Color.parseColor("#94A3B8"));
+                    tvObs.setTextColor(Color.parseColor("#CBD5E1"));
+                } else {
+                    tvItemCheck.setText("○");
+                    tvItemCheck.setTextColor(Color.parseColor("#CBD5E1"));
+                    tvDescricaoPreco.setPaintFlags(tvDescricaoPreco.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                    tvDescricaoPreco.setTextColor(Color.parseColor("#1E293B"));
+                    tvObs.setTextColor(Color.parseColor("#B45309"));
+                }
+
                 if (prod.hasObs()) {
                     tvObs.setVisibility(View.VISIBLE);
                     tvObs.setText("↳ Obs: " + prod.getObs());
                 } else {
                     tvObs.setVisibility(View.GONE);
                 }
+
+                // Clique no produto para dar baixa parcial / riscar o item
+                linhaView.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onItemCheckClick(item, prod);
+                    }
+                });
+
                 holder.layoutItensComanda.addView(linhaView);
             }
         } else {
-            // Se ainda não carregou ou não possui lista detalhada de itens
             if (item.getQtdeItens() > 0) {
                 holder.layoutItensComanda.setVisibility(View.VISIBLE);
                 TextView tvSimples = new TextView(context);
@@ -138,6 +164,33 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
                 listener.onComandaClick(item);
             }
         });
+    }
+
+    /**
+     * Aplica o semáforo de cores no tempo de espera da comanda:
+     * - Verde (< 10 min): no prazo normal
+     * - Amarelo / Laranja (10 a 20 min): atenção / em preparo
+     * - Vermelho (> 20 min): atrasado / prioridade urgente
+     */
+    private void atualizarVisualTempo(ComandaViewHolder holder, ComandaCardModel item) {
+        String tempoStr = "⏱ " + item.getTempoFormatado();
+
+        if (item.isEntregue()) {
+            holder.tvComandaTempo.setText(tempoStr);
+            holder.tvComandaTempo.setTextColor(Color.parseColor("#64748B"));
+        } else {
+            long minutos = item.getMinutosDecorridos();
+            if (minutos < 10) {
+                holder.tvComandaTempo.setText(tempoStr);
+                holder.tvComandaTempo.setTextColor(Color.parseColor("#059669")); // Verde normal
+            } else if (minutos < 20) {
+                holder.tvComandaTempo.setText(tempoStr);
+                holder.tvComandaTempo.setTextColor(Color.parseColor("#D97706")); // Laranja atenção
+            } else {
+                holder.tvComandaTempo.setText(tempoStr + " ⚠️");
+                holder.tvComandaTempo.setTextColor(Color.parseColor("#DC2626")); // Vermelho urgente
+            }
+        }
     }
 
     @Override

@@ -75,4 +75,18 @@ public class ItemComandaModel {
         } catch (Exception ignored) {}
         return vlrQtde + "x " + descricao + " — R$ " + totalFormatado;
     }
+
+    private boolean checado = false;
+    public boolean isChecado() { return checado; }
+    public void setChecado(boolean checado) { this.checado = checado; }
+
+    public String getItemKey(String comandaId) {
+        if (autonum != null && !autonum.isEmpty()) {
+            return comandaId + "_AUT_" + autonum;
+        }
+        if (numItem != null && !numItem.isEmpty()) {
+            return comandaId + "_ITEM_" + numItem + "_" + codProd;
+        }
+        return comandaId + "_PROD_" + codProd + "_" + descricao;
+    }
 }

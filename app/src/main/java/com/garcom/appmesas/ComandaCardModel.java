@@ -144,6 +144,11 @@ public class ComandaCardModel {
         return String.format(Locale.getDefault(), "%02d:%02d:%02d", horas, minutos, segundos);
     }
 
+    public long getMinutosDecorridos() {
+        long decorridoMs = System.currentTimeMillis() - detectedAt;
+        return decorridoMs > 0 ? (decorridoMs / 60000) : 0;
+    }
+
     public String getTotalFormatado() {
         return String.format(Locale.GERMANY, "R$ %.2f", totalValor);
     }

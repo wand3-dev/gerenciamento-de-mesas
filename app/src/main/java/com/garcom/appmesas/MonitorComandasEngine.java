@@ -41,7 +41,9 @@ public class MonitorComandasEngine {
 
     private static final String PREF_MONITOR = "monitor_comandas_prefs";
     private static final String KEY_ENTREGUES = "key_comandas_entregues";
+    private static final String KEY_ITENS_CHECADOS = "key_itens_checados";
     private final Set<String> comandasEntregues = new HashSet<>();
+    private final Set<String> itensChecados = new HashSet<>();
 
     private final List<MonitorCallback> callbacks = new ArrayList<>();
     private Runnable runnablePolling;
@@ -59,11 +61,44 @@ public class MonitorComandasEngine {
         if (salvos != null) {
             comandasEntregues.addAll(salvos);
         }
+        Set<String> itensSalvos = sp.getStringSet(KEY_ITENS_CHECADOS, null);
+        if (itensSalvos != null) {
+            itensChecados.addAll(itensSalvos);
+        }
     }
 
     private void salvarComandasEntregues() {
         android.content.SharedPreferences sp = context.getSharedPreferences(PREF_MONITOR, Context.MODE_PRIVATE);
-        sp.edit().putStringSet(KEY_ENTREGUES, new HashSet<>(comandasEntregues)).apply();
+        sp.edit()
+            .putStringSet(KEY_ENTREGUES, new HashSet<>(comandasEntregues))
+            .putStringSet(KEY_ITENS_CHECADOS, new HashSet<>(itensChecados))
+            .apply();
+    }
+
+    public synchronized void alternarItemChecado(String comandaId, String itemKey) {
+        if (itemKey == null || itemKey.isEmpty()) return;
+        if (itensChecados.contains(itemKey)) {
+            itensChecados.remove(itemKey);
+        } else {
+            itensChecados.add(itemKey);
+        }
+        salvarComandasEntregues();
+
+        ComandaCardModel card = mapaComandas.get(comandaId);
+        if (card != null) {
+            for (ItemComandaModel it : card.getItens()) {
+                if (itemKey.equals(it.getItemKey(card.getId()))) {
+                    it.setChecado(itensChecados.contains(itemKey));
+                }
+            }
+        }
+
+        List<ComandaCardModel> listaFinal = getListaComandas();
+        mainHandler.post(() -> {
+            for (MonitorCallback cb : callbacks) {
+                cb.onComandasAtualizadas(listaFinal, ultimaSincronizacao);
+            }
+        });
     }
 
     public synchronized void alternarEntregueComanda(String idComanda) {
@@ -260,6 +295,10 @@ public class MonitorComandasEngine {
                             if (itensDestaComanda.isEmpty() && !todosItensMesa.isEmpty()) {
                                 itensDestaComanda.addAll(todosItensMesa);
                             }
+                        }
+
+                        for (ItemComandaModel itProd : itensDestaComanda) {
+                            itProd.setChecado(itensChecados.contains(itProd.getItemKey(card.getId())));
                         }
                         card.setItens(itensDestaComanda);
                     }

@@ -145,6 +145,14 @@ public class MainActivity extends AppCompatActivity {
                     monitorEngine.alternarEntregueComanda(comanda.getId());
                 }
             }
+
+            @Override
+            public void onItemCheckClick(ComandaCardModel comanda, ItemComandaModel item) {
+                VibrationHelper.vibrateTick(MainActivity.this);
+                if (monitorEngine != null) {
+                    monitorEngine.alternarItemChecado(comanda.getId(), item.getItemKey(comanda.getId()));
+                }
+            }
         });
         rvComandasMonitoradas.setLayoutManager(new LinearLayoutManager(this));
         rvComandasMonitoradas.setHasFixedSize(true);
