@@ -167,37 +167,18 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onEntregueClick(ComandaCardModel comanda, int position) {
-                VibrationHelper.vibrateSuccess(MainActivity.this);
-                if (monitorEngine != null) {
-                    monitorEngine.alternarEntregueComanda(comanda.getId());
-                }
-            }
-
-            @Override
             public void onItemCheckClick(ComandaCardModel comanda, ItemComandaModel item) {
                 VibrationHelper.vibrateTick(MainActivity.this);
                 if (monitorEngine != null) {
+                    boolean eraEntregue = comanda.isEntregue();
                     monitorEngine.alternarItemChecado(comanda.getId(), item.getItemKey(comanda.getId()));
 
-                    // Auto-concluir comanda se todos os itens forem checados
-                    List<ItemComandaModel> itens = comanda.getItens();
-                    if (itens != null && !itens.isEmpty()) {
-                        boolean todosChecados = true;
-                        for (ItemComandaModel it : itens) {
-                            if (!it.isChecado()) {
-                                todosChecados = false;
-                                break;
-                            }
-                        }
-                        if (todosChecados && !comanda.isEntregue()) {
-                            monitorEngine.alternarEntregueComanda(comanda.getId());
-                            VibrationHelper.vibrateSuccess(MainActivity.this);
-                            Toast.makeText(MainActivity.this, "⚡ Comanda #" + comanda.getNumComanda() + " concluída!", Toast.LENGTH_SHORT).show();
-                        } else if (!todosChecados && comanda.isEntregue()) {
-                            monitorEngine.alternarEntregueComanda(comanda.getId());
-                            Toast.makeText(MainActivity.this, "Comanda #" + comanda.getNumComanda() + " reaberta.", Toast.LENGTH_SHORT).show();
-                        }
+                    // Auto-conclusão: feedback ao usuário se concluiu ou reabriu
+                    if (!eraEntregue && comanda.isEntregue()) {
+                        VibrationHelper.vibrateSuccess(MainActivity.this);
+                        Toast.makeText(MainActivity.this, "⚡ Comanda #" + comanda.getNumComanda() + " concluída!", Toast.LENGTH_SHORT).show();
+                    } else if (eraEntregue && !comanda.isEntregue()) {
+                        Toast.makeText(MainActivity.this, "Comanda #" + comanda.getNumComanda() + " reaberta.", Toast.LENGTH_SHORT).show();
                     }
                 }
             }
@@ -238,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
                     listaComandasMonitoradas.addAll(comandas);
                     filtrarEAtualizarComandas();
                     if (tvUltimaSincronizacao != null && !ultimaSync.isEmpty()) {
-                        tvUltimaSincronizacao.setText("Última sync: " + ultimaSync + " (" + comandas.size() + " comanda(s) aberta(s))");
+                        tvUltimaSincronizacao.setText("Última sync: " + ultimaSync + " (" + listaComandasFiltradas.size() + " comanda(s) com itens)");
                     }
                 });
             }
@@ -271,11 +252,17 @@ public class MainActivity extends AppCompatActivity {
         listaComandasFiltradas.clear();
         String busca = StringHelper.normalizar(queryBusca.trim());
 
+        int totalComandasComItens = 0;
         int totalPendentes = 0;
         int totalEntregues = 0;
         long somaMinutosPendentes = 0;
 
         for (ComandaCardModel card : listaComandasMonitoradas) {
+            // Oculta comandas sem itens
+            if (!card.hasItens()) {
+                continue;
+            }
+            totalComandasComItens++;
             if (card.isEntregue()) {
                 totalEntregues++;
             } else {
@@ -290,7 +277,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (btnFiltroTodas != null) {
-            btnFiltroTodas.setText("📋 TODAS (" + listaComandasMonitoradas.size() + ")");
+            btnFiltroTodas.setText("📋 TODAS (" + totalComandasComItens + ")");
         }
         if (btnFiltroPendentes != null) {
             btnFiltroPendentes.setText("⏳ PENDENTES (" + totalPendentes + ")");
@@ -298,6 +285,11 @@ public class MainActivity extends AppCompatActivity {
 
         Set<String> chavesInseridas = new HashSet<>();
         for (ComandaCardModel card : listaComandasMonitoradas) {
+            // Oculta comandas sem itens
+            if (!card.hasItens()) {
+                continue;
+            }
+
             // Se o filtro de ocultar entregues estiver ativo, ignora as entregues
             if (ocultarEntregues && card.isEntregue()) {
                 continue;

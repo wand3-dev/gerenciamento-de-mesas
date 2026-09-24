@@ -84,7 +84,6 @@ public class MonitorComandasEngine {
         } else {
             itensChecados.add(itemKey);
         }
-        salvarComandasEntregues();
 
         ComandaCardModel card = mapaComandas.get(comandaId);
         if (card != null) {
@@ -93,7 +92,27 @@ public class MonitorComandasEngine {
                     it.setChecado(itensChecados.contains(itemKey));
                 }
             }
+
+            // Auto-concluir se todos os itens estiverem checados, ou reabrir se desmarcar algum
+            List<ItemComandaModel> itens = card.getItens();
+            if (itens != null && !itens.isEmpty()) {
+                boolean todosChecados = true;
+                for (ItemComandaModel it : itens) {
+                    if (!it.isChecado()) {
+                        todosChecados = false;
+                        break;
+                    }
+                }
+                if (todosChecados) {
+                    comandasEntregues.add(comandaId);
+                    card.setEntregue(true);
+                } else {
+                    comandasEntregues.remove(comandaId);
+                    card.setEntregue(false);
+                }
+            }
         }
+        salvarComandasEntregues();
 
         List<ComandaCardModel> listaFinal = getListaComandas();
         mainHandler.post(() -> {
@@ -148,12 +167,18 @@ public class MonitorComandasEngine {
     public boolean isAtivo() { return ativo; }
 
     /**
-     * Retorna a lista de comandas com:
+     * Retorna a lista de comandas com itens:
+     * - Oculta comandas que não têm itens
      * - Comandas abertas (não entregues) no topo (lá pra cima)
      * - Comandas entregues no fim da lista (lá pra baixo)
      */
     public synchronized List<ComandaCardModel> getListaComandas() {
-        List<ComandaCardModel> lista = new ArrayList<>(mapaComandas.values());
+        List<ComandaCardModel> lista = new ArrayList<>();
+        for (ComandaCardModel card : mapaComandas.values()) {
+            if (card.hasItens()) {
+                lista.add(card);
+            }
+        }
         java.util.Collections.sort(lista, (c1, c2) -> {
             // 1. Não entregues primeiro, entregues por último
             if (c1.isEntregue() != c2.isEntregue()) {
@@ -267,19 +292,14 @@ public class MonitorComandasEngine {
                         chavesAtivasNestaConsulta.add(chave);
 
                         ComandaCardModel card = mapaComandas.get(chave);
-                        if (card == null) {
-                            // Nova comanda detectada!
-                            novasComandasDetectadas++;
-                            if (descricaoPrimeiraNova.isEmpty()) {
-                                descricaoPrimeiraNova = "CMD #" + numCmd + (m > 0 ? " (Mesa " + m + ")" : "");
-                            }
+                        boolean ehNova = (card == null);
+                        if (ehNova) {
                             card = new ComandaCardModel(objCmd);
                             card.setEntregue(comandasEntregues.contains(chave));
                             mapaComandas.put(chave, card);
                         } else {
                             // Comanda já existente: preserva detectedAt e atualiza valores/itens
                             card.atualizarDados(objCmd);
-                            card.setEntregue(comandasEntregues.contains(chave));
                         }
 
                         // Associar os produtos desta comanda específica
@@ -304,10 +324,48 @@ public class MonitorComandasEngine {
                             }
                         }
 
+                        boolean todosChecados = !itensDestaComanda.isEmpty();
+                        int itensPendentesNovos = 0;
                         for (ItemComandaModel itProd : itensDestaComanda) {
-                            itProd.setChecado(itensChecados.contains(itProd.getItemKey(card.getId())));
+                            boolean chk = itensChecados.contains(itProd.getItemKey(card.getId()));
+                            itProd.setChecado(chk);
+                            if (!chk) {
+                                todosChecados = false;
+                                itensPendentesNovos++;
+                            }
                         }
                         card.setItens(itensDestaComanda);
+
+                        // Contabiliza como nova comanda para notificação apenas se ela tiver itens
+                        if (ehNova && card.hasItens()) {
+                            novasComandasDetectadas++;
+                            if (descricaoPrimeiraNova.isEmpty()) {
+                                descricaoPrimeiraNova = "CMD #" + numCmd + (m > 0 ? " (Mesa " + m + ")" : "");
+                            }
+                        }
+
+                        // Reabertura automática: se a comanda estava marcada como entregue/concluída, mas surgiram novos pedidos não checados:
+                        boolean estavaEntregue = comandasEntregues.contains(chave);
+                        if (estavaEntregue && !todosChecados && itensPendentesNovos > 0) {
+                            comandasEntregues.remove(chave);
+                            card.setEntregue(false);
+                            card.setDetectedAt(System.currentTimeMillis());
+                            if (!primeiraConsulta) {
+                                final String cmdNum = card.getNumComanda();
+                                final int mesaNum = card.getMesa();
+                                mainHandler.post(() -> {
+                                    NotificationHelper.tocarSinoNovaComanda(context);
+                                    String msg = "🔔 Novos pedidos na CMD #" + cmdNum + (mesaNum > 0 ? " (Mesa " + mesaNum + ")" : "") + "!";
+                                    NotificationHelper.notificarNovaComandaAberta(context, msg, "Novos itens foram lançados na comanda.");
+                                    android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show();
+                                });
+                            }
+                        } else if (todosChecados && !itensDestaComanda.isEmpty()) {
+                            comandasEntregues.add(chave);
+                            card.setEntregue(true);
+                        } else {
+                            card.setEntregue(comandasEntregues.contains(chave));
+                        }
                     }
 
                     // Remoção automática de comandas que já foram fechadas no servidor

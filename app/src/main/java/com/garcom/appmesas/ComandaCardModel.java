@@ -91,6 +91,10 @@ public class ComandaCardModel {
     public boolean isEntregue() { return entregue; }
     public void setEntregue(boolean entregue) { this.entregue = entregue; }
 
+    public boolean hasItens() {
+        return itens != null && !itens.isEmpty();
+    }
+
     public void atualizarDados(JSONObject objAbertas) {
         String totalStr = objAbertas.optString("Total", "0.00").trim().replace(",", ".");
         try {

@@ -11,17 +11,18 @@
     android:clickable="true"
     android:focusable="true">
 
-    <!-- Indicador de Check (Entrega parcial do item) -->
+    <!-- Caixinha de Marcar como Entregue (Checkbox individual do item) -->
     <TextView
         android:id="@+id/tvItemCheck"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="10dp"
         android:gravity="center"
-        android:text="○"
-        android:textColor="#94A3B8"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        android:layout_marginEnd="6dp" />
+        android:background="@drawable/bg_checkbox_unchecked"
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
+        android:textStyle="bold" />
 
     <LinearLayout
         android:layout_width="0dp"

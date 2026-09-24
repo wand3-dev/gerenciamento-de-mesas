@@ -72,23 +72,22 @@
                     android:fontFamily="monospace" />
             </LinearLayout>
 
-            <!-- Botão de Entrega da Comanda -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnComandaEntregue"
+            <!-- Badge de Status: Concluída / Entregue (visível apenas quando todos os itens forem checados) -->
+            <TextView
+                android:id="@+id/tvComandaStatusEntregue"
                 android:layout_width="wrap_content"
-                android:layout_height="38dp"
+                android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="ENTREGAR"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
+                android:background="@drawable/bg_pill_status_livre"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:text="✓ CONCLUÍDA"
+                android:textColor="#059669"
+                android:textSize="11.5sp"
                 android:textStyle="bold"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:minWidth="96dp"
-                app:backgroundTint="#059669"
-                app:cornerRadius="8dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp" />
+                android:visibility="gone" />
         </LinearLayout>
 
         <!-- Container dos Itens da Comanda (Produtos lançados) -->

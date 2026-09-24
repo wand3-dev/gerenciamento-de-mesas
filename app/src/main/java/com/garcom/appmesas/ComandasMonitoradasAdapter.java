@@ -25,7 +25,6 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
 
     public interface OnComandaActionListener {
         void onComandaClick(ComandaCardModel comanda);
-        void onEntregueClick(ComandaCardModel comanda, int position);
         void onItemCheckClick(ComandaCardModel comanda, ItemComandaModel item);
     }
 
@@ -84,16 +83,17 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
 
                 tvDescricaoPreco.setText(prod.getTextoLinha());
 
-                // Estado de checado (entrega parcial)
+                // Estado de checado (entrega parcial na caixinha)
                 if (prod.isChecado()) {
+                    tvItemCheck.setBackgroundResource(R.drawable.bg_checkbox_checked);
                     tvItemCheck.setText("✓");
-                    tvItemCheck.setTextColor(Color.parseColor("#059669"));
+                    tvItemCheck.setTextColor(Color.WHITE);
                     tvDescricaoPreco.setPaintFlags(tvDescricaoPreco.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                     tvDescricaoPreco.setTextColor(Color.parseColor("#94A3B8"));
                     tvObs.setTextColor(Color.parseColor("#CBD5E1"));
                 } else {
-                    tvItemCheck.setText("○");
-                    tvItemCheck.setTextColor(Color.parseColor("#CBD5E1"));
+                    tvItemCheck.setBackgroundResource(R.drawable.bg_checkbox_unchecked);
+                    tvItemCheck.setText("");
                     tvDescricaoPreco.setPaintFlags(tvDescricaoPreco.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
                     tvDescricaoPreco.setTextColor(Color.parseColor("#1E293B"));
                     tvObs.setTextColor(Color.parseColor("#B45309"));
@@ -106,7 +106,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
                     tvObs.setVisibility(View.GONE);
                 }
 
-                // Clique no produto para dar baixa parcial / riscar o item
+                // Clique no produto / caixinha para dar baixa parcial / riscar o item
                 linhaView.setOnClickListener(v -> {
                     if (listener != null) {
                         listener.onItemCheckClick(item, prod);
@@ -116,17 +116,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
                 holder.layoutItensComanda.addView(linhaView);
             }
         } else {
-            if (item.getQtdeItens() > 0) {
-                holder.layoutItensComanda.setVisibility(View.VISIBLE);
-                TextView tvSimples = new TextView(context);
-                tvSimples.setText(item.getQtdeItens() + " item(ns) lançado(s)");
-                tvSimples.setTextColor(Color.parseColor("#64748B"));
-                tvSimples.setTextSize(12f);
-                tvSimples.setPadding(0, 2, 0, 2);
-                holder.layoutItensComanda.addView(tvSimples);
-            } else {
-                holder.layoutItensComanda.setVisibility(View.GONE);
-            }
+            holder.layoutItensComanda.setVisibility(View.GONE);
         }
 
         // 5. Resumo de Quantidade e Valor Total
@@ -140,27 +130,20 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
             holder.tvComandaDocumento.setVisibility(View.GONE);
         }
 
-        // 6. Botão de Entrega e estilo visual (Aberta vs Entregue)
+        // 6. Status visual da Comanda (Aberta vs Entregue/Concluída)
         if (item.isEntregue()) {
-            holder.btnComandaEntregue.setText("✓ ENTREGUE");
-            holder.btnComandaEntregue.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#475569")));
+            if (holder.tvComandaStatusEntregue != null) {
+                holder.tvComandaStatusEntregue.setVisibility(View.VISIBLE);
+            }
             holder.layoutComandaItem.setAlpha(0.65f);
             holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#F8FAFC"));
         } else {
-            holder.btnComandaEntregue.setText("ENTREGAR");
-            holder.btnComandaEntregue.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#059669")));
+            if (holder.tvComandaStatusEntregue != null) {
+                holder.tvComandaStatusEntregue.setVisibility(View.GONE);
+            }
             holder.layoutComandaItem.setAlpha(1.0f);
             holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#FFFFFF"));
         }
-
-        holder.btnComandaEntregue.setOnClickListener(v -> {
-            if (listener != null) {
-                int pos = holder.getBindingAdapterPosition();
-                if (pos != RecyclerView.NO_POSITION) {
-                    listener.onEntregueClick(item, pos);
-                }
-            }
-        });
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
@@ -219,7 +202,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
         TextView tvComandaQtdeItens;
         TextView tvComandaTotalValor;
         TextView tvComandaDocumento;
-        MaterialButton btnComandaEntregue;
+        TextView tvComandaStatusEntregue;
 
         public ComandaViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -231,7 +214,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
             tvComandaQtdeItens = itemView.findViewById(R.id.tvComandaQtdeItens);
             tvComandaTotalValor = itemView.findViewById(R.id.tvComandaTotalValor);
             tvComandaDocumento = itemView.findViewById(R.id.tvComandaDocumento);
-            btnComandaEntregue = itemView.findViewById(R.id.btnComandaEntregue);
+            tvComandaStatusEntregue = itemView.findViewById(R.id.tvComandaStatusEntregue);
         }
     }
 }
