@@ -155,7 +155,10 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
 
         holder.btnComandaEntregue.setOnClickListener(v -> {
             if (listener != null) {
-                listener.onEntregueClick(item, holder.getAdapterPosition());
+                int pos = holder.getBindingAdapterPosition();
+                if (pos != RecyclerView.NO_POSITION) {
+                    listener.onEntregueClick(item, pos);
+                }
             }
         });
 

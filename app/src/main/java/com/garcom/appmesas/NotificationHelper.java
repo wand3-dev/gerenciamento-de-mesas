@@ -481,6 +481,12 @@ public class NotificationHelper {
                         }, 250); // intervalo de 250ms entre os toques
                     }
                 });
+                mp.setOnErrorListener((player, what, extra) -> {
+                    try {
+                        player.release();
+                    } catch (Exception ignored) {}
+                    return true;
+                });
                 mp.start();
             }
         } catch (Exception ignored) {}

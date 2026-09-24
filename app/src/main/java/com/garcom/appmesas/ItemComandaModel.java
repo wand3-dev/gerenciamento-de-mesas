@@ -68,12 +68,15 @@ public class ItemComandaModel {
      * 3x PRODUTO — R$ XX,XX
      */
     public String getTextoLinha() {
-        String totalFormatado = vlrTotal;
+        String totalFormatado = (vlrTotal != null && !vlrTotal.isEmpty()) ? vlrTotal : "0,00";
         try {
-            double totalNum = Double.parseDouble(vlrTotal.replace(",", "."));
-            totalFormatado = String.format(java.util.Locale.GERMANY, "%.2f", totalNum);
+            if (vlrTotal != null && !vlrTotal.trim().isEmpty()) {
+                double totalNum = Double.parseDouble(vlrTotal.trim().replace(",", "."));
+                totalFormatado = String.format(java.util.Locale.GERMANY, "%.2f", totalNum);
+            }
         } catch (Exception ignored) {}
-        return vlrQtde + "x " + descricao + " — R$ " + totalFormatado;
+        String desc = (descricao != null && !descricao.isEmpty()) ? descricao : "Item";
+        return vlrQtde + "x " + desc + " — R$ " + totalFormatado;
     }
 
     private boolean checado = false;

@@ -45,7 +45,7 @@ public class MonitorComandasEngine {
     private final Set<String> comandasEntregues = new HashSet<>();
     private final Set<String> itensChecados = new HashSet<>();
 
-    private final List<MonitorCallback> callbacks = new ArrayList<>();
+    private final List<MonitorCallback> callbacks = new java.util.concurrent.CopyOnWriteArrayList<>();
     private Runnable runnablePolling;
     private boolean primeiraConsulta = true;
 
@@ -307,8 +307,17 @@ public class MonitorComandasEngine {
                     Iterator<Map.Entry<String, ComandaCardModel>> it = mapaComandas.entrySet().iterator();
                     while (it.hasNext()) {
                         Map.Entry<String, ComandaCardModel> entry = it.next();
-                        if (!chavesAtivasNestaConsulta.contains(entry.getKey())) {
-                            comandasEntregues.remove(entry.getKey());
+                        String chaveRemovida = entry.getKey();
+                        if (!chavesAtivasNestaConsulta.contains(chaveRemovida)) {
+                            comandasEntregues.remove(chaveRemovida);
+                            // Purga itens checados associados à comanda fechada para liberar memória
+                            String prefixo = chaveRemovida + "_";
+                            Iterator<String> itItens = itensChecados.iterator();
+                            while (itItens.hasNext()) {
+                                if (itItens.next().startsWith(prefixo)) {
+                                    itItens.remove();
+                                }
+                            }
                             it.remove();
                         }
                     }

@@ -143,14 +143,14 @@ public class ServerComandasClient {
             }
         }
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inStream, charset));
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            sb.append(line);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inStream, charset))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+            return sb.toString().trim();
         }
-        reader.close();
-        return sb.toString().trim();
     }
 
     // =========================================================================

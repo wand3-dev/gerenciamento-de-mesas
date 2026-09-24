@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private final List<ComandaCardModel> listaComandasMonitoradas = new ArrayList<>();
     private final List<ComandaCardModel> listaComandasFiltradas = new ArrayList<>();
     private MonitorComandasEngine monitorEngine;
+    private MonitorComandasEngine.MonitorCallback monitorCallback;
 
     // Timer de 1s para o cronômetro individual de cada comanda
     private final Handler timer1sHandler = new Handler(Looper.getMainLooper());
@@ -220,25 +221,29 @@ public class MainActivity extends AppCompatActivity {
         if (tvNomeUsuarioLogado != null) tvNomeUsuarioLogado.setOnClickListener(v -> exibirModalConfigServidor());
 
         // Registrar Callback do Motor de Monitoramento
-        if (monitorEngine != null) {
-            monitorEngine.registrarCallback(new MonitorComandasEngine.MonitorCallback() {
-                @Override
-                public void onEstadoAlterado(EstadoServidor novoEstado, String mensagem) {
-                    runOnUiThread(() -> atualizarUiEstadoServidor(novoEstado, mensagem));
-                }
+        monitorCallback = new MonitorComandasEngine.MonitorCallback() {
+            @Override
+            public void onEstadoAlterado(EstadoServidor novoEstado, String mensagem) {
+                if (isFinishing() || isDestroyed()) return;
+                runOnUiThread(() -> atualizarUiEstadoServidor(novoEstado, mensagem));
+            }
 
-                @Override
-                public void onComandasAtualizadas(List<ComandaCardModel> comandas, String ultimaSync) {
-                    runOnUiThread(() -> {
-                        listaComandasMonitoradas.clear();
-                        listaComandasMonitoradas.addAll(comandas);
-                        filtrarEAtualizarComandas();
-                        if (tvUltimaSincronizacao != null && !ultimaSync.isEmpty()) {
-                            tvUltimaSincronizacao.setText("Última sync: " + ultimaSync + " (" + comandas.size() + " comanda(s) aberta(s))");
-                        }
-                    });
-                }
-            });
+            @Override
+            public void onComandasAtualizadas(List<ComandaCardModel> comandas, String ultimaSync) {
+                if (isFinishing() || isDestroyed()) return;
+                runOnUiThread(() -> {
+                    listaComandasMonitoradas.clear();
+                    listaComandasMonitoradas.addAll(comandas);
+                    filtrarEAtualizarComandas();
+                    if (tvUltimaSincronizacao != null && !ultimaSync.isEmpty()) {
+                        tvUltimaSincronizacao.setText("Última sync: " + ultimaSync + " (" + comandas.size() + " comanda(s) aberta(s))");
+                    }
+                });
+            }
+        };
+
+        if (monitorEngine != null) {
+            monitorEngine.registrarCallback(monitorCallback);
         }
 
         // Inicia automaticamente o monitoramento de comandas ao abrir o app
@@ -405,8 +410,16 @@ public class MainActivity extends AppCompatActivity {
             if (listaComandasFiltradas.isEmpty()) {
                 if (layoutEmptyServidor != null) {
                     layoutEmptyServidor.setVisibility(View.VISIBLE);
-                    if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Nenhuma Comanda Aberta");
-                    if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Não há comandas abertas nas últimas 10 horas registradas no servidor.");
+                    if (ocultarEntregues && !listaComandasMonitoradas.isEmpty()) {
+                        if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Todas Entregues! 🎉");
+                        if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Todas as comandas abertas já foram entregues. Toque em 'TODAS' para revê-las.");
+                    } else if (queryBusca != null && !queryBusca.trim().isEmpty()) {
+                        if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Nenhum Resultado");
+                        if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Nenhuma comanda encontrada para '" + queryBusca.trim() + "'.");
+                    } else {
+                        if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Nenhuma Comanda Aberta");
+                        if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Não há comandas abertas nas últimas 10 horas registradas no servidor.");
+                    }
                     if (btnEmptyLigarServidor != null) btnEmptyLigarServidor.setVisibility(View.GONE);
                 }
                 if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.GONE);
@@ -565,6 +578,17 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         if (runnableTimer1s != null) {
             timer1sHandler.removeCallbacks(runnableTimer1s);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (monitorEngine != null && monitorCallback != null) {
+            monitorEngine.removerCallback(monitorCallback);
+        }
+        if (timer1sHandler != null) {
+            timer1sHandler.removeCallbacksAndMessages(null);
         }
     }
 
