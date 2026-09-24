@@ -498,4 +498,15 @@ public class NotificationHelper {
             }
         } catch (Exception ignored) {}
     }
+
+    public static void tocarSinoNovaComanda(Context context) {
+        if (context == null) return;
+        Context appContext = context.getApplicationContext();
+        android.content.SharedPreferences sp = appContext.getSharedPreferences("app_settings", Context.MODE_PRIVATE);
+        boolean somAtivo = sp.getBoolean("som_nova_comanda", true);
+        if (somAtivo) {
+            tocarAudio(appContext, R.raw.sino_pedido, 1);
+            vibrar(appContext, new long[]{0, 300, 150, 300});
+        }
+    }
 }

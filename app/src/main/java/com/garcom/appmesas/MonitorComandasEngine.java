@@ -45,6 +45,7 @@ public class MonitorComandasEngine {
 
     private final List<MonitorCallback> callbacks = new ArrayList<>();
     private Runnable runnablePolling;
+    private boolean primeiraConsulta = true;
 
     private MonitorComandasEngine(Context context) {
         this.context = context.getApplicationContext();
@@ -199,6 +200,9 @@ public class MonitorComandasEngine {
                     }
                 }
 
+                int novasComandasDetectadas = 0;
+                String descricaoPrimeiraNova = "";
+
                 // 4. Atualizar o mapa de comandas e associar os itens de cada comanda
                 synchronized (this) {
                     for (JSONObject objCmd : comandasValidas) {
@@ -222,7 +226,11 @@ public class MonitorComandasEngine {
 
                         ComandaCardModel card = mapaComandas.get(chave);
                         if (card == null) {
-                            // Nova comanda: inicializa timer individual
+                            // Nova comanda detectada!
+                            novasComandasDetectadas++;
+                            if (descricaoPrimeiraNova.isEmpty()) {
+                                descricaoPrimeiraNova = "CMD #" + numCmd + (m > 0 ? " (Mesa " + m + ")" : "");
+                            }
                             card = new ComandaCardModel(objCmd);
                             card.setEntregue(comandasEntregues.contains(chave));
                             mapaComandas.put(chave, card);
@@ -267,6 +275,18 @@ public class MonitorComandasEngine {
                     }
                     salvarComandasEntregues();
                 }
+
+                // Toca som de sino de pedido e vibração se novas comandas foram abertas
+                if (!primeiraConsulta && novasComandasDetectadas > 0) {
+                    final int qtdNovas = novasComandasDetectadas;
+                    final String descNova = descricaoPrimeiraNova;
+                    mainHandler.post(() -> {
+                        NotificationHelper.tocarSinoNovaComanda(context);
+                        String msg = (qtdNovas == 1) ? ("🔔 Nova comanda: " + descNova) : ("🔔 " + qtdNovas + " novas comandas abertas!");
+                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show();
+                    });
+                }
+                primeiraConsulta = false;
 
                 // Sincronização concluída com sucesso
                 ultimaSincronizacao = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());

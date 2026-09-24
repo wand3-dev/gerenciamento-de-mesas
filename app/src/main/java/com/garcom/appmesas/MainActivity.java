@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQ_NOTIFICACOES = 102;
 
     // Monitor de Comandas em Tempo Real
-    private TextView tvStatusServidorPill, tvUltimaSincronizacao, btnConfigIpPorta;
+    private TextView tvStatusServidorPill, tvUltimaSincronizacao, btnConfigIpPorta, btnToggleSomAlerta;
     private MaterialButton btnLigarServidor;
     private View layoutEmptyServidor, layoutConnectingServidor;
     private MaterialButton btnEmptyLigarServidor;
@@ -77,9 +77,26 @@ public class MainActivity extends AppCompatActivity {
         tvStatusServidorPill = findViewById(R.id.tvStatusServidorPill);
         tvUltimaSincronizacao = findViewById(R.id.tvUltimaSincronizacao);
         btnConfigIpPorta = findViewById(R.id.btnConfigIpPorta);
+        btnToggleSomAlerta = findViewById(R.id.btnToggleSomAlerta);
         btnLigarServidor = findViewById(R.id.btnLigarServidor);
         tvNomeUsuarioLogado = findViewById(R.id.tvNomeUsuarioLogado);
         tvTabMonitorTitulo = findViewById(R.id.tvTabMonitorTitulo);
+
+        if (btnToggleSomAlerta != null) {
+            boolean somAtivo = spSettings.getBoolean("som_nova_comanda", true);
+            atualizarIconeSomAlerta(somAtivo);
+            btnToggleSomAlerta.setOnClickListener(v -> {
+                boolean novoSom = !spSettings.getBoolean("som_nova_comanda", true);
+                spSettings.edit().putBoolean("som_nova_comanda", novoSom).apply();
+                atualizarIconeSomAlerta(novoSom);
+                if (novoSom) {
+                    NotificationHelper.tocarSinoNovaComanda(this);
+                    Toast.makeText(this, "🔔 Som de nova comanda ATIVADO", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "🔕 Som de nova comanda DESATIVADO", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
 
         layoutEmptyServidor = findViewById(R.id.layoutEmptyServidor);
         layoutConnectingServidor = findViewById(R.id.layoutConnectingServidor);
@@ -474,6 +491,13 @@ public class MainActivity extends AppCompatActivity {
             getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         } else {
             getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+    }
+
+    private void atualizarIconeSomAlerta(boolean ativo) {
+        if (btnToggleSomAlerta != null) {
+            btnToggleSomAlerta.setText(ativo ? "🔔" : "🔕");
+            btnToggleSomAlerta.setAlpha(ativo ? 1.0f : 0.55f);
         }
     }
 

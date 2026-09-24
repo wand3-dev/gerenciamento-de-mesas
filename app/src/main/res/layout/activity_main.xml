@@ -109,12 +109,24 @@
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp" />
 
+                <!-- Botão Som de Nova Comanda (Sino / Mudo) -->
+                <TextView
+                    android:id="@+id/btnToggleSomAlerta"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="2dp"
+                    android:gravity="center"
+                    android:text="🔔"
+                    android:textSize="15sp"
+                    android:clickable="true"
+                    android:focusable="true" />
+
                 <!-- Botão Configurações IP -->
                 <TextView
                     android:id="@+id/btnConfigIpPorta"
                     android:layout_width="34dp"
                     android:layout_height="34dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_marginStart="2dp"
                     android:gravity="center"
                     android:text="⚙️"
                     android:textSize="15sp"
