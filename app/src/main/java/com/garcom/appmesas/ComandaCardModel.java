@@ -21,6 +21,7 @@ public class ComandaCardModel {
     private String contato;
     private String cnpjCpf;
     private boolean entregue = false;
+    private boolean favorita = false;
     private final List<ItemComandaModel> itens = new ArrayList<>();
 
     public ComandaCardModel(JSONObject objAbertas) {
@@ -90,6 +91,8 @@ public class ComandaCardModel {
     public List<ItemComandaModel> getItens() { return itens; }
     public boolean isEntregue() { return entregue; }
     public void setEntregue(boolean entregue) { this.entregue = entregue; }
+    public boolean isFavorita() { return favorita; }
+    public void setFavorita(boolean favorita) { this.favorita = favorita; }
 
     public boolean hasItens() {
         return itens != null && !itens.isEmpty();

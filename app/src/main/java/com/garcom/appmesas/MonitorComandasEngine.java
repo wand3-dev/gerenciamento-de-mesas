@@ -44,8 +44,10 @@ public class MonitorComandasEngine {
     private static final String PREF_MONITOR = "monitor_comandas_prefs";
     private static final String KEY_ENTREGUES = "key_comandas_entregues";
     private static final String KEY_ITENS_CHECADOS = "key_itens_checados";
+    private static final String KEY_FAVORITOS = "key_mesas_favoritas";
     private final Set<String> comandasEntregues = new HashSet<>();
     private final Set<String> itensChecados = new HashSet<>();
+    private final Set<String> favoritos = new HashSet<>();
 
     private final List<MonitorCallback> callbacks = new java.util.concurrent.CopyOnWriteArrayList<>();
     private Runnable runnablePolling;
@@ -67,6 +69,10 @@ public class MonitorComandasEngine {
         if (itensSalvos != null) {
             itensChecados.addAll(itensSalvos);
         }
+        Set<String> favsSalvos = sp.getStringSet(KEY_FAVORITOS, null);
+        if (favsSalvos != null) {
+            favoritos.addAll(favsSalvos);
+        }
     }
 
     private void salvarComandasEntregues() {
@@ -74,7 +80,72 @@ public class MonitorComandasEngine {
         sp.edit()
             .putStringSet(KEY_ENTREGUES, new HashSet<>(comandasEntregues))
             .putStringSet(KEY_ITENS_CHECADOS, new HashSet<>(itensChecados))
+            .putStringSet(KEY_FAVORITOS, new HashSet<>(favoritos))
             .apply();
+    }
+
+    public String obterChaveFavorito(ComandaCardModel card) {
+        if (card == null) return "";
+        if (card.getMesa() > 0) {
+            return "MESA_" + card.getMesa();
+        }
+        return card.getId();
+    }
+
+    public synchronized boolean isFavorito(ComandaCardModel card) {
+        if (card == null) return false;
+        String chaveMesa = (card.getMesa() > 0) ? ("MESA_" + card.getMesa()) : "";
+        return (!chaveMesa.isEmpty() && favoritos.contains(chaveMesa)) || favoritos.contains(card.getId());
+    }
+
+    public synchronized boolean alternarFavorito(ComandaCardModel card) {
+        if (card == null) return false;
+        String chave = obterChaveFavorito(card);
+        boolean eraFav = isFavorito(card);
+        boolean novoEstado = !eraFav;
+        if (eraFav) {
+            favoritos.remove(chave);
+            favoritos.remove(card.getId());
+            if (card.getMesa() > 0) {
+                favoritos.remove("MESA_" + card.getMesa());
+            }
+        } else {
+            favoritos.add(chave);
+        }
+        for (ComandaCardModel c : mapaComandas.values()) {
+            if (obterChaveFavorito(c).equals(chave) || c.getId().equals(card.getId())) {
+                c.setFavorita(novoEstado);
+            }
+        }
+        salvarComandasEntregues();
+        notificarAtualizacaoComandas();
+        return novoEstado;
+    }
+
+    public synchronized void removerFavorito(ComandaCardModel card) {
+        if (card == null) return;
+        String chave = obterChaveFavorito(card);
+        favoritos.remove(chave);
+        favoritos.remove(card.getId());
+        if (card.getMesa() > 0) {
+            favoritos.remove("MESA_" + card.getMesa());
+        }
+        for (ComandaCardModel c : mapaComandas.values()) {
+            if (obterChaveFavorito(c).equals(chave) || c.getId().equals(card.getId())) {
+                c.setFavorita(false);
+            }
+        }
+        salvarComandasEntregues();
+        notificarAtualizacaoComandas();
+    }
+
+    private void notificarAtualizacaoComandas() {
+        List<ComandaCardModel> listaFinal = getListaComandas();
+        mainHandler.post(() -> {
+            for (MonitorCallback cb : callbacks) {
+                cb.onComandasAtualizadas(listaFinal, ultimaSincronizacao);
+            }
+        });
     }
 
     public synchronized void alternarItemChecado(String comandaId, String itemKey) {
@@ -106,6 +177,10 @@ public class MonitorComandasEngine {
                 if (todosChecados) {
                     comandasEntregues.add(comandaId);
                     card.setEntregue(true);
+                    // REQUISITO: "ao selecionar todos os produtos da mesa favorita, saia auto dos favoritos."
+                    if (isFavorito(card)) {
+                        removerFavorito(card);
+                    }
                 } else {
                     comandasEntregues.remove(comandaId);
                     card.setEntregue(false);
@@ -113,13 +188,7 @@ public class MonitorComandasEngine {
             }
         }
         salvarComandasEntregues();
-
-        List<ComandaCardModel> listaFinal = getListaComandas();
-        mainHandler.post(() -> {
-            for (MonitorCallback cb : callbacks) {
-                cb.onComandasAtualizadas(listaFinal, ultimaSincronizacao);
-            }
-        });
+        notificarAtualizacaoComandas();
     }
 
     public synchronized void alternarEntregueComanda(String idComanda) {
@@ -131,16 +200,14 @@ public class MonitorComandasEngine {
         }
         ComandaCardModel card = mapaComandas.get(idComanda);
         if (card != null) {
-            card.setEntregue(comandasEntregues.contains(idComanda));
+            boolean entregue = comandasEntregues.contains(idComanda);
+            card.setEntregue(entregue);
+            if (entregue && isFavorito(card)) {
+                removerFavorito(card);
+            }
         }
         salvarComandasEntregues();
-
-        List<ComandaCardModel> listaFinal = getListaComandas();
-        mainHandler.post(() -> {
-            for (MonitorCallback cb : callbacks) {
-                cb.onComandasAtualizadas(listaFinal, ultimaSincronizacao);
-            }
-        });
+        notificarAtualizacaoComandas();
     }
 
     public static synchronized MonitorComandasEngine getInstance(Context context) {
@@ -176,6 +243,7 @@ public class MonitorComandasEngine {
         List<ComandaCardModel> lista = new ArrayList<>();
         for (ComandaCardModel card : mapaComandas.values()) {
             if (card.hasItens()) {
+                card.setFavorita(isFavorito(card));
                 lista.add(card);
             }
         }
@@ -184,7 +252,11 @@ public class MonitorComandasEngine {
             if (c1.isEntregue() != c2.isEntregue()) {
                 return c1.isEntregue() ? 1 : -1;
             }
-            // 2. Se ambos têm o mesmo status, ordena pelo tempo de detecção (mais antigas primeiro)
+            // 2. Entre os não entregues, favoritos primeiro!
+            if (!c1.isEntregue() && c1.isFavorita() != c2.isFavorita()) {
+                return c1.isFavorita() ? -1 : 1;
+            }
+            // 3. Se ambos têm o mesmo status, ordena pelo tempo de detecção (mais antigas primeiro)
             return Long.compare(c1.getDetectedAt(), c2.getDetectedAt());
         });
         return lista;
@@ -300,10 +372,12 @@ public class MonitorComandasEngine {
                         if (ehNova) {
                             card = new ComandaCardModel(objCmd);
                             card.setEntregue(comandasEntregues.contains(chave));
+                            card.setFavorita(isFavorito(card));
                             mapaComandas.put(chave, card);
                         } else {
                             // Comanda já existente: preserva detectedAt e atualiza valores/itens
                             card.atualizarDados(objCmd);
+                            card.setFavorita(isFavorito(card));
                         }
 
                         // Associar os produtos desta comanda específica
@@ -367,6 +441,9 @@ public class MonitorComandasEngine {
                         } else if (todosChecados && !itensDestaComanda.isEmpty()) {
                             comandasEntregues.add(chave);
                             card.setEntregue(true);
+                            if (isFavorito(card)) {
+                                removerFavorito(card);
+                            }
                         } else {
                             card.setEntregue(comandasEntregues.contains(chave));
                         }

@@ -204,7 +204,7 @@
     </LinearLayout>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         3. FILTROS RÁPIDOS (TODAS vs PENDENTES) & MÉTRICAS DO TURNO
+         3. FILTROS RÁPIDOS (TODAS vs FAVORITAS vs PENDENTES) & MÉTRICAS DO TURNO
     ═══════════════════════════════════════════════════════════════ -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -216,47 +216,74 @@
         android:paddingTop="2dp"
         android:paddingBottom="6dp">
 
-        <TextView
-            android:id="@+id/btnFiltroTodas"
-            android:layout_width="wrap_content"
-            android:layout_height="32dp"
-            android:background="@drawable/bg_filter_chip_active"
-            android:gravity="center"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:text="📋 TODAS (0)"
-            android:textColor="#FFFFFF"
-            android:textSize="11.5sp"
-            android:textStyle="bold"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <TextView
-            android:id="@+id/btnFiltroPendentes"
-            android:layout_width="wrap_content"
-            android:layout_height="32dp"
-            android:layout_marginStart="6dp"
-            android:background="@drawable/bg_filter_chip_inactive"
-            android:gravity="center"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:text="⏳ PENDENTES (0)"
-            android:textColor="#64748B"
-            android:textSize="11.5sp"
-            android:textStyle="bold"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <View
+        <HorizontalScrollView
             android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:scrollbars="none"
+            android:overScrollMode="never">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/btnFiltroTodas"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:background="@drawable/bg_filter_chip_active"
+                    android:gravity="center"
+                    android:paddingStart="11dp"
+                    android:paddingEnd="11dp"
+                    android:text="📋 TODAS (0)"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/btnFiltroFavoritas"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_filter_chip_inactive"
+                    android:gravity="center"
+                    android:paddingStart="11dp"
+                    android:paddingEnd="11dp"
+                    android:text="⭐ FAVORITAS (0)"
+                    android:textColor="#64748B"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/btnFiltroPendentes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_filter_chip_inactive"
+                    android:gravity="center"
+                    android:paddingStart="11dp"
+                    android:paddingEnd="11dp"
+                    android:text="⏳ PENDENTES (0)"
+                    android:textColor="#64748B"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </LinearLayout>
+        </HorizontalScrollView>
 
         <!-- Métrica Rápida do Turno -->
         <LinearLayout
             android:id="@+id/layoutMetricasTurno"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:background="@drawable/bg_dashboard_card_slate"

@@ -88,6 +88,20 @@
                 android:textSize="11.5sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
+
+            <!-- Botão de Favoritar (Estrela para separar as mesas do garçom) -->
+            <TextView
+                android:id="@+id/btnComandaFavorito"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:layout_marginStart="8dp"
+                android:gravity="center"
+                android:text="☆"
+                android:textColor="#94A3B8"
+                android:textSize="20sp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?android:attr/selectableItemBackgroundBorderless" />
         </LinearLayout>
 
         <!-- Container dos Itens da Comanda (Produtos lançados) -->

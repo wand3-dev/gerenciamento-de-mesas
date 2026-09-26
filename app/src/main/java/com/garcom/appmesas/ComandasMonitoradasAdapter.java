@@ -26,6 +26,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     public interface OnComandaActionListener {
         void onComandaClick(ComandaCardModel comanda);
         void onItemCheckClick(ComandaCardModel comanda, ItemComandaModel item);
+        void onFavoritoClick(ComandaCardModel comanda);
     }
 
     public ComandasMonitoradasAdapter(Context context, List<ComandaCardModel> listaComandas, OnComandaActionListener listener) {
@@ -62,10 +63,15 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
         ComandaCardModel item = listaComandas.get(position);
         if (item == null) return;
 
-        // 1. Número da Mesa (em destaque)
+        // 1. Número da Mesa (em destaque, com indicador de favorita se aplicável)
         if (item.getMesa() > 0) {
             holder.tvComandaMesa.setVisibility(View.VISIBLE);
-            holder.tvComandaMesa.setText(String.format(java.util.Locale.getDefault(), "MESA %02d", item.getMesa()));
+            String mesaTxt = String.format(java.util.Locale.getDefault(), "MESA %02d", item.getMesa());
+            if (item.isFavorita()) {
+                holder.tvComandaMesa.setText("⭐ " + mesaTxt);
+            } else {
+                holder.tvComandaMesa.setText(mesaTxt);
+            }
         } else {
             holder.tvComandaMesa.setVisibility(View.GONE);
         }
@@ -155,7 +161,23 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
             holder.tvComandaDocumento.setVisibility(View.GONE);
         }
 
-        // 6. Status visual da Comanda (Aberta vs Entregue/Concluída)
+        // 6. Botão de Favoritar (Estrela)
+        if (holder.btnComandaFavorito != null) {
+            if (item.isFavorita()) {
+                holder.btnComandaFavorito.setText("⭐");
+                holder.btnComandaFavorito.setTextColor(Color.parseColor("#F59E0B"));
+            } else {
+                holder.btnComandaFavorito.setText("☆");
+                holder.btnComandaFavorito.setTextColor(Color.parseColor("#94A3B8"));
+            }
+            holder.btnComandaFavorito.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onFavoritoClick(item);
+                }
+            });
+        }
+
+        // 7. Status visual da Comanda (Aberta vs Entregue/Concluída)
         if (item.isEntregue()) {
             if (holder.tvComandaStatusEntregue != null) {
                 holder.tvComandaStatusEntregue.setVisibility(View.VISIBLE);
@@ -167,7 +189,11 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
                 holder.tvComandaStatusEntregue.setVisibility(View.GONE);
             }
             holder.layoutComandaItem.setAlpha(1.0f);
-            holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#FFFFFF"));
+            if (item.isFavorita()) {
+                holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#FFFDF5")); // Destaque sutil para favorita
+            } else {
+                holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#FFFFFF"));
+            }
         }
 
         holder.itemView.setOnClickListener(v -> {
@@ -231,6 +257,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
         TextView tvComandaTotalValor;
         TextView tvComandaDocumento;
         TextView tvComandaStatusEntregue;
+        TextView btnComandaFavorito;
 
         public ComandaViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -243,6 +270,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
             tvComandaTotalValor = itemView.findViewById(R.id.tvComandaTotalValor);
             tvComandaDocumento = itemView.findViewById(R.id.tvComandaDocumento);
             tvComandaStatusEntregue = itemView.findViewById(R.id.tvComandaStatusEntregue);
+            btnComandaFavorito = itemView.findViewById(R.id.btnComandaFavorito);
         }
     }
 }
