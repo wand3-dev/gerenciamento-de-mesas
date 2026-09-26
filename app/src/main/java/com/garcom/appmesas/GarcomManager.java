@@ -10,9 +10,13 @@ public class GarcomManager {
     private static final Map<String, String> garconsPadrao = new HashMap<>();
 
     static {
-        // Mapeamentos conhecidos
+        // Mapeamentos oficiais dos garçons
+        garconsPadrao.put("40", "Kamila");
+        garconsPadrao.put("65", "Geovana");
         garconsPadrao.put("200", "Cauã");
+        garconsPadrao.put("217", "Miguel");
         garconsPadrao.put("223", "Wanderson");
+        garconsPadrao.put("224", "Lucas");
     }
 
     public static String getNomeGarcom(Context context, String codVend) {
