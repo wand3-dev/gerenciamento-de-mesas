@@ -14,6 +14,7 @@ public class ItemComandaModel {
     private String vlrTotal;
     private String obs;
     private int mesa;
+    private String codVend;
 
     public ItemComandaModel(JSONObject obj) {
         this.autonum = obj.optString("AUTONUM", "").trim();
@@ -43,6 +44,11 @@ public class ItemComandaModel {
                 this.mesa = Integer.parseInt(obj.optString("MESA", "0").trim());
             } catch (Exception ignored) {}
         }
+
+        this.codVend = obj.optString("COD_VEND", "").trim();
+        if (this.codVend.isEmpty()) {
+            this.codVend = obj.optString("cod_vend", "").trim();
+        }
     }
 
     public String getAutonum() { return autonum; }
@@ -56,6 +62,11 @@ public class ItemComandaModel {
     public String getVlrTotal() { return vlrTotal; }
     public String getObs() { return obs; }
     public int getMesa() { return mesa; }
+    public String getCodVend() { return codVend; }
+
+    public boolean hasGarcom() {
+        return codVend != null && !codVend.isEmpty();
+    }
 
     public boolean hasObs() {
         return obs != null && !obs.isEmpty();

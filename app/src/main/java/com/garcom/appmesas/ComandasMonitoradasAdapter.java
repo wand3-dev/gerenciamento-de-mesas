@@ -106,6 +106,22 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
                     tvObs.setVisibility(View.GONE);
                 }
 
+                TextView tvGarcom = linhaView.findViewById(R.id.tvGarcom);
+                if (tvGarcom != null) {
+                    if (prod.hasGarcom()) {
+                        String nome = GarcomManager.getNomeGarcom(context, prod.getCodVend());
+                        tvGarcom.setVisibility(View.VISIBLE);
+                        tvGarcom.setText("👤 " + nome);
+                        if (prod.isChecado()) {
+                            tvGarcom.setTextColor(Color.parseColor("#94A3B8"));
+                        } else {
+                            tvGarcom.setTextColor(Color.parseColor("#0369A1"));
+                        }
+                    } else {
+                        tvGarcom.setVisibility(View.GONE);
+                    }
+                }
+
                 // Clique no produto / caixinha para dar baixa parcial / riscar o item
                 linhaView.setOnClickListener(v -> {
                     if (listener != null) {
