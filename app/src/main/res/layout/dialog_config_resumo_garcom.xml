@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_floating_panel"
+    android:padding="20dp">
+
+    <!-- Cabeçalho -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="👤 "
+            android:textSize="20sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="RESUMO DO GARÇOM"
+            android:textColor="#0F172A"
+            android:textSize="15.5sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.02" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:text="Defina seu código de garçom para visualizar seus pedidos e faturamento do dia no topo da tela inicial."
+        android:textColor="#64748B"
+        android:textSize="11.5sp" />
+
+    <!-- Card de Status do Turno Atual -->
+    <LinearLayout
+        android:id="@+id/layoutCardStatusResumo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="vertical"
+        android:background="#FEF3C7"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tvStatusResumoGarcomNome"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="👤 Nenhum garçom configurado"
+            android:textColor="#92400E"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvStatusResumoGarcomValores"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Pedidos hoje: 0 • Faturamento: R$ 0,00"
+            android:textColor="#B45309"
+            android:textSize="11.5sp" />
+    </LinearLayout>
+
+    <!-- Seleção Rápida de Garçons -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="SELECIONE SEU NOME (EQUIPE)"
+        android:textColor="#0D9488"
+        android:textSize="10.5sp"
+        android:textStyle="bold" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:scrollbars="none"
+        android:overScrollMode="never">
+
+        <LinearLayout
+            android:id="@+id/layoutChipsGarcons"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <!-- Chips injetados dinamicamente via código -->
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Entrada Manual do Código -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="OU DIGITE O CÓDIGO DO GARÇOM"
+        android:textColor="#475569"
+        android:textSize="10.5sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/etCodGarcomResumo"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="4dp"
+        android:background="#F1F5F9"
+        android:hint="Ex: 200, 223, 217..."
+        android:inputType="number"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:textColor="#0F172A"
+        android:textColorHint="#94A3B8"
+        android:textSize="15sp"
+        android:fontFamily="monospace"
+        android:textStyle="bold" />
+
+    <!-- Nome Detectado -->
+    <TextView
+        android:id="@+id/tvNomeGarcomDetectado"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Garçom não identificado"
+        android:textColor="#0369A1"
+        android:textSize="11.5sp"
+        android:textStyle="bold" />
+
+    <!-- Ações e Botões -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <Button
+            android:id="@+id/btnZerarTurnoHoje"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="ZERAR HOJE"
+            android:textColor="#DC2626"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/btnFecharResumoGarcom"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="VOLTAR"
+            android:textColor="#64748B"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSalvarCodGarcom"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:text="CONFIRMAR"
+            android:textColor="#FFFFFF"
+            android:textSize="11.5sp"
+            android:textStyle="bold"
+            app:backgroundTint="#0F172A"
+            app:cornerRadius="8dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp" />
+    </LinearLayout>
+</LinearLayout>

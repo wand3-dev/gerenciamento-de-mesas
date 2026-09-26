@@ -22,6 +22,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -68,6 +69,11 @@ public class MainActivity extends AppCompatActivity {
     private ServerComandasClient serverClient;
     private UpdateChecker updateChecker;
 
+    // Barra de Resumo do Garçom
+    private LinearLayout layoutBarraResumoGarcom;
+    private TextView tvBarraGarcomIdentificacao, tvBarraGarcomSubtitulo;
+    private TextView tvBarraGarcomQtdPedidos, tvBarraGarcomAtivosPendente, tvBarraGarcomFaturamento;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,6 +96,22 @@ public class MainActivity extends AppCompatActivity {
         btnToggleSomAlerta = findViewById(R.id.btnToggleSomAlerta);
         btnLigarServidor = findViewById(R.id.btnLigarServidor);
         tvNomeUsuarioLogado = findViewById(R.id.tvNomeUsuarioLogado);
+
+        // Inicialização da Barra de Resumo do Garçom
+        layoutBarraResumoGarcom = findViewById(R.id.layoutBarraResumoGarcom);
+        tvBarraGarcomIdentificacao = findViewById(R.id.tvBarraGarcomIdentificacao);
+        tvBarraGarcomSubtitulo = findViewById(R.id.tvBarraGarcomSubtitulo);
+        tvBarraGarcomQtdPedidos = findViewById(R.id.tvBarraGarcomQtdPedidos);
+        tvBarraGarcomAtivosPendente = findViewById(R.id.tvBarraGarcomAtivosPendente);
+        tvBarraGarcomFaturamento = findViewById(R.id.tvBarraGarcomFaturamento);
+
+        if (layoutBarraResumoGarcom != null) {
+            layoutBarraResumoGarcom.setOnClickListener(v -> {
+                VibrationHelper.vibrateTick(MainActivity.this);
+                exibirModalResumoGarcom();
+            });
+        }
+        atualizarVisualResumoGarcom();
 
         if (btnToggleSomAlerta != null) {
             boolean somAtivo = spSettings.getBoolean("som_nova_comanda", true);
@@ -189,6 +211,7 @@ public class MainActivity extends AppCompatActivity {
                     boolean eraEntregue = comanda.isEntregue();
                     boolean eraFavorita = comanda.isFavorita();
                     monitorEngine.alternarItemChecado(comanda.getId(), item.getItemKey(comanda.getId()));
+                    atualizarVisualResumoGarcom();
 
                     // Auto-conclusão: feedback ao usuário se concluiu ou reabriu
                     if (!eraEntregue && comanda.isEntregue()) {
@@ -267,6 +290,7 @@ public class MainActivity extends AppCompatActivity {
                     listaComandasMonitoradas.clear();
                     listaComandasMonitoradas.addAll(comandas);
                     filtrarEAtualizarComandas();
+                    atualizarVisualResumoGarcom();
                     if (tvUltimaSincronizacao != null && !ultimaSync.isEmpty()) {
                         tvUltimaSincronizacao.setText("Última sync: " + ultimaSync + " (" + listaComandasFiltradas.size() + " comanda(s) com itens)");
                     }
@@ -611,6 +635,22 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        MaterialButton btnConfigResumoGarcom = dialog.findViewById(R.id.btnConfigResumoGarcom);
+        if (btnConfigResumoGarcom != null) {
+            btnConfigResumoGarcom.setVisibility(View.VISIBLE);
+            String codAtual = ResumoGarcomManager.getCodigoGarcom(this);
+            String nomeAtual = ResumoGarcomManager.getNomeGarcomAtivo(this);
+            if (!codAtual.isEmpty()) {
+                btnConfigResumoGarcom.setText("👤 RESUMO DO GARÇOM: " + (!nomeAtual.isEmpty() ? nomeAtual : ("#" + codAtual)));
+            } else {
+                btnConfigResumoGarcom.setText("👤 RESUMO DO GARÇOM (DEFINIR CÓDIGO)");
+            }
+            btnConfigResumoGarcom.setOnClickListener(v -> {
+                dialog.dismiss();
+                exibirModalResumoGarcom();
+            });
+        }
+
         if (btnCancelar != null) btnCancelar.setOnClickListener(v -> dialog.dismiss());
         if (btnSalvar != null) {
             btnSalvar.setText("SALVAR CONEXÃO");
@@ -814,9 +854,214 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    private void atualizarVisualResumoGarcom() {
+        ResumoGarcomManager.ResumoGarcomDados dados = ResumoGarcomManager.calcularEAtualizar(this, listaComandasMonitoradas);
+        if (tvBarraGarcomIdentificacao != null) {
+            tvBarraGarcomIdentificacao.setText(dados.getTituloGarcom());
+        }
+        if (tvBarraGarcomSubtitulo != null) {
+            if (dados.temCodigoConfigurado()) {
+                if (dados.comandasAtivasAgora > 0) {
+                    tvBarraGarcomSubtitulo.setText("Em " + dados.comandasAtivasAgora + " comanda(s) aberta(s) agora");
+                } else {
+                    tvBarraGarcomSubtitulo.setText("Sem comandas abertas no momento");
+                }
+            } else {
+                tvBarraGarcomSubtitulo.setText("Toque aqui para definir seu código");
+            }
+        }
+        if (tvBarraGarcomQtdPedidos != null) {
+            if (dados.temCodigoConfigurado()) {
+                String pedidosTxt = dados.totalPedidosHoje == 1 ? "1 pedido" : (dados.totalPedidosHoje + " pedidos");
+                tvBarraGarcomQtdPedidos.setText(pedidosTxt);
+            } else {
+                tvBarraGarcomQtdPedidos.setText("--");
+            }
+        }
+        if (tvBarraGarcomAtivosPendente != null) {
+            if (dados.temCodigoConfigurado()) {
+                tvBarraGarcomAtivosPendente.setText(dados.pedidosAbertosAgora + " ativos");
+            } else {
+                tvBarraGarcomAtivosPendente.setText("0 ativos");
+            }
+        }
+        if (tvBarraGarcomFaturamento != null) {
+            if (dados.temCodigoConfigurado()) {
+                tvBarraGarcomFaturamento.setText(dados.getFaturamentoHojeFormatado());
+            } else {
+                tvBarraGarcomFaturamento.setText("R$ 0,00");
+            }
+        }
+    }
+
+    private void exibirModalResumoGarcom() {
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_config_resumo_garcom);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        TextView tvStatusNome = dialog.findViewById(R.id.tvStatusResumoGarcomNome);
+        TextView tvStatusValores = dialog.findViewById(R.id.tvStatusResumoGarcomValores);
+        LinearLayout layoutChips = dialog.findViewById(R.id.layoutChipsGarcons);
+        EditText etCodGarcom = dialog.findViewById(R.id.etCodGarcomResumo);
+        TextView tvNomeDetectado = dialog.findViewById(R.id.tvNomeGarcomDetectado);
+        Button btnZerar = dialog.findViewById(R.id.btnZerarTurnoHoje);
+        Button btnFechar = dialog.findViewById(R.id.btnFecharResumoGarcom);
+        MaterialButton btnSalvar = dialog.findViewById(R.id.btnSalvarCodGarcom);
+
+        String codAtual = ResumoGarcomManager.getCodigoGarcom(this);
+        if (etCodGarcom != null) {
+            etCodGarcom.setText(codAtual);
+            if (!codAtual.isEmpty()) {
+                etCodGarcom.setSelection(codAtual.length());
+            }
+        }
+
+        Runnable atualizarCardStatus = () -> {
+            ResumoGarcomManager.ResumoGarcomDados dados = ResumoGarcomManager.calcularEAtualizar(this, listaComandasMonitoradas);
+            if (tvStatusNome != null) {
+                if (dados.temCodigoConfigurado()) {
+                    tvStatusNome.setText("👤 " + dados.nomeGarcom + " (#" + dados.codigoGarcom + ")");
+                } else {
+                    tvStatusNome.setText("👤 Nenhum garçom configurado");
+                }
+            }
+            if (tvStatusValores != null) {
+                if (dados.temCodigoConfigurado()) {
+                    String ativosTxt = dados.pedidosAbertosAgora > 0 ? (" • " + dados.pedidosAbertosAgora + " ativos agora") : "";
+                    tvStatusValores.setText("Pedidos hoje: " + dados.totalPedidosHoje + " • Faturamento: " + dados.getFaturamentoHojeFormatado() + ativosTxt);
+                } else {
+                    tvStatusValores.setText("Selecione um garçom abaixo para começar a contabilizar.");
+                }
+            }
+        };
+        atualizarCardStatus.run();
+
+        if (etCodGarcom != null && tvNomeDetectado != null) {
+            etCodGarcom.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    String cod = s.toString().trim();
+                    if (cod.isEmpty()) {
+                        tvNomeDetectado.setText("Digite o código do garçom");
+                        tvNomeDetectado.setTextColor(Color.parseColor("#94A3B8"));
+                    } else {
+                        String nome = GarcomManager.getNomeGarcom(MainActivity.this, cod);
+                        tvNomeDetectado.setText("✓ Garçom identificado: " + nome);
+                        tvNomeDetectado.setTextColor(Color.parseColor("#059669"));
+                    }
+                }
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+            String codInicial = etCodGarcom.getText().toString().trim();
+            if (!codInicial.isEmpty()) {
+                tvNomeDetectado.setText("✓ Garçom identificado: " + GarcomManager.getNomeGarcom(this, codInicial));
+                tvNomeDetectado.setTextColor(Color.parseColor("#059669"));
+            }
+        }
+
+        if (layoutChips != null) {
+            layoutChips.removeAllViews();
+            java.util.Map<String, String> garcons = GarcomManager.getGarconsPadrao();
+            for (java.util.Map.Entry<String, String> entry : garcons.entrySet()) {
+                String codG = entry.getKey();
+                String nomeG = entry.getValue();
+
+                TextView chip = new TextView(this);
+                chip.setText(codG + " • " + nomeG);
+                chip.setTextSize(11f);
+                chip.setTypeface(null, android.graphics.Typeface.BOLD);
+                chip.setPadding(26, 14, 26, 14);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                );
+                lp.setMarginEnd(14);
+                chip.setLayoutParams(lp);
+
+                boolean selecionado = codAtual.equals(codG);
+                if (selecionado) {
+                    chip.setBackgroundResource(R.drawable.bg_filter_chip_active);
+                    chip.setTextColor(Color.WHITE);
+                } else {
+                    chip.setBackgroundResource(R.drawable.bg_filter_chip_inactive);
+                    chip.setTextColor(Color.parseColor("#475569"));
+                }
+
+                chip.setOnClickListener(v -> {
+                    if (etCodGarcom != null) {
+                        etCodGarcom.setText(codG);
+                        etCodGarcom.setSelection(codG.length());
+                    }
+                    for (int i = 0; i < layoutChips.getChildCount(); i++) {
+                        View c = layoutChips.getChildAt(i);
+                        if (c instanceof TextView) {
+                            ((TextView) c).setBackgroundResource(R.drawable.bg_filter_chip_inactive);
+                            ((TextView) c).setTextColor(Color.parseColor("#475569"));
+                        }
+                    }
+                    chip.setBackgroundResource(R.drawable.bg_filter_chip_active);
+                    chip.setTextColor(Color.WHITE);
+                });
+
+                layoutChips.addView(chip);
+            }
+        }
+
+        if (btnZerar != null) {
+            btnZerar.setOnClickListener(v -> {
+                String codParaZerar = (etCodGarcom != null) ? etCodGarcom.getText().toString().trim() : "";
+                if (codParaZerar.isEmpty()) codParaZerar = codAtual;
+                if (codParaZerar.isEmpty()) {
+                    Toast.makeText(this, "Nenhum código para zerar", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                final String finalCod = codParaZerar;
+                new AlertDialog.Builder(this)
+                        .setTitle("Zerar Resumo de Hoje?")
+                        .setMessage("Deseja realmente zerar o acumulado de pedidos e faturamento do garçom #" + finalCod + " para o turno de hoje?")
+                        .setPositiveButton("Sim, zerar", (d, which) -> {
+                            ResumoGarcomManager.zerarResumoHoje(MainActivity.this, finalCod);
+                            atualizarCardStatus.run();
+                            atualizarVisualResumoGarcom();
+                            Toast.makeText(MainActivity.this, "✓ Turno de hoje zerado para #" + finalCod, Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Não", null)
+                        .show();
+            });
+        }
+
+        if (btnFechar != null) {
+            btnFechar.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        if (btnSalvar != null) {
+            btnSalvar.setOnClickListener(v -> {
+                String novoCod = (etCodGarcom != null) ? etCodGarcom.getText().toString().trim() : "";
+                if (novoCod.isEmpty()) {
+                    if (etCodGarcom != null) etCodGarcom.setError("Digite o código do garçom");
+                    return;
+                }
+                ResumoGarcomManager.setCodigoGarcom(MainActivity.this, novoCod);
+                atualizarVisualResumoGarcom();
+                String nomeSalvo = GarcomManager.getNomeGarcom(MainActivity.this, novoCod);
+                Toast.makeText(MainActivity.this, "✓ Resumo configurado para: " + nomeSalvo + " (#" + novoCod + ")", Toast.LENGTH_LONG).show();
+                dialog.dismiss();
+            });
+        }
+
+        dialog.show();
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
+        atualizarVisualResumoGarcom();
 
         // Inicia contador suave de segundos a cada 1s para o tempo de espera das comandas
         if (runnableTimer1s == null) {

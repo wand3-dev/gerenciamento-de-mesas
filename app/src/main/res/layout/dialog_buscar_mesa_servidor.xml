@@ -132,6 +132,22 @@
         app:cornerRadius="10dp"
         android:visibility="gone" />
 
+    <!-- Botão Configurar Resumo do Garçom -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnConfigResumoGarcom"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_marginTop="8dp"
+        android:text="👤 RESUMO DO GARÇOM (MEU CÓDIGO)"
+        android:textColor="#D97706"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        app:strokeColor="#F59E0B"
+        app:strokeWidth="1.5dp"
+        app:cornerRadius="10dp"
+        android:visibility="gone" />
+
     <!-- Botões de Ação -->
     <LinearLayout
         android:layout_width="match_parent"

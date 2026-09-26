@@ -66,6 +66,21 @@ public class ItemComandaModel {
     public String getObs() { return obs; }
     public int getMesa() { return mesa; }
     public String getCodVend() { return codVend; }
+    public double getValorTotalNumerico() {
+        try {
+            if (vlrTotal != null && !vlrTotal.trim().isEmpty()) {
+                double val = Double.parseDouble(vlrTotal.trim().replace(",", "."));
+                if (val > 0) return val;
+            }
+        } catch (Exception ignored) {}
+        try {
+            if (vlrPreco != null && !vlrPreco.trim().isEmpty()) {
+                double preco = Double.parseDouble(vlrPreco.trim().replace(",", "."));
+                return preco * Math.max(1, vlrQtde);
+            }
+        } catch (Exception ignored) {}
+        return 0.0;
+    }
 
     public boolean hasGarcom() {
         return codVend != null && !codVend.isEmpty();

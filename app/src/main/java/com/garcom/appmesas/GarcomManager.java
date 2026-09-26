@@ -7,16 +7,20 @@ import java.util.Map;
 
 public class GarcomManager {
     private static final String PREF_GARCONS = "garcons_mapeamento_prefs";
-    private static final Map<String, String> garconsPadrao = new HashMap<>();
+    private static final Map<String, String> garconsPadrao = new java.util.LinkedHashMap<>();
 
     static {
         // Mapeamentos oficiais dos garçons
+        garconsPadrao.put("200", "Cauã");
+        garconsPadrao.put("223", "Wanderson");
+        garconsPadrao.put("217", "Miguel");
+        garconsPadrao.put("224", "Lucas");
         garconsPadrao.put("40", "Kamila");
         garconsPadrao.put("65", "Geovana");
-        garconsPadrao.put("200", "Cauã");
-        garconsPadrao.put("217", "Miguel");
-        garconsPadrao.put("223", "Wanderson");
-        garconsPadrao.put("224", "Lucas");
+    }
+
+    public static Map<String, String> getGarconsPadrao() {
+        return new java.util.LinkedHashMap<>(garconsPadrao);
     }
 
     public static String getNomeGarcom(Context context, String codVend) {
@@ -81,7 +85,7 @@ public class GarcomManager {
         }
     }
 
-    private static String normalizarCodigo(String cod) {
+    public static String normalizarCodigo(String cod) {
         if (cod == null) return "";
         String limpo = cod.trim();
         try {
