@@ -186,10 +186,13 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
             });
         }
 
-        // 7. Status visual da Comanda (Aberta vs Entregue/Concluída)
+        // 7. Status visual da Comanda (Aberta vs Entregue/Concluída) e Alerta de Atraso
         if (item.isEntregue()) {
             if (holder.tvComandaStatusEntregue != null) {
                 holder.tvComandaStatusEntregue.setVisibility(View.VISIBLE);
+            }
+            if (holder.tvComandaStatusAtraso != null) {
+                holder.tvComandaStatusAtraso.setVisibility(View.GONE);
             }
             holder.layoutComandaItem.setAlpha(0.65f);
             holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#F8FAFC"));
@@ -198,10 +201,22 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
                 holder.tvComandaStatusEntregue.setVisibility(View.GONE);
             }
             holder.layoutComandaItem.setAlpha(1.0f);
-            if (item.isFavorita()) {
-                holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#FFFDF5")); // Destaque sutil para favorita
+            long minutos = item.getMinutosDecorridos();
+            if (minutos >= 15) {
+                // Alerta crítico de comanda atrasada (+15 minutos)
+                if (holder.tvComandaStatusAtraso != null) {
+                    holder.tvComandaStatusAtraso.setVisibility(View.VISIBLE);
+                }
+                holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#FEF2F2")); // Destaque avermelhado de atenção
             } else {
-                holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#FFFFFF"));
+                if (holder.tvComandaStatusAtraso != null) {
+                    holder.tvComandaStatusAtraso.setVisibility(View.GONE);
+                }
+                if (item.isFavorita()) {
+                    holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#FFFDF5")); // Destaque sutil para favorita
+                } else {
+                    holder.layoutComandaItem.setBackgroundColor(Color.parseColor("#FFFFFF"));
+                }
             }
         }
 
@@ -215,8 +230,8 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     /**
      * Aplica o semáforo de cores no tempo de espera da comanda:
      * - Verde (< 10 min): no prazo normal
-     * - Amarelo / Laranja (10 a 20 min): atenção / em preparo
-     * - Vermelho (> 20 min): atrasado / prioridade urgente
+     * - Amarelo / Laranja (10 a 14 min): atenção / em preparo
+     * - Vermelho (>= 15 min): atrasado / prioridade urgente
      */
     private void atualizarVisualTempo(ComandaViewHolder holder, ComandaCardModel item) {
         String tempoStr = "⏱ " + item.getTempoFormatado();
@@ -224,17 +239,29 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
         if (item.isEntregue()) {
             holder.tvComandaTempo.setText(tempoStr);
             holder.tvComandaTempo.setTextColor(Color.parseColor("#64748B"));
+            if (holder.tvComandaStatusAtraso != null) {
+                holder.tvComandaStatusAtraso.setVisibility(View.GONE);
+            }
         } else {
             long minutos = item.getMinutosDecorridos();
             if (minutos < 10) {
                 holder.tvComandaTempo.setText(tempoStr);
                 holder.tvComandaTempo.setTextColor(Color.parseColor("#059669")); // Verde normal
-            } else if (minutos < 20) {
+                if (holder.tvComandaStatusAtraso != null) {
+                    holder.tvComandaStatusAtraso.setVisibility(View.GONE);
+                }
+            } else if (minutos < 15) {
                 holder.tvComandaTempo.setText(tempoStr);
                 holder.tvComandaTempo.setTextColor(Color.parseColor("#D97706")); // Laranja atenção
+                if (holder.tvComandaStatusAtraso != null) {
+                    holder.tvComandaStatusAtraso.setVisibility(View.GONE);
+                }
             } else {
                 holder.tvComandaTempo.setText(tempoStr + " ⚠️");
                 holder.tvComandaTempo.setTextColor(Color.parseColor("#DC2626")); // Vermelho urgente
+                if (holder.tvComandaStatusAtraso != null) {
+                    holder.tvComandaStatusAtraso.setVisibility(View.VISIBLE);
+                }
             }
         }
     }
@@ -266,6 +293,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
         TextView tvComandaTotalValor;
         TextView tvComandaDocumento;
         TextView tvComandaStatusEntregue;
+        TextView tvComandaStatusAtraso;
         TextView btnComandaFavorito;
 
         public ComandaViewHolder(@NonNull View itemView) {
@@ -279,6 +307,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
             tvComandaTotalValor = itemView.findViewById(R.id.tvComandaTotalValor);
             tvComandaDocumento = itemView.findViewById(R.id.tvComandaDocumento);
             tvComandaStatusEntregue = itemView.findViewById(R.id.tvComandaStatusEntregue);
+            tvComandaStatusAtraso = itemView.findViewById(R.id.tvComandaStatusAtraso);
             btnComandaFavorito = itemView.findViewById(R.id.btnComandaFavorito);
         }
     }

@@ -382,6 +382,22 @@
                     android:textStyle="bold"
                     android:clickable="true"
                     android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/btnFiltroMeus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_filter_chip_inactive"
+                    android:gravity="center"
+                    android:paddingStart="11dp"
+                    android:paddingEnd="11dp"
+                    android:text="👤 MEUS (0)"
+                    android:textColor="#64748B"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true" />
             </LinearLayout>
         </HorizontalScrollView>
 

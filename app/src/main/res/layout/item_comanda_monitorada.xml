@@ -89,6 +89,23 @@
                 android:textStyle="bold"
                 android:visibility="gone" />
 
+            <!-- Badge de Alerta: Atraso Crítico (+15 min) -->
+            <TextView
+                android:id="@+id/tvComandaStatusAtraso"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_pill_atraso"
+                android:paddingStart="7dp"
+                android:paddingEnd="7dp"
+                android:paddingTop="3dp"
+                android:paddingBottom="3dp"
+                android:text="⚠️ +15m"
+                android:textColor="#FFFFFF"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
             <!-- Botão de Favoritar (Estrela para separar as mesas do garçom) -->
             <TextView
                 android:id="@+id/btnComandaFavorito"

@@ -41,10 +41,11 @@ public class MainActivity extends AppCompatActivity {
     public static final int FILTRO_TODAS = 0;
     public static final int FILTRO_FAVORITAS = 1;
     public static final int FILTRO_PENDENTES = 2;
+    public static final int FILTRO_MEUS = 3;
     private int filtroAtual = FILTRO_TODAS;
 
     private TextView tvStatusServidorPill, tvUltimaSincronizacao, btnConfigIpPorta, btnToggleSomAlerta;
-    private TextView btnFiltroTodas, btnFiltroFavoritas, btnFiltroPendentes, tvMetricaResumo;
+    private TextView btnFiltroTodas, btnFiltroFavoritas, btnFiltroPendentes, btnFiltroMeus, tvMetricaResumo;
     private MaterialButton btnLigarServidor;
     private View layoutEmptyServidor, layoutConnectingServidor;
     private MaterialButton btnEmptyLigarServidor;
@@ -132,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
         btnFiltroTodas = findViewById(R.id.btnFiltroTodas);
         btnFiltroFavoritas = findViewById(R.id.btnFiltroFavoritas);
         btnFiltroPendentes = findViewById(R.id.btnFiltroPendentes);
+        btnFiltroMeus = findViewById(R.id.btnFiltroMeus);
         tvMetricaResumo = findViewById(R.id.tvMetricaResumo);
 
         filtroAtual = spSettings.getInt("filtro_monitor_atual", FILTRO_TODAS);
@@ -159,6 +161,15 @@ public class MainActivity extends AppCompatActivity {
             btnFiltroPendentes.setOnClickListener(v -> {
                 filtroAtual = FILTRO_PENDENTES;
                 spSettings.edit().putInt("filtro_monitor_atual", FILTRO_PENDENTES).apply();
+                atualizarVisualFiltroChips();
+                filtrarEAtualizarComandas();
+            });
+        }
+
+        if (btnFiltroMeus != null) {
+            btnFiltroMeus.setOnClickListener(v -> {
+                filtroAtual = FILTRO_MEUS;
+                spSettings.edit().putInt("filtro_monitor_atual", FILTRO_MEUS).apply();
                 atualizarVisualFiltroChips();
                 filtrarEAtualizarComandas();
             });
@@ -326,6 +337,11 @@ public class MainActivity extends AppCompatActivity {
             btnFiltroPendentes.setBackgroundResource(ativo ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
             btnFiltroPendentes.setTextColor(Color.parseColor(ativo ? "#FFFFFF" : "#64748B"));
         }
+        if (btnFiltroMeus != null) {
+            boolean ativo = (filtroAtual == FILTRO_MEUS);
+            btnFiltroMeus.setBackgroundResource(ativo ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
+            btnFiltroMeus.setTextColor(Color.parseColor(ativo ? "#FFFFFF" : "#64748B"));
+        }
     }
 
     private void filtrarEAtualizarComandas() {
@@ -336,7 +352,9 @@ public class MainActivity extends AppCompatActivity {
         int totalPendentes = 0;
         int totalFavoritas = 0;
         int totalEntregues = 0;
+        int totalMeus = 0;
         long somaMinutosPendentes = 0;
+        String meuCodGarcom = ResumoGarcomManager.getCodigoGarcom(this);
 
         for (ComandaCardModel card : listaComandasMonitoradas) {
             if (card == null) continue;
@@ -354,6 +372,16 @@ public class MainActivity extends AppCompatActivity {
                 totalPendentes++;
                 somaMinutosPendentes += card.getMinutosDecorridos();
             }
+
+            // Contabiliza comandas com pedidos no nome do garçom ativo
+            if (!meuCodGarcom.isEmpty() && card.getItens() != null) {
+                for (ItemComandaModel it : card.getItens()) {
+                    if (it != null && meuCodGarcom.equals(GarcomManager.normalizarCodigo(it.getCodVend()))) {
+                        totalMeus++;
+                        break;
+                    }
+                }
+            }
         }
 
         long mediaMinutos = totalPendentes > 0 ? (somaMinutosPendentes / totalPendentes) : 0;
@@ -369,6 +397,9 @@ public class MainActivity extends AppCompatActivity {
         }
         if (btnFiltroPendentes != null) {
             btnFiltroPendentes.setText("⏳ PENDENTES (" + totalPendentes + ")");
+        }
+        if (btnFiltroMeus != null) {
+            btnFiltroMeus.setText("👤 MEUS (" + totalMeus + ")");
         }
 
         Set<String> chavesInseridas = new HashSet<>();
@@ -386,6 +417,20 @@ public class MainActivity extends AppCompatActivity {
             if (filtroAtual == FILTRO_PENDENTES && card.isEntregue()) {
                 continue;
             }
+            if (filtroAtual == FILTRO_MEUS) {
+                boolean temMeu = false;
+                if (!meuCodGarcom.isEmpty() && card.getItens() != null) {
+                    for (ItemComandaModel it : card.getItens()) {
+                        if (it != null && meuCodGarcom.equals(GarcomManager.normalizarCodigo(it.getCodVend()))) {
+                            temMeu = true;
+                            break;
+                        }
+                    }
+                }
+                if (!temMeu) {
+                    continue;
+                }
+            }
 
             String chave = card.getId();
             if (chavesInseridas.contains(chave)) {
@@ -400,15 +445,27 @@ public class MainActivity extends AppCompatActivity {
                 boolean matchMesa = card.getMesa() > 0 && String.valueOf(card.getMesa()).contains(busca);
                 boolean matchDoc = card.getDocumento() != null && card.getDocumento().contains(busca);
                 boolean matchItem = false;
+                boolean matchGarcom = false;
                 if (card.getItens() != null) {
                     for (ItemComandaModel it : card.getItens()) {
-                        if (it != null && StringHelper.normalizar(it.getDescricao()).contains(busca)) {
-                            matchItem = true;
-                            break;
+                        if (it != null) {
+                            if (StringHelper.normalizar(it.getDescricao()).contains(busca)) {
+                                matchItem = true;
+                            }
+                            if (it.hasGarcom()) {
+                                String codG = GarcomManager.normalizarCodigo(it.getCodVend());
+                                String nomeG = StringHelper.normalizar(GarcomManager.getNomeGarcom(MainActivity.this, codG));
+                                if (codG.contains(busca) || nomeG.contains(busca)) {
+                                    matchGarcom = true;
+                                }
+                            }
+                            if (matchItem || matchGarcom) {
+                                break;
+                            }
                         }
                     }
                 }
-                if (matchComanda || matchMesa || matchDoc || matchItem) {
+                if (matchComanda || matchMesa || matchDoc || matchItem || matchGarcom) {
                     novaFiltrada.add(card);
                 }
             }

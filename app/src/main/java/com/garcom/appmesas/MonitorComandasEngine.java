@@ -48,6 +48,7 @@ public class MonitorComandasEngine {
     private final Set<String> comandasEntregues = new HashSet<>();
     private final Set<String> itensChecados = new HashSet<>();
     private final Set<String> favoritos = new HashSet<>();
+    private final Set<String> comandasAvisadasAtraso = new HashSet<>();
 
     private final List<MonitorCallback> callbacks = new java.util.concurrent.CopyOnWriteArrayList<>();
     private Runnable runnablePolling;
@@ -492,6 +493,41 @@ public class MonitorComandasEngine {
                         NotificationHelper.notificarNovaComandaAberta(context, titulo, texto);
                         android.widget.Toast.makeText(context, titulo, android.widget.Toast.LENGTH_SHORT).show();
                     });
+                }
+
+                // Alerta suave de atraso crítico (+15 minutos) para comandas abertas com pedidos do garçom ativo
+                if (!primeiraConsulta) {
+                    String meuCodGarcom = ResumoGarcomManager.getCodigoGarcom(context);
+                    if (!meuCodGarcom.isEmpty()) {
+                        synchronized (this) {
+                            for (ComandaCardModel card : mapaComandas.values()) {
+                                if (card != null && !card.isEntregue() && card.getMinutosDecorridos() >= 15) {
+                                    String chaveAtraso = "ATRASO_15M_" + card.getId();
+                                    if (!comandasAvisadasAtraso.contains(chaveAtraso)) {
+                                        boolean temPedidoMeu = false;
+                                        if (card.getItens() != null) {
+                                            for (ItemComandaModel it : card.getItens()) {
+                                                if (it != null && meuCodGarcom.equals(GarcomManager.normalizarCodigo(it.getCodVend()))) {
+                                                    temPedidoMeu = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if (temPedidoMeu) {
+                                            comandasAvisadasAtraso.add(chaveAtraso);
+                                            String mesaOuCmd = (card.getMesa() > 0) ? ("Mesa " + card.getMesa()) : ("CMD #" + card.getNumComanda());
+                                            mainHandler.post(() -> {
+                                                VibrationHelper.vibrateLongPress(context);
+                                                NotificationHelper.notificarNovaComandaAberta(context, "⚠️ Atraso: " + mesaOuCmd, "Comanda aberta há mais de 15 minutos!");
+                                                android.widget.Toast.makeText(context, "⚠️ " + mesaOuCmd + " aguardando há mais de 15 min!", android.widget.Toast.LENGTH_SHORT).show();
+                                            });
+                                            break; // Alerta uma por ciclo para manter discreto
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 primeiraConsulta = false;
 
