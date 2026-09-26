@@ -183,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        rvComandasMonitoradas.setLayoutManager(new LinearLayoutManager(this));
+        rvComandasMonitoradas.setLayoutManager(new SafeLinearLayoutManager(this));
         rvComandasMonitoradas.setHasFixedSize(true);
         rvComandasMonitoradas.setAdapter(adapterComandas);
 
@@ -249,7 +249,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void filtrarEAtualizarComandas() {
-        listaComandasFiltradas.clear();
+        List<ComandaCardModel> novaFiltrada = new ArrayList<>();
         String busca = StringHelper.normalizar(queryBusca.trim());
 
         int totalComandasComItens = 0;
@@ -258,6 +258,7 @@ public class MainActivity extends AppCompatActivity {
         long somaMinutosPendentes = 0;
 
         for (ComandaCardModel card : listaComandasMonitoradas) {
+            if (card == null) continue;
             // Oculta comandas sem itens
             if (!card.hasItens()) {
                 continue;
@@ -285,6 +286,7 @@ public class MainActivity extends AppCompatActivity {
 
         Set<String> chavesInseridas = new HashSet<>();
         for (ComandaCardModel card : listaComandasMonitoradas) {
+            if (card == null) continue;
             // Oculta comandas sem itens
             if (!card.hasItens()) {
                 continue;
@@ -302,34 +304,49 @@ public class MainActivity extends AppCompatActivity {
             chavesInseridas.add(chave);
 
             if (busca.isEmpty()) {
-                listaComandasFiltradas.add(card);
+                novaFiltrada.add(card);
             } else {
                 boolean matchComanda = card.getNumComanda().contains(busca);
                 boolean matchMesa = card.getMesa() > 0 && String.valueOf(card.getMesa()).contains(busca);
                 boolean matchDoc = card.getDocumento() != null && card.getDocumento().contains(busca);
                 boolean matchItem = false;
-                for (ItemComandaModel it : card.getItens()) {
-                    if (StringHelper.normalizar(it.getDescricao()).contains(busca)) {
-                        matchItem = true;
-                        break;
+                if (card.getItens() != null) {
+                    for (ItemComandaModel it : card.getItens()) {
+                        if (it != null && StringHelper.normalizar(it.getDescricao()).contains(busca)) {
+                            matchItem = true;
+                            break;
+                        }
                     }
                 }
                 if (matchComanda || matchMesa || matchDoc || matchItem) {
-                    listaComandasFiltradas.add(card);
+                    novaFiltrada.add(card);
                 }
             }
         }
 
         // Ordenação: comandas abertas primeiro (lá pra cima), entregues no final (lá pra baixo)
-        Collections.sort(listaComandasFiltradas, (c1, c2) -> {
+        Collections.sort(novaFiltrada, (c1, c2) -> {
             if (c1.isEntregue() != c2.isEntregue()) {
                 return c1.isEntregue() ? 1 : -1;
             }
             return Long.compare(c1.getDetectedAt(), c2.getDetectedAt());
         });
 
+        listaComandasFiltradas.clear();
+        listaComandasFiltradas.addAll(novaFiltrada);
+
         if (adapterComandas != null) {
-            adapterComandas.notifyDataSetChanged();
+            try {
+                if (rvComandasMonitoradas != null && !rvComandasMonitoradas.isComputingLayout()) {
+                    adapterComandas.notifyDataSetChanged();
+                } else if (rvComandasMonitoradas != null) {
+                    rvComandasMonitoradas.post(() -> {
+                        try {
+                            adapterComandas.notifyDataSetChanged();
+                        } catch (Exception ignored) {}
+                    });
+                }
+            } catch (Exception ignored) {}
         }
 
         atualizarVisibilidadeMonitor();
@@ -558,9 +575,13 @@ public class MainActivity extends AppCompatActivity {
             runnableTimer1s = new Runnable() {
                 @Override
                 public void run() {
-                    if (adapterComandas != null && monitorEngine != null && monitorEngine.isAtivo()) {
-                        adapterComandas.atualizarContadoresSegundos();
-                    }
+                    try {
+                        if (!isFinishing() && !isDestroyed() && rvComandasMonitoradas != null && !rvComandasMonitoradas.isComputingLayout()) {
+                            if (adapterComandas != null && monitorEngine != null && monitorEngine.isAtivo()) {
+                                adapterComandas.atualizarContadoresSegundos();
+                            }
+                        }
+                    } catch (Exception ignored) {}
                     timer1sHandler.postDelayed(this, 1000);
                 }
             };
@@ -589,28 +610,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void verificarEPedirTodasPermissoes() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFICACOES);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFICACOES);
+                }
             }
-        }
-
-        // Permite funcionamento ininterrupto em segundo plano (isenção de otimização de bateria do sistema)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            android.content.SharedPreferences sp = getSharedPreferences("app_settings", MODE_PRIVATE);
-            boolean jaPediuBateria = sp.getBoolean("pediu_otimizacao_bateria", false);
-            if (!jaPediuBateria) {
-                sp.edit().putBoolean("pediu_otimizacao_bateria", true).apply();
-                try {
-                    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-                    if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
-                        Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                        intent.setData(android.net.Uri.parse("package:" + getPackageName()));
-                        startActivity(intent);
-                    }
-                } catch (Exception ignored) {}
-            }
-        }
+        } catch (Exception ignored) {}
     }
 
     private void aplicarKeepScreenOn(boolean keepOn) {
@@ -635,6 +641,24 @@ public class MainActivity extends AppCompatActivity {
         } else {
             btn.setText("💤 MANTER TELA SEMPRE LIGADA: DESLIGADO");
             btn.setTextColor(Color.parseColor("#64748B"));
+        }
+    }
+
+    /**
+     * LinearLayoutManager seguro contra corridas de thread e inconsistencias transitorias do RecyclerView
+     */
+    public static class SafeLinearLayoutManager extends LinearLayoutManager {
+        public SafeLinearLayoutManager(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
+            try {
+                super.onLayoutChildren(recycler, state);
+            } catch (IndexOutOfBoundsException | IllegalStateException e) {
+                // Previne eventuais corridas transitorias do RecyclerView durante updates rapidos
+            }
         }
     }
 }

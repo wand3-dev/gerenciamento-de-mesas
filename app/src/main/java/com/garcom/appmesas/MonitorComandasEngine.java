@@ -193,7 +193,11 @@ public class MonitorComandasEngine {
     public synchronized void ligarServidor() {
         if (ativo && estado == EstadoServidor.ONLINE) return;
         ativo = true;
-        MonitorComandasService.iniciar(context);
+        try {
+            if (!MonitorComandasService.isRodando()) {
+                MonitorComandasService.iniciar(context);
+            }
+        } catch (Throwable ignored) {}
         setEstado(EstadoServidor.CONNECTING, "CONECTANDO...");
         executarCicloPolling();
     }

@@ -30,11 +30,17 @@ public class MonitorComandasService extends Service {
         try {
             Intent intent = new Intent(context, MonitorComandasService.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                ContextCompat.startForegroundService(context, intent);
+                try {
+                    ContextCompat.startForegroundService(context, intent);
+                } catch (Throwable t) {
+                    try {
+                        context.startService(intent);
+                    } catch (Throwable ignored) {}
+                }
             } else {
                 context.startService(intent);
             }
-        } catch (Exception ignored) {}
+        } catch (Throwable ignored) {}
     }
 
     public static void parar(Context context) {
@@ -42,7 +48,7 @@ public class MonitorComandasService extends Service {
         try {
             Intent intent = new Intent(context, MonitorComandasService.class);
             context.stopService(intent);
-        } catch (Exception ignored) {}
+        } catch (Throwable ignored) {}
     }
 
     @Override
@@ -50,19 +56,28 @@ public class MonitorComandasService extends Service {
         super.onCreate();
         servicoRodando = true;
 
-        NotificationHelper.criarCanaisNotificacao(this);
+        try {
+            NotificationHelper.criarCanaisNotificacao(this);
 
-        // Notificação persistente do Foreground Service
-        Notification notif = NotificationHelper.buildMonitorNotification(
-                this,
-                "Monitor de Comandas Ativo",
-                "Sincronizando comandas a cada 10s em segundo plano"
-        );
+            // Notificação persistente do Foreground Service
+            Notification notif = NotificationHelper.buildMonitorNotification(
+                    this,
+                    "Monitor de Comandas Ativo",
+                    "Sincronizando comandas a cada 10s em segundo plano"
+            );
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIF_SERVICE_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-        } else {
-            startForeground(NOTIF_SERVICE_ID, notif);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                try {
+                    startForeground(NOTIF_SERVICE_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+                } catch (Throwable t) {
+                    // Fallback para startForeground padrão caso DATA_SYNC tenha restrição de sistema
+                    startForeground(NOTIF_SERVICE_ID, notif);
+                }
+            } else {
+                startForeground(NOTIF_SERVICE_ID, notif);
+            }
+        } catch (Throwable t) {
+            android.util.Log.e("MonitorComandasService", "Erro ao executar startForeground", t);
         }
 
         // Adquire WakeLock parcial de segurança para manter processamento de rede contínuo
@@ -72,26 +87,34 @@ public class MonitorComandasService extends Service {
                 wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AppMesas:MonitorComandasWakeLock");
                 wakeLock.acquire(10 * 60 * 1000L); // 10 minutos com renovação
             }
-        } catch (Exception ignored) {}
+        } catch (Throwable ignored) {}
 
-        monitorEngine = MonitorComandasEngine.getInstance(this);
+        try {
+            monitorEngine = MonitorComandasEngine.getInstance(this);
 
-        // Atualiza a notificação em tempo real quando as comandas forem atualizadas
-        monitorCallback = new MonitorComandasEngine.MonitorCallback() {
-            @Override
-            public void onEstadoAlterado(EstadoServidor novoEstado, String mensagem) {
-                atualizarNotificacao(novoEstado, monitorEngine.getListaComandas().size(), monitorEngine.getUltimaSincronizacao());
+            // Atualiza a notificação em tempo real quando as comandas forem atualizadas
+            monitorCallback = new MonitorComandasEngine.MonitorCallback() {
+                @Override
+                public void onEstadoAlterado(EstadoServidor novoEstado, String mensagem) {
+                    try {
+                        atualizarNotificacao(novoEstado, monitorEngine.getListaComandas().size(), monitorEngine.getUltimaSincronizacao());
+                    } catch (Throwable ignored) {}
+                }
+
+                @Override
+                public void onComandasAtualizadas(List<ComandaCardModel> comandas, String ultimaSincronizacao) {
+                    try {
+                        atualizarNotificacao(monitorEngine.getEstado(), comandas != null ? comandas.size() : 0, ultimaSincronizacao);
+                    } catch (Throwable ignored) {}
+                }
+            };
+            monitorEngine.registrarCallback(monitorCallback);
+
+            if (!monitorEngine.isAtivo()) {
+                monitorEngine.ligarServidor();
             }
-
-            @Override
-            public void onComandasAtualizadas(List<ComandaCardModel> comandas, String ultimaSincronizacao) {
-                atualizarNotificacao(monitorEngine.getEstado(), comandas.size(), ultimaSincronizacao);
-            }
-        };
-        monitorEngine.registrarCallback(monitorCallback);
-
-        if (!monitorEngine.isAtivo()) {
-            monitorEngine.ligarServidor();
+        } catch (Throwable t) {
+            android.util.Log.e("MonitorComandasService", "Erro ao inicializar MonitorEngine no Service", t);
         }
     }
 

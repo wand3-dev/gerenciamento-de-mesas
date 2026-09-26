@@ -45,8 +45,12 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
     @Override
     public void onBindViewHolder(@NonNull ComandaViewHolder holder, int position, @NonNull List<Object> payloads) {
         if (!payloads.isEmpty() && payloads.contains(PAYLOAD_TEMPO)) {
-            ComandaCardModel item = listaComandas.get(position);
-            atualizarVisualTempo(holder, item);
+            if (position >= 0 && position < listaComandas.size()) {
+                ComandaCardModel item = listaComandas.get(position);
+                if (item != null) {
+                    atualizarVisualTempo(holder, item);
+                }
+            }
             return;
         }
         super.onBindViewHolder(holder, position, payloads);
@@ -54,7 +58,9 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
 
     @Override
     public void onBindViewHolder(@NonNull ComandaViewHolder holder, int position) {
+        if (position < 0 || position >= listaComandas.size()) return;
         ComandaCardModel item = listaComandas.get(position);
+        if (item == null) return;
 
         // 1. Número da Mesa (em destaque)
         if (item.getMesa() > 0) {
@@ -76,60 +82,63 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
         if (itens != null && !itens.isEmpty()) {
             holder.layoutItensComanda.setVisibility(View.VISIBLE);
             for (ItemComandaModel prod : itens) {
-                View linhaView = inflater.inflate(R.layout.item_linha_produto, holder.layoutItensComanda, false);
-                TextView tvItemCheck = linhaView.findViewById(R.id.tvItemCheck);
-                TextView tvDescricaoPreco = linhaView.findViewById(R.id.tvDescricaoPreco);
-                TextView tvObs = linhaView.findViewById(R.id.tvObs);
+                if (prod == null) continue;
+                try {
+                    View linhaView = inflater.inflate(R.layout.item_linha_produto, holder.layoutItensComanda, false);
+                    TextView tvItemCheck = linhaView.findViewById(R.id.tvItemCheck);
+                    TextView tvDescricaoPreco = linhaView.findViewById(R.id.tvDescricaoPreco);
+                    TextView tvObs = linhaView.findViewById(R.id.tvObs);
 
-                tvDescricaoPreco.setText(prod.getTextoLinha());
+                    tvDescricaoPreco.setText(prod.getTextoLinha());
 
-                // Estado de checado (entrega parcial na caixinha)
-                if (prod.isChecado()) {
-                    tvItemCheck.setBackgroundResource(R.drawable.bg_checkbox_checked);
-                    tvItemCheck.setText("✓");
-                    tvItemCheck.setTextColor(Color.WHITE);
-                    tvDescricaoPreco.setPaintFlags(tvDescricaoPreco.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-                    tvDescricaoPreco.setTextColor(Color.parseColor("#94A3B8"));
-                    tvObs.setTextColor(Color.parseColor("#CBD5E1"));
-                } else {
-                    tvItemCheck.setBackgroundResource(R.drawable.bg_checkbox_unchecked);
-                    tvItemCheck.setText("");
-                    tvDescricaoPreco.setPaintFlags(tvDescricaoPreco.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-                    tvDescricaoPreco.setTextColor(Color.parseColor("#1E293B"));
-                    tvObs.setTextColor(Color.parseColor("#B45309"));
-                }
-
-                if (prod.hasObs()) {
-                    tvObs.setVisibility(View.VISIBLE);
-                    tvObs.setText("↳ Obs: " + prod.getObs());
-                } else {
-                    tvObs.setVisibility(View.GONE);
-                }
-
-                TextView tvGarcom = linhaView.findViewById(R.id.tvGarcom);
-                if (tvGarcom != null) {
-                    if (prod.hasGarcom()) {
-                        String nome = GarcomManager.getNomeGarcom(context, prod.getCodVend());
-                        tvGarcom.setVisibility(View.VISIBLE);
-                        tvGarcom.setText("👤 " + nome);
-                        if (prod.isChecado()) {
-                            tvGarcom.setTextColor(Color.parseColor("#94A3B8"));
-                        } else {
-                            tvGarcom.setTextColor(Color.parseColor("#0369A1"));
-                        }
+                    // Estado de checado (entrega parcial na caixinha)
+                    if (prod.isChecado()) {
+                        tvItemCheck.setBackgroundResource(R.drawable.bg_checkbox_checked);
+                        tvItemCheck.setText("✓");
+                        tvItemCheck.setTextColor(Color.WHITE);
+                        tvDescricaoPreco.setPaintFlags(tvDescricaoPreco.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                        tvDescricaoPreco.setTextColor(Color.parseColor("#94A3B8"));
+                        tvObs.setTextColor(Color.parseColor("#CBD5E1"));
                     } else {
-                        tvGarcom.setVisibility(View.GONE);
+                        tvItemCheck.setBackgroundResource(R.drawable.bg_checkbox_unchecked);
+                        tvItemCheck.setText("");
+                        tvDescricaoPreco.setPaintFlags(tvDescricaoPreco.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+                        tvDescricaoPreco.setTextColor(Color.parseColor("#1E293B"));
+                        tvObs.setTextColor(Color.parseColor("#B45309"));
                     }
-                }
 
-                // Clique no produto / caixinha para dar baixa parcial / riscar o item
-                linhaView.setOnClickListener(v -> {
-                    if (listener != null) {
-                        listener.onItemCheckClick(item, prod);
+                    if (prod.hasObs()) {
+                        tvObs.setVisibility(View.VISIBLE);
+                        tvObs.setText("↳ Obs: " + prod.getObs());
+                    } else {
+                        tvObs.setVisibility(View.GONE);
                     }
-                });
 
-                holder.layoutItensComanda.addView(linhaView);
+                    TextView tvGarcom = linhaView.findViewById(R.id.tvGarcom);
+                    if (tvGarcom != null) {
+                        if (prod.hasGarcom()) {
+                            String nome = GarcomManager.getNomeGarcom(context, prod.getCodVend());
+                            tvGarcom.setVisibility(View.VISIBLE);
+                            tvGarcom.setText("👤 " + nome);
+                            if (prod.isChecado()) {
+                                tvGarcom.setTextColor(Color.parseColor("#94A3B8"));
+                            } else {
+                                tvGarcom.setTextColor(Color.parseColor("#0369A1"));
+                            }
+                        } else {
+                            tvGarcom.setVisibility(View.GONE);
+                        }
+                    }
+
+                    // Clique no produto / caixinha para dar baixa parcial / riscar o item
+                    linhaView.setOnClickListener(v -> {
+                        if (listener != null) {
+                            listener.onItemCheckClick(item, prod);
+                        }
+                    });
+
+                    holder.layoutItensComanda.addView(linhaView);
+                } catch (Exception ignored) {}
             }
         } else {
             holder.layoutItensComanda.setVisibility(View.GONE);
@@ -204,9 +213,12 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
      * Atualização suave do cronômetro de todas as comandas a cada segundo
      */
     public void atualizarContadoresSegundos() {
-        if (!listaComandas.isEmpty()) {
-            notifyItemRangeChanged(0, listaComandas.size(), PAYLOAD_TEMPO);
-        }
+        try {
+            int total = listaComandas.size();
+            if (total > 0) {
+                notifyItemRangeChanged(0, total, PAYLOAD_TEMPO);
+            }
+        } catch (Exception ignored) {}
     }
 
     public static class ComandaViewHolder extends RecyclerView.ViewHolder {

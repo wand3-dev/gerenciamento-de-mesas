@@ -23,54 +23,73 @@ public class GarcomManager {
         if (codVend == null || codVend.trim().isEmpty()) {
             return "";
         }
-        String codigo = normalizarCodigo(codVend);
+        try {
+            String codigo = normalizarCodigo(codVend);
+            if (codigo.isEmpty()) return "";
 
-        // 1. Se for o usuário atualmente logado
-        if (context != null) {
-            String codLogado = SessionManager.getCodFunc(context);
-            String nomeLogado = SessionManager.getNomeUsuario(context);
-            if (!codLogado.isEmpty() && codLogado.equals(codigo) && !nomeLogado.isEmpty()) {
-                return primeiroNome(nomeLogado);
+            // 1. Se for o usuário atualmente logado
+            if (context != null) {
+                try {
+                    String codLogado = SessionManager.getCodFunc(context);
+                    String nomeLogado = SessionManager.getNomeUsuario(context);
+                    if (!codLogado.isEmpty() && normalizarCodigo(codLogado).equals(codigo) && !nomeLogado.isEmpty()) {
+                        return primeiroNome(nomeLogado);
+                    }
+                } catch (Exception ignored) {}
+
+                // 2. Procura nas preferências de garçons cadastrados
+                try {
+                    SharedPreferences sp = context.getSharedPreferences(PREF_GARCONS, Context.MODE_PRIVATE);
+                    String nomeSalvo = sp.getString("garcom_" + codigo, "");
+                    if (!nomeSalvo.isEmpty()) {
+                        return primeiroNome(nomeSalvo);
+                    }
+                } catch (Exception ignored) {}
             }
 
-            // 2. Procura nas preferências de garçons cadastrados
-            SharedPreferences sp = context.getSharedPreferences(PREF_GARCONS, Context.MODE_PRIVATE);
-            String nomeSalvo = sp.getString("garcom_" + codigo, "");
-            if (!nomeSalvo.isEmpty()) {
-                return primeiroNome(nomeSalvo);
+            // 3. Procura no mapa padrão
+            if (garconsPadrao.containsKey(codigo)) {
+                return primeiroNome(garconsPadrao.get(codigo));
             }
-        }
 
-        // 3. Procura no mapa padrão
-        if (garconsPadrao.containsKey(codigo)) {
-            return primeiroNome(garconsPadrao.get(codigo));
+            return "Garçom " + codigo;
+        } catch (Exception e) {
+            return "Garçom " + codVend;
         }
-
-        return "Garçom " + codigo;
     }
 
     public static void registrarGarcom(Context context, String codVend, String nome) {
         if (codVend == null || nome == null) return;
-        String cod = codVend.trim();
-        String n = nome.trim();
-        garconsPadrao.put(cod, n);
-        if (context != null) {
-            SharedPreferences sp = context.getSharedPreferences(PREF_GARCONS, Context.MODE_PRIVATE);
-            sp.edit().putString("garcom_" + cod, n).apply();
-        }
+        try {
+            String cod = normalizarCodigo(codVend);
+            String n = nome.trim();
+            garconsPadrao.put(cod, n);
+            if (context != null) {
+                SharedPreferences sp = context.getSharedPreferences(PREF_GARCONS, Context.MODE_PRIVATE);
+                sp.edit().putString("garcom_" + cod, n).apply();
+            }
+        } catch (Exception ignored) {}
     }
 
     private static String primeiroNome(String nomeCompleto) {
         if (nomeCompleto == null || nomeCompleto.trim().isEmpty()) return "";
-        String[] partes = nomeCompleto.trim().split("\\s+");
-        return partes.length > 0 ? partes[0] : nomeCompleto;
+        try {
+            String[] partes = nomeCompleto.trim().split("\\s+");
+            return partes.length > 0 ? partes[0] : nomeCompleto;
+        } catch (Exception e) {
+            return nomeCompleto;
+        }
     }
 
     private static String normalizarCodigo(String cod) {
         if (cod == null) return "";
         String limpo = cod.trim();
         try {
-            return String.valueOf(Integer.parseInt(limpo));
+            if (limpo.contains(".")) {
+                double d = Double.parseDouble(limpo);
+                return String.valueOf((long) d);
+            }
+            return String.valueOf(Long.parseLong(limpo));
         } catch (Exception e) {
             return limpo;
         }
