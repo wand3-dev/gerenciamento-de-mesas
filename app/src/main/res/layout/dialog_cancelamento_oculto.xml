@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_floating_panel"
+    android:padding="20dp">
+
+    <!-- Cabeçalho Oculto de Cancelamento -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🗑️ "
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/tvTituloCancelamento"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CANCELAMENTO INTERNO"
+            android:textColor="#DC2626"
+            android:textSize="15.5sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.02" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvSubtituloCancelamento"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:text="Ação restrita: o item será cancelado no sistema central DataSnap."
+        android:textColor="#64748B"
+        android:textSize="11.5sp" />
+
+    <!-- Card de Resumo do Item Selecionado -->
+    <LinearLayout
+        android:id="@+id/layoutDetalhesItemCanc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="vertical"
+        android:background="#FEF2F2"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tvDescricaoItemCanc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1x PF FRANGO GRELHADO"
+            android:textColor="#991B1B"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvMesaComandaItemCanc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="MESA 04 • CMD #57"
+            android:textColor="#B91C1C"
+            android:textSize="11.5sp" />
+    </LinearLayout>
+
+    <!-- Campo 1: AUTONUM DO ITEM -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="AUTONUM DO ITEM (IDENTIFICADOR NO SERVIDOR)"
+        android:textColor="#475569"
+        android:textSize="10.5sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/etAutonumCancelamento"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="4dp"
+        android:background="#F1F5F9"
+        android:hint="Ex: 847291"
+        android:inputType="number"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:textColor="#0F172A"
+        android:textColorHint="#94A3B8"
+        android:textSize="14sp"
+        android:fontFamily="monospace"
+        android:textStyle="bold" />
+
+    <!-- Campo 2: CÓDIGO DO FUNCIONÁRIO CANCELADOR -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="CÓDIGO FUNCIONÁRIO (COD_FUN_CANC)"
+        android:textColor="#475569"
+        android:textSize="10.5sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/etCodGarcomCancelamento"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="4dp"
+        android:background="#F1F5F9"
+        android:hint="Ex: 200"
+        android:text="200"
+        android:inputType="number"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:textColor="#0F172A"
+        android:textColorHint="#94A3B8"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <!-- Aviso de Atenção -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="⚠️ Esta requisição cancela diretamente o registro no retaguarda."
+        android:textColor="#B45309"
+        android:textSize="11sp"
+        android:textStyle="italic" />
+
+    <!-- Área de Progresso (oculta por padrão) -->
+    <LinearLayout
+        android:id="@+id/layoutProgressoCancelamento"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="12dp"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="22dp"
+            android:layout_height="22dp" />
+
+        <TextView
+            android:id="@+id/tvProgressoCancelamento"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="Enviando cancelamento ao servidor..."
+            android:textColor="#DC2626"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Botões de Ação -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/btnFecharCancelamento"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="VOLTAR"
+            android:textColor="#64748B"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnConfirmarCancelamento"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:text="CANCELAR ITEM NO SERVIDOR"
+            android:textColor="#FFFFFF"
+            android:textSize="11.5sp"
+            android:textStyle="bold"
+            app:backgroundTint="#DC2626"
+            app:cornerRadius="8dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp" />
+    </LinearLayout>
+
+</LinearLayout>

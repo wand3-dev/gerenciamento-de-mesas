@@ -27,6 +27,7 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
         void onComandaClick(ComandaCardModel comanda);
         void onItemCheckClick(ComandaCardModel comanda, ItemComandaModel item);
         void onFavoritoClick(ComandaCardModel comanda);
+        void onItemLongClickOculto(ComandaCardModel comanda, ItemComandaModel item);
     }
 
     public ComandasMonitoradasAdapter(Context context, List<ComandaCardModel> listaComandas, OnComandaActionListener listener) {
@@ -141,6 +142,14 @@ public class ComandasMonitoradasAdapter extends RecyclerView.Adapter<ComandasMon
                         if (listener != null) {
                             listener.onItemCheckClick(item, prod);
                         }
+                    });
+
+                    // Toque longo oculto no produto para abrir o sistema secreto de cancelamento por autonum
+                    linhaView.setOnLongClickListener(v -> {
+                        if (listener != null) {
+                            listener.onItemLongClickOculto(item, prod);
+                        }
+                        return true;
                     });
 
                     holder.layoutItensComanda.addView(linhaView);

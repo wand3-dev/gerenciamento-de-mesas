@@ -286,6 +286,17 @@ public class MonitorComandasEngine {
         setEstado(EstadoServidor.OFFLINE, "LIGAR SERVIDOR");
     }
 
+    public void forcarAtualizacaoImediata() {
+        if (!ativo) return;
+        if (scheduledPollingTask != null && !scheduledPollingTask.isDone()) {
+            scheduledPollingTask.cancel(false);
+        }
+        if (runnablePolling != null) {
+            mainHandler.removeCallbacks(runnablePolling);
+        }
+        executor.execute(this::executarCicloPolling);
+    }
+
     private void setEstado(EstadoServidor novoEstado, String msg) {
         this.estado = novoEstado;
         mainHandler.post(() -> {

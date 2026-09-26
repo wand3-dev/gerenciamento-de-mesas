@@ -18,6 +18,9 @@ public class ItemComandaModel {
 
     public ItemComandaModel(JSONObject obj) {
         this.autonum = obj.optString("AUTONUM", "").trim();
+        if (this.autonum.isEmpty()) {
+            this.autonum = obj.optString("autonum", "").trim();
+        }
         this.documento = obj.optString("DOCUMENTO", "").trim();
         this.numComanda = obj.optString("NUM_COMANDA", "").trim();
         this.numItem = obj.optString("NUM_ITEM", "").trim();

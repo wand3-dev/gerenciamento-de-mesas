@@ -503,4 +503,92 @@ public class ServerComandasClient {
 
         return -1;
     }
+
+    public interface OnCancelamentoCallback {
+        void onSuccess(String resposta);
+        void onError(String erro);
+    }
+
+    /**
+     * Executa a requisição oficial de cancelamento de item no servidor DataSnap:
+     * POST /datasnap/rest/tpreatend/func_CancelarComanda/T
+     * Payload: [{"autonum":"numero","cod_fun_canc":"200"}]
+     */
+    public void cancelarItemComanda(String autonum, String codFunCanc, OnCancelamentoCallback callback) {
+        executor.execute(() -> {
+            try {
+                String resposta = cancelarItemComandaSync(autonum, codFunCanc);
+                mainHandler.post(() -> {
+                    if (callback != null) callback.onSuccess(resposta);
+                });
+            } catch (Exception e) {
+                mainHandler.post(() -> {
+                    if (callback != null) callback.onError(e.getMessage() != null ? e.getMessage() : "Erro desconhecido");
+                });
+            }
+        });
+    }
+
+    public String cancelarItemComandaSync(String autonum, String codFunCanc) throws Exception {
+        if (autonum == null || autonum.trim().isEmpty()) {
+            throw new IllegalArgumentException("Autonum do item não informado.");
+        }
+        String cod = (codFunCanc != null && !codFunCanc.trim().isEmpty()) ? codFunCanc.trim() : "200";
+
+        String urlStr = getBaseUrl() + "/func_CancelarComanda/T";
+        URL url = new URL(urlStr);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("POST");
+        conn.setConnectTimeout(10000);
+        conn.setReadTimeout(15000);
+        conn.setDoOutput(true);
+        conn.setDoInput(true);
+
+        // Headers exatos da requisição informada pelo usuário
+        conn.setRequestProperty("Host", getServerIp() + ":" + getServerPort());
+        conn.setRequestProperty("User-Agent", USER_AGENT);
+        conn.setRequestProperty("Accept-Encoding", "gzip");
+        conn.setRequestProperty("Content-Type", "text/plain; charset=utf-8");
+        conn.setRequestProperty("Authorization", AUTH_HEADER);
+
+        // Body: [{"autonum":"numero","cod_fun_canc":"200"}]
+        JSONArray array = new JSONArray();
+        JSONObject obj = new JSONObject();
+        obj.put("autonum", autonum.trim());
+        obj.put("cod_fun_canc", cod);
+        array.put(obj);
+
+        byte[] payloadBytes = array.toString().getBytes(StandardCharsets.UTF_8);
+        conn.setFixedLengthStreamingMode(payloadBytes.length);
+
+        try (OutputStream os = conn.getOutputStream()) {
+            os.write(payloadBytes);
+            os.flush();
+        }
+
+        int responseCode = conn.getResponseCode();
+        InputStream is = (responseCode >= 200 && responseCode < 400) ? conn.getInputStream() : conn.getErrorStream();
+
+        String contentEncoding = conn.getContentEncoding();
+        if ("gzip".equalsIgnoreCase(contentEncoding) && is != null) {
+            is = new GZIPInputStream(is);
+        }
+
+        StringBuilder response = new StringBuilder();
+        if (is != null) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+            }
+        }
+
+        String resStr = response.toString();
+        if (responseCode >= 200 && responseCode < 300) {
+            return resStr;
+        } else {
+            throw new Exception("HTTP " + responseCode + ": " + resStr);
+        }
+    }
 }

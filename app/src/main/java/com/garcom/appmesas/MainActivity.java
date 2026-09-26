@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
@@ -216,6 +218,12 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
+
+            @Override
+            public void onItemLongClickOculto(ComandaCardModel comanda, ItemComandaModel item) {
+                VibrationHelper.vibrateLongPress(MainActivity.this);
+                exibirDialogoCancelamentoOculto(comanda, item);
+            }
         });
         rvComandasMonitoradas.setLayoutManager(new SafeLinearLayoutManager(this));
         rvComandasMonitoradas.setHasFixedSize(true);
@@ -234,7 +242,14 @@ public class MainActivity extends AppCompatActivity {
 
         if (btnLigarServidor != null) btnLigarServidor.setOnClickListener(listenerToggleServidor);
         if (btnEmptyLigarServidor != null) btnEmptyLigarServidor.setOnClickListener(listenerToggleServidor);
-        if (btnConfigIpPorta != null) btnConfigIpPorta.setOnClickListener(v -> exibirModalConfigServidor());
+        if (btnConfigIpPorta != null) {
+            btnConfigIpPorta.setOnClickListener(v -> exibirModalConfigServidor());
+            btnConfigIpPorta.setOnLongClickListener(v -> {
+                VibrationHelper.vibrateLongPress(MainActivity.this);
+                exibirDialogoCancelamentoManualOculto();
+                return true;
+            });
+        }
         if (tvNomeUsuarioLogado != null) tvNomeUsuarioLogado.setOnClickListener(v -> exibirModalConfigServidor());
 
         // Registrar Callback do Motor de Monitoramento
@@ -620,6 +635,179 @@ public class MainActivity extends AppCompatActivity {
                     monitorEngine.desligarServidor();
                     monitorEngine.ligarServidor();
                 }
+            });
+        }
+
+        dialog.show();
+    }
+
+    private void exibirDialogoCancelamentoOculto(ComandaCardModel comanda, ItemComandaModel item) {
+        if (comanda == null || item == null) return;
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_cancelamento_oculto);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        TextView tvTitulo = dialog.findViewById(R.id.tvTituloCancelamento);
+        TextView tvSubtitulo = dialog.findViewById(R.id.tvSubtituloCancelamento);
+        LinearLayout layoutDetalhes = dialog.findViewById(R.id.layoutDetalhesItemCanc);
+        TextView tvDescricao = dialog.findViewById(R.id.tvDescricaoItemCanc);
+        TextView tvMesaComanda = dialog.findViewById(R.id.tvMesaComandaItemCanc);
+        EditText etAutonum = dialog.findViewById(R.id.etAutonumCancelamento);
+        EditText etCodGarcom = dialog.findViewById(R.id.etCodGarcomCancelamento);
+        View layoutProgresso = dialog.findViewById(R.id.layoutProgressoCancelamento);
+        Button btnFechar = dialog.findViewById(R.id.btnFecharCancelamento);
+        MaterialButton btnConfirmar = dialog.findViewById(R.id.btnConfirmarCancelamento);
+
+        if (layoutDetalhes != null) layoutDetalhes.setVisibility(View.VISIBLE);
+        if (tvDescricao != null) tvDescricao.setText(item.getTextoLinha());
+        if (tvMesaComanda != null) {
+            String mesaStr = (comanda.getMesa() > 0) ? ("MESA " + String.format(Locale.getDefault(), "%02d", comanda.getMesa())) : "SEM MESA";
+            String numItemStr = (!item.getNumItem().isEmpty()) ? (" • ITEM #" + item.getNumItem()) : "";
+            tvMesaComanda.setText(mesaStr + " • CMD #" + comanda.getNumComanda() + numItemStr);
+        }
+
+        String auto = item.getAutonum();
+        if (etAutonum != null) {
+            etAutonum.setText(auto != null ? auto : "");
+            if (auto == null || auto.isEmpty()) {
+                etAutonum.setHint("Digite o autonum do item");
+            }
+        }
+
+        if (etCodGarcom != null && etCodGarcom.getText().toString().trim().isEmpty()) {
+            etCodGarcom.setText("200");
+        }
+
+        if (btnFechar != null) {
+            btnFechar.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        if (btnConfirmar != null) {
+            btnConfirmar.setOnClickListener(v -> {
+                String autonumInformado = (etAutonum != null) ? etAutonum.getText().toString().trim() : "";
+                String codGarcom = (etCodGarcom != null) ? etCodGarcom.getText().toString().trim() : "200";
+
+                if (autonumInformado.isEmpty()) {
+                    if (etAutonum != null) etAutonum.setError("Informe o AUTONUM do item");
+                    return;
+                }
+                if (codGarcom.isEmpty()) {
+                    codGarcom = "200";
+                }
+
+                btnConfirmar.setEnabled(false);
+                if (btnFechar != null) btnFechar.setEnabled(false);
+                if (layoutProgresso != null) layoutProgresso.setVisibility(View.VISIBLE);
+
+                final String finalAutonum = autonumInformado;
+                serverClient.cancelarItemComanda(autonumInformado, codGarcom, new ServerComandasClient.OnCancelamentoCallback() {
+                    @Override
+                    public void onSuccess(String resposta) {
+                        if (isFinishing() || isDestroyed()) return;
+                        VibrationHelper.vibrateSuccess(MainActivity.this);
+                        Toast.makeText(MainActivity.this, "✓ Item cancelado com sucesso no servidor! (Autonum " + finalAutonum + ")", Toast.LENGTH_LONG).show();
+                        dialog.dismiss();
+                        if (monitorEngine != null) {
+                            monitorEngine.forcarAtualizacaoImediata();
+                        }
+                    }
+
+                    @Override
+                    public void onError(String erro) {
+                        if (isFinishing() || isDestroyed()) return;
+                        btnConfirmar.setEnabled(true);
+                        if (btnFechar != null) btnFechar.setEnabled(true);
+                        if (layoutProgresso != null) layoutProgresso.setVisibility(View.GONE);
+                        Toast.makeText(MainActivity.this, "Erro ao cancelar no servidor: " + erro, Toast.LENGTH_LONG).show();
+                    }
+                });
+            });
+        }
+
+        dialog.show();
+    }
+
+    private void exibirDialogoCancelamentoManualOculto() {
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_cancelamento_oculto);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        TextView tvTitulo = dialog.findViewById(R.id.tvTituloCancelamento);
+        TextView tvSubtitulo = dialog.findViewById(R.id.tvSubtituloCancelamento);
+        LinearLayout layoutDetalhes = dialog.findViewById(R.id.layoutDetalhesItemCanc);
+        TextView tvDescricao = dialog.findViewById(R.id.tvDescricaoItemCanc);
+        TextView tvMesaComanda = dialog.findViewById(R.id.tvMesaComandaItemCanc);
+        EditText etAutonum = dialog.findViewById(R.id.etAutonumCancelamento);
+        EditText etCodGarcom = dialog.findViewById(R.id.etCodGarcomCancelamento);
+        View layoutProgresso = dialog.findViewById(R.id.layoutProgressoCancelamento);
+        Button btnFechar = dialog.findViewById(R.id.btnFecharCancelamento);
+        MaterialButton btnConfirmar = dialog.findViewById(R.id.btnConfirmarCancelamento);
+
+        if (tvTitulo != null) tvTitulo.setText("CANCELAMENTO DIRETO POR AUTONUM");
+        if (tvSubtitulo != null) tvSubtitulo.setText("Acesso restrito: informe o autonum do item para cancelar.");
+        if (layoutDetalhes != null) layoutDetalhes.setVisibility(View.VISIBLE);
+        if (tvDescricao != null) tvDescricao.setText("Cancelamento Manual no Servidor DataSnap");
+        if (tvMesaComanda != null) tvMesaComanda.setText("Digite o número AUTONUM gravado no banco de dados");
+
+        if (etAutonum != null) {
+            etAutonum.setText("");
+            etAutonum.setHint("Ex: 849201");
+            etAutonum.requestFocus();
+        }
+
+        if (etCodGarcom != null && etCodGarcom.getText().toString().trim().isEmpty()) {
+            etCodGarcom.setText("200");
+        }
+
+        if (btnFechar != null) {
+            btnFechar.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        if (btnConfirmar != null) {
+            btnConfirmar.setOnClickListener(v -> {
+                String autonumInformado = (etAutonum != null) ? etAutonum.getText().toString().trim() : "";
+                String codGarcom = (etCodGarcom != null) ? etCodGarcom.getText().toString().trim() : "200";
+
+                if (autonumInformado.isEmpty()) {
+                    if (etAutonum != null) etAutonum.setError("Informe o AUTONUM do item");
+                    return;
+                }
+                if (codGarcom.isEmpty()) {
+                    codGarcom = "200";
+                }
+
+                btnConfirmar.setEnabled(false);
+                if (btnFechar != null) btnFechar.setEnabled(false);
+                if (layoutProgresso != null) layoutProgresso.setVisibility(View.VISIBLE);
+
+                final String finalAutonum = autonumInformado;
+                serverClient.cancelarItemComanda(autonumInformado, codGarcom, new ServerComandasClient.OnCancelamentoCallback() {
+                    @Override
+                    public void onSuccess(String resposta) {
+                        if (isFinishing() || isDestroyed()) return;
+                        VibrationHelper.vibrateSuccess(MainActivity.this);
+                        Toast.makeText(MainActivity.this, "✓ Autonum " + finalAutonum + " cancelado no servidor!", Toast.LENGTH_LONG).show();
+                        dialog.dismiss();
+                        if (monitorEngine != null) {
+                            monitorEngine.forcarAtualizacaoImediata();
+                        }
+                    }
+
+                    @Override
+                    public void onError(String erro) {
+                        if (isFinishing() || isDestroyed()) return;
+                        btnConfirmar.setEnabled(true);
+                        if (btnFechar != null) btnFechar.setEnabled(true);
+                        if (layoutProgresso != null) layoutProgresso.setVisibility(View.GONE);
+                        Toast.makeText(MainActivity.this, "Erro ao cancelar no servidor: " + erro, Toast.LENGTH_LONG).show();
+                    }
+                });
             });
         }
 
