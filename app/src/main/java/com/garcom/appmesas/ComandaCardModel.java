@@ -86,6 +86,7 @@ public class ComandaCardModel {
     public String getDocumento() { return documento; }
     public long getDetectedAt() { return detectedAt; }
     public void setDetectedAt(long detectedAt) { this.detectedAt = detectedAt; }
+    public long getDataTimestamp() { return dataTimestamp; }
     public int getQtdeItens() { return qtdeItens; }
     public double getTotalValor() { return totalValor; }
     public List<ItemComandaModel> getItens() { return itens; }

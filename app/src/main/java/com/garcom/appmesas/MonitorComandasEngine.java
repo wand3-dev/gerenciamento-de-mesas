@@ -45,6 +45,11 @@ public class MonitorComandasEngine {
     private static final String KEY_ENTREGUES = "key_comandas_entregues";
     private static final String KEY_ITENS_CHECADOS = "key_itens_checados";
     private static final String KEY_FAVORITOS = "key_mesas_favoritas";
+
+    private static final String PREF_TIMESTAMPS = "comandas_timestamps_prefs";
+    private static final String KEY_PREFIX_CMD = "ts_cmd_";
+    private static final String KEY_PREFIX_ITEM = "ts_item_";
+
     private final Set<String> comandasEntregues = new HashSet<>();
     private final Set<String> itensChecados = new HashSet<>();
     private final Set<String> favoritos = new HashSet<>();
@@ -58,6 +63,28 @@ public class MonitorComandasEngine {
         this.context = context.getApplicationContext();
         this.serverClient = ServerComandasClient.getInstance(this.context);
         carregarComandasEntregues();
+        limparTimestampsAntigos();
+    }
+
+    private void limparTimestampsAntigos() {
+        try {
+            android.content.SharedPreferences sp = context.getSharedPreferences(PREF_TIMESTAMPS, Context.MODE_PRIVATE);
+            Map<String, ?> todos = sp.getAll();
+            if (todos == null || todos.isEmpty()) return;
+            long agora = System.currentTimeMillis();
+            long maxIdadeMs = 12L * 60L * 60L * 1000L; // 12 horas
+            android.content.SharedPreferences.Editor editor = null;
+            for (Map.Entry<String, ?> e : todos.entrySet()) {
+                if (e.getValue() instanceof Long) {
+                    long ts = (Long) e.getValue();
+                    if (ts <= 0 || ts > agora || (agora - ts) > maxIdadeMs) {
+                        if (editor == null) editor = sp.edit();
+                        editor.remove(e.getKey());
+                    }
+                }
+            }
+            if (editor != null) editor.apply();
+        } catch (Exception ignored) {}
     }
 
     private void carregarComandasEntregues() {
@@ -360,6 +387,10 @@ public class MonitorComandasEngine {
 
                 // 4. Atualizar o mapa de comandas e associar os itens de cada comanda
                 synchronized (this) {
+                    android.content.SharedPreferences spTimes = context.getSharedPreferences(PREF_TIMESTAMPS, Context.MODE_PRIVATE);
+                    long agoraPolling = System.currentTimeMillis();
+                    long maxIdadeMs = 12L * 60L * 60L * 1000L; // 12 horas
+
                     for (JSONObject objCmd : comandasValidas) {
                         String doc = objCmd.optString("DOCUMENTO", "").trim();
                         String numCmd = objCmd.optString("NUM_COMANDA", "").trim();
@@ -381,10 +412,22 @@ public class MonitorComandasEngine {
 
                         ComandaCardModel card = mapaComandas.get(chave);
                         boolean ehNova = (card == null);
+
                         if (ehNova) {
                             card = new ComandaCardModel(objCmd);
                             card.setEntregue(comandasEntregues.contains(chave));
                             card.setFavorita(isFavorito(card));
+
+                            // Preserva o timestamp real de entrada mesmo ao fechar ou falhar o app:
+                            long tsSalvo = spTimes.getLong(KEY_PREFIX_CMD + chave, 0L);
+                            if (tsSalvo > 0 && tsSalvo <= agoraPolling && (agoraPolling - tsSalvo) <= maxIdadeMs) {
+                                card.setDetectedAt(tsSalvo);
+                            } else {
+                                long tsNovo = agoraPolling;
+                                card.setDetectedAt(tsNovo);
+                                spTimes.edit().putLong(KEY_PREFIX_CMD + chave, tsNovo).apply();
+                            }
+
                             mapaComandas.put(chave, card);
                         } else {
                             // Comanda já existente: preserva detectedAt e atualiza valores/itens
@@ -416,13 +459,27 @@ public class MonitorComandasEngine {
 
                         boolean todosChecados = !itensDestaComanda.isEmpty();
                         int itensPendentesNovos = 0;
+                        android.content.SharedPreferences.Editor spEditorItens = null;
                         for (ItemComandaModel itProd : itensDestaComanda) {
-                            boolean chk = itensChecados.contains(itProd.getItemKey(card.getId()));
+                            String itemKey = itProd.getItemKey(card.getId());
+                            long tsItemSalvo = spTimes.getLong(KEY_PREFIX_ITEM + itemKey, 0L);
+                            if (tsItemSalvo > 0 && tsItemSalvo <= agoraPolling && (agoraPolling - tsItemSalvo) <= maxIdadeMs) {
+                                itProd.setDetectedAt(tsItemSalvo);
+                            } else {
+                                itProd.setDetectedAt(agoraPolling);
+                                if (spEditorItens == null) spEditorItens = spTimes.edit();
+                                spEditorItens.putLong(KEY_PREFIX_ITEM + itemKey, agoraPolling);
+                            }
+
+                            boolean chk = itensChecados.contains(itemKey);
                             itProd.setChecado(chk);
                             if (!chk) {
                                 todosChecados = false;
                                 itensPendentesNovos++;
                             }
+                        }
+                        if (spEditorItens != null) {
+                            spEditorItens.apply();
                         }
                         card.setItens(itensDestaComanda);
 
@@ -439,7 +496,9 @@ public class MonitorComandasEngine {
                         if (estavaEntregue && !todosChecados && itensPendentesNovos > 0) {
                             comandasEntregues.remove(chave);
                             card.setEntregue(false);
-                            card.setDetectedAt(System.currentTimeMillis());
+                            long agoraReabertura = System.currentTimeMillis();
+                            card.setDetectedAt(agoraReabertura);
+                            spTimes.edit().putLong(KEY_PREFIX_CMD + chave, agoraReabertura).apply();
                             if (!primeiraConsulta) {
                                 final String cmdNum = card.getNumComanda();
                                 final int mesaNum = card.getMesa();
@@ -463,6 +522,7 @@ public class MonitorComandasEngine {
 
                     // Remoção automática de comandas que já foram fechadas no servidor
                     Iterator<Map.Entry<String, ComandaCardModel>> it = mapaComandas.entrySet().iterator();
+                    android.content.SharedPreferences.Editor spCleanEditor = null;
                     while (it.hasNext()) {
                         Map.Entry<String, ComandaCardModel> entry = it.next();
                         String chaveRemovida = entry.getKey();
@@ -476,8 +536,36 @@ public class MonitorComandasEngine {
                                     itItens.remove();
                                 }
                             }
+
+                            if (spCleanEditor == null) {
+                                spCleanEditor = spTimes.edit();
+                            }
+                            spCleanEditor.remove(KEY_PREFIX_CMD + chaveRemovida);
+
                             it.remove();
                         }
+                    }
+                    if (spCleanEditor != null) {
+                        try {
+                            Map<String, ?> allKeys = spTimes.getAll();
+                            if (allKeys != null) {
+                                for (String k : allKeys.keySet()) {
+                                    if (k.startsWith(KEY_PREFIX_ITEM)) {
+                                        boolean ativa = false;
+                                        for (String chAtiva : chavesAtivasNestaConsulta) {
+                                            if (k.startsWith(KEY_PREFIX_ITEM + chAtiva + "_")) {
+                                                ativa = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!ativa) {
+                                            spCleanEditor.remove(k);
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Exception ignored) {}
+                        spCleanEditor.apply();
                     }
                     salvarComandasEntregues();
                 }

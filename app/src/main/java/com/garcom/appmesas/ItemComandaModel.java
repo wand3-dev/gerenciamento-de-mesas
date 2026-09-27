@@ -109,8 +109,13 @@ public class ItemComandaModel {
     }
 
     private boolean checado = false;
+    private long detectedAt = 0L;
+
     public boolean isChecado() { return checado; }
     public void setChecado(boolean checado) { this.checado = checado; }
+
+    public long getDetectedAt() { return detectedAt; }
+    public void setDetectedAt(long detectedAt) { this.detectedAt = detectedAt; }
 
     public String getItemKey(String comandaId) {
         if (autonum != null && !autonum.isEmpty()) {
