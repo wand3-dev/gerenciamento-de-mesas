@@ -43,24 +43,24 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🥐 "
-                        android:textSize="18sp" />
+                        android:text="⚙️ "
+                        android:textSize="17sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="PORTUGÁLIA"
-                        android:textColor="#FDE68A"
-                        android:textSize="17sp"
+                        android:text="SERVIÇOS DO SISTEMA"
+                        android:textColor="#F8FAFC"
+                        android:textSize="16sp"
                         android:textStyle="bold"
-                        android:letterSpacing="0.06" />
+                        android:letterSpacing="0.04" />
                 </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvSubtituloHeader"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Painel de Vendas &amp; Faturamento"
+                    android:text="Painel de Métricas &amp; Faturamento"
                     android:textColor="#94A3B8"
                     android:textSize="11sp"
                     android:textStyle="bold" />
