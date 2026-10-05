@@ -1,1213 +1,531 @@
 package com.garcom.appmesas;
 
-import android.app.Dialog;
+import android.app.AlertDialog;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.PowerManager;
-import android.text.Editable;
-import android.text.TextWatcher;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import com.google.android.material.button.MaterialButton;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
+import java.text.DateFormatSymbols;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
-public class MainActivity extends AppCompatActivity {
-    private static final int REQ_NOTIFICACOES = 102;
+public class MainActivity extends AppCompatActivity implements
+        MonitorComandasEngine.MonitorCallback,
+        CancelamentoDetectorManager.OnCancelamentoListener {
 
-    // Monitor de Comandas em Tempo Real
-    public static final int FILTRO_TODAS = 0;
-    public static final int FILTRO_FAVORITAS = 1;
-    public static final int FILTRO_PENDENTES = 2;
-    public static final int FILTRO_MEUS = 3;
-    private int filtroAtual = FILTRO_TODAS;
+    // Views do Cabeçalho
+    private TextView tvStatusServidorPill;
+    private View btnAtualizar;
+    private View btnConfigGarcom;
+    private TextView tvNomeGarcomAtivo;
+    private TextView tvUltimaSincronizacao;
 
-    private TextView tvStatusServidorPill, tvUltimaSincronizacao, btnConfigIpPorta, btnToggleSomAlerta;
-    private TextView btnFiltroTodas, btnFiltroFavoritas, btnFiltroPendentes, btnFiltroMeus, tvMetricaResumo;
-    private MaterialButton btnLigarServidor;
-    private View layoutEmptyServidor, layoutConnectingServidor;
-    private MaterialButton btnEmptyLigarServidor;
-    private TextView tvEmptyServidorTitulo, tvEmptyServidorDesc;
-    private RecyclerView rvComandasMonitoradas;
-    private ComandasMonitoradasAdapter adapterComandas;
-    private final List<ComandaCardModel> listaComandasMonitoradas = new ArrayList<>();
-    private final List<ComandaCardModel> listaComandasFiltradas = new ArrayList<>();
+    // Card de Alerta de Cancelamento Pendente (Aparece se um produto sumir da comanda)
+    private View cardItemPendenteConfirmacao;
+    private TextView tvBadgeContadorPendentes;
+    private TextView tvPendenteDescricao;
+    private TextView tvPendenteMesaComanda;
+    private MaterialButton btnConfirmarCancelado;
+    private MaterialButton btnDescartarCancelado;
+
+    // Métricas de Vendas
+    private TextView tvFaturamentoHoje;
+    private TextView tvQtdItensHoje;
+    private TextView tvAbertosAgora;
+    private TextView tvTituloMes;
+    private TextView tvFaturamentoMes;
+    private TextView tvQtdItensMes;
+    private TextView tvCancelamentosHoje;
+
+    // Listas / Históricos
+    private LinearLayout layoutHistoricoDias;
+    private TextView tvVazioDias;
+    private LinearLayout layoutHistoricoCancelamentos;
+    private TextView tvVazioCancelamentos;
+
+    // Motores e Gerenciadores
     private MonitorComandasEngine monitorEngine;
-    private MonitorComandasEngine.MonitorCallback monitorCallback;
+    private VendasFaturamentoManager vendasManager;
+    private CancelamentoDetectorManager cancelamentoManager;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    // Timer de 1s para o cronômetro individual de cada comanda
-    private final Handler timer1sHandler = new Handler(Looper.getMainLooper());
-    private Runnable runnableTimer1s;
-
-    // Busca rápida
-    private EditText etBuscarMesa;
-    private TextView btnClearSearch;
-    private String queryBusca = "";
-
-    private TextView tvNomeUsuarioLogado;
-    private ServerComandasClient serverClient;
-    private UpdateChecker updateChecker;
-
-    // Barra de Resumo do Garçom
-    private LinearLayout layoutBarraResumoGarcom;
-    private TextView tvBarraGarcomIdentificacao, tvBarraGarcomSubtitulo;
-    private TextView tvBarraGarcomQtdPedidos, tvBarraGarcomAtivosPendente, tvBarraGarcomFaturamento;
+    private AlertDialog dialogCancelamentoAtivo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        serverClient = ServerComandasClient.getInstance(this);
+        // Inicializa instâncias
         monitorEngine = MonitorComandasEngine.getInstance(this);
-        updateChecker = new UpdateChecker(this);
+        vendasManager = VendasFaturamentoManager.getInstance(this);
+        cancelamentoManager = CancelamentoDetectorManager.getInstance(this);
 
-        NotificationHelper.criarCanaisNotificacao(this);
-        verificarEPedirTodasPermissoes();
-
-        android.content.SharedPreferences spSettings = getSharedPreferences("app_settings", MODE_PRIVATE);
-        aplicarKeepScreenOn(spSettings.getBoolean("keep_screen_on", true));
-
-        // Inicialização de Views
-        tvStatusServidorPill = findViewById(R.id.tvStatusServidorPill);
-        tvUltimaSincronizacao = findViewById(R.id.tvUltimaSincronizacao);
-        btnConfigIpPorta = findViewById(R.id.btnConfigIpPorta);
-        btnToggleSomAlerta = findViewById(R.id.btnToggleSomAlerta);
-        btnLigarServidor = findViewById(R.id.btnLigarServidor);
-        tvNomeUsuarioLogado = findViewById(R.id.tvNomeUsuarioLogado);
-
-        // Inicialização da Barra de Resumo do Garçom
-        layoutBarraResumoGarcom = findViewById(R.id.layoutBarraResumoGarcom);
-        tvBarraGarcomIdentificacao = findViewById(R.id.tvBarraGarcomIdentificacao);
-        tvBarraGarcomSubtitulo = findViewById(R.id.tvBarraGarcomSubtitulo);
-        tvBarraGarcomQtdPedidos = findViewById(R.id.tvBarraGarcomQtdPedidos);
-        tvBarraGarcomAtivosPendente = findViewById(R.id.tvBarraGarcomAtivosPendente);
-        tvBarraGarcomFaturamento = findViewById(R.id.tvBarraGarcomFaturamento);
-
-        if (layoutBarraResumoGarcom != null) {
-            layoutBarraResumoGarcom.setOnClickListener(v -> {
-                VibrationHelper.vibrateTick(MainActivity.this);
-                exibirModalResumoGarcom();
-            });
-        }
-        atualizarVisualResumoGarcom();
-
-        if (btnToggleSomAlerta != null) {
-            boolean somAtivo = spSettings.getBoolean("som_nova_comanda", true);
-            atualizarIconeSomAlerta(somAtivo);
-            btnToggleSomAlerta.setOnClickListener(v -> {
-                boolean novoSom = !spSettings.getBoolean("som_nova_comanda", true);
-                spSettings.edit().putBoolean("som_nova_comanda", novoSom).apply();
-                atualizarIconeSomAlerta(novoSom);
-                if (novoSom) {
-                    NotificationHelper.tocarSinoNovaComanda(this);
-                    Toast.makeText(this, "🔔 Som de nova comanda ATIVADO", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(this, "🔕 Som de nova comanda DESATIVADO", Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
-
-        btnFiltroTodas = findViewById(R.id.btnFiltroTodas);
-        btnFiltroFavoritas = findViewById(R.id.btnFiltroFavoritas);
-        btnFiltroPendentes = findViewById(R.id.btnFiltroPendentes);
-        btnFiltroMeus = findViewById(R.id.btnFiltroMeus);
-        tvMetricaResumo = findViewById(R.id.tvMetricaResumo);
-
-        filtroAtual = spSettings.getInt("filtro_monitor_atual", FILTRO_TODAS);
-        atualizarVisualFiltroChips();
-
-        if (btnFiltroTodas != null) {
-            btnFiltroTodas.setOnClickListener(v -> {
-                filtroAtual = FILTRO_TODAS;
-                spSettings.edit().putInt("filtro_monitor_atual", FILTRO_TODAS).apply();
-                atualizarVisualFiltroChips();
-                filtrarEAtualizarComandas();
-            });
-        }
-
-        if (btnFiltroFavoritas != null) {
-            btnFiltroFavoritas.setOnClickListener(v -> {
-                filtroAtual = FILTRO_FAVORITAS;
-                spSettings.edit().putInt("filtro_monitor_atual", FILTRO_FAVORITAS).apply();
-                atualizarVisualFiltroChips();
-                filtrarEAtualizarComandas();
-            });
-        }
-
-        if (btnFiltroPendentes != null) {
-            btnFiltroPendentes.setOnClickListener(v -> {
-                filtroAtual = FILTRO_PENDENTES;
-                spSettings.edit().putInt("filtro_monitor_atual", FILTRO_PENDENTES).apply();
-                atualizarVisualFiltroChips();
-                filtrarEAtualizarComandas();
-            });
-        }
-
-        if (btnFiltroMeus != null) {
-            btnFiltroMeus.setOnClickListener(v -> {
-                filtroAtual = FILTRO_MEUS;
-                spSettings.edit().putInt("filtro_monitor_atual", FILTRO_MEUS).apply();
-                atualizarVisualFiltroChips();
-                filtrarEAtualizarComandas();
-            });
-        }
-
-        layoutEmptyServidor = findViewById(R.id.layoutEmptyServidor);
-        layoutConnectingServidor = findViewById(R.id.layoutConnectingServidor);
-        tvEmptyServidorTitulo = findViewById(R.id.tvEmptyServidorTitulo);
-        tvEmptyServidorDesc = findViewById(R.id.tvEmptyServidorDesc);
-        btnEmptyLigarServidor = findViewById(R.id.btnEmptyLigarServidor);
-        rvComandasMonitoradas = findViewById(R.id.rvComandasMonitoradas);
-
-        etBuscarMesa = findViewById(R.id.etBuscarMesa);
-        btnClearSearch = findViewById(R.id.btnClearSearch);
-
-        // Barra de busca instantânea de comandas
-        if (etBuscarMesa != null) {
-            etBuscarMesa.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    queryBusca = s.toString();
-                    if (btnClearSearch != null) {
-                        btnClearSearch.setVisibility(queryBusca.isEmpty() ? View.GONE : View.VISIBLE);
-                    }
-                    filtrarEAtualizarComandas();
-                }
-                @Override
-                public void afterTextChanged(Editable s) {}
-            });
-        }
-        if (btnClearSearch != null) {
-            btnClearSearch.setOnClickListener(v -> {
-                if (etBuscarMesa != null) etBuscarMesa.setText("");
-            });
-        }
-
-        // Configuração do RecyclerView de Comandas
-        adapterComandas = new ComandasMonitoradasAdapter(this, listaComandasFiltradas, new ComandasMonitoradasAdapter.OnComandaActionListener() {
-            @Override
-            public void onComandaClick(ComandaCardModel comanda) {
-                // Apenas comandas - sem abrir tela de mesa
-            }
-
-            @Override
-            public void onItemCheckClick(ComandaCardModel comanda, ItemComandaModel item) {
-                VibrationHelper.vibrateTick(MainActivity.this);
-                if (monitorEngine != null) {
-                    boolean eraEntregue = comanda.isEntregue();
-                    boolean eraFavorita = comanda.isFavorita();
-                    monitorEngine.alternarItemChecado(comanda.getId(), item.getItemKey(comanda.getId()));
-                    atualizarVisualResumoGarcom();
-
-                    // Auto-conclusão: feedback ao usuário se concluiu ou reabriu
-                    if (!eraEntregue && comanda.isEntregue()) {
-                        VibrationHelper.vibrateSuccess(MainActivity.this);
-                        if (eraFavorita) {
-                            String mesaOuCmd = (comanda.getMesa() > 0) ? ("Mesa " + String.format(java.util.Locale.getDefault(), "%02d", comanda.getMesa())) : ("CMD #" + comanda.getNumComanda());
-                            Toast.makeText(MainActivity.this, "⚡ " + mesaOuCmd + " concluída e removida dos favoritos!", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(MainActivity.this, "⚡ Comanda #" + comanda.getNumComanda() + " concluída!", Toast.LENGTH_SHORT).show();
-                        }
-                    } else if (eraEntregue && !comanda.isEntregue()) {
-                        Toast.makeText(MainActivity.this, "Comanda #" + comanda.getNumComanda() + " reaberta.", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
-
-            @Override
-            public void onFavoritoClick(ComandaCardModel comanda) {
-                VibrationHelper.vibrateTick(MainActivity.this);
-                if (monitorEngine != null && comanda != null) {
-                    boolean novoEstado = monitorEngine.alternarFavorito(comanda);
-                    String mesaOuCmd = (comanda.getMesa() > 0) ? ("Mesa " + String.format(java.util.Locale.getDefault(), "%02d", comanda.getMesa())) : ("CMD #" + comanda.getNumComanda());
-                    if (novoEstado) {
-                        Toast.makeText(MainActivity.this, "⭐ " + mesaOuCmd + " adicionada aos favoritos!", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(MainActivity.this, mesaOuCmd + " removida dos favoritos.", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
-
-            @Override
-            public void onItemLongClickOculto(ComandaCardModel comanda, ItemComandaModel item) {
-                VibrationHelper.vibrateLongPress(MainActivity.this);
-                exibirDialogoCancelamentoOculto(comanda, item);
-            }
-        });
-        rvComandasMonitoradas.setLayoutManager(new SafeLinearLayoutManager(this));
-        rvComandasMonitoradas.setHasFixedSize(true);
-        rvComandasMonitoradas.setAdapter(adapterComandas);
-
-        // Ações Ligar / Desligar
-        View.OnClickListener listenerToggleServidor = v -> {
-            if (monitorEngine != null && monitorEngine.isAtivo()) {
-                monitorEngine.desligarServidor();
-                Toast.makeText(MainActivity.this, "Servidor desligado.", Toast.LENGTH_SHORT).show();
-            } else if (monitorEngine != null) {
-                monitorEngine.ligarServidor();
-                Toast.makeText(MainActivity.this, "Conectando ao servidor...", Toast.LENGTH_SHORT).show();
-            }
-        };
-
-        if (btnLigarServidor != null) btnLigarServidor.setOnClickListener(listenerToggleServidor);
-        if (btnEmptyLigarServidor != null) btnEmptyLigarServidor.setOnClickListener(listenerToggleServidor);
-        if (btnConfigIpPorta != null) {
-            btnConfigIpPorta.setOnClickListener(v -> exibirModalConfigServidor());
-            btnConfigIpPorta.setOnLongClickListener(v -> {
-                VibrationHelper.vibrateLongPress(MainActivity.this);
-                exibirDialogoCancelamentoManualOculto();
-                return true;
-            });
-        }
-        if (tvNomeUsuarioLogado != null) tvNomeUsuarioLogado.setOnClickListener(v -> exibirModalConfigServidor());
-
-        // Registrar Callback do Motor de Monitoramento
-        monitorCallback = new MonitorComandasEngine.MonitorCallback() {
-            @Override
-            public void onEstadoAlterado(EstadoServidor novoEstado, String mensagem) {
-                if (isFinishing() || isDestroyed()) return;
-                runOnUiThread(() -> atualizarUiEstadoServidor(novoEstado, mensagem));
-            }
-
-            @Override
-            public void onComandasAtualizadas(List<ComandaCardModel> comandas, String ultimaSync) {
-                if (isFinishing() || isDestroyed()) return;
-                runOnUiThread(() -> {
-                    listaComandasMonitoradas.clear();
-                    listaComandasMonitoradas.addAll(comandas);
-                    filtrarEAtualizarComandas();
-                    atualizarVisualResumoGarcom();
-                    if (tvUltimaSincronizacao != null && !ultimaSync.isEmpty()) {
-                        tvUltimaSincronizacao.setText("Última sync: " + ultimaSync + " (" + listaComandasFiltradas.size() + " comanda(s) com itens)");
-                    }
-                });
-            }
-        };
-
-        if (monitorEngine != null) {
-            monitorEngine.registrarCallback(monitorCallback);
-        }
-
-        // Inicia automaticamente o monitoramento de comandas e o serviço em segundo plano ao abrir o app
-        if (monitorEngine != null && !monitorEngine.isAtivo()) {
-            monitorEngine.ligarServidor();
-        } else {
-            MonitorComandasService.iniciar(this);
-        }
-    }
-
-    private void atualizarVisualFiltroChips() {
-        if (btnFiltroTodas != null) {
-            boolean ativo = (filtroAtual == FILTRO_TODAS);
-            btnFiltroTodas.setBackgroundResource(ativo ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
-            btnFiltroTodas.setTextColor(Color.parseColor(ativo ? "#FFFFFF" : "#64748B"));
-        }
-        if (btnFiltroFavoritas != null) {
-            boolean ativo = (filtroAtual == FILTRO_FAVORITAS);
-            btnFiltroFavoritas.setBackgroundResource(ativo ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
-            btnFiltroFavoritas.setTextColor(Color.parseColor(ativo ? "#FFFFFF" : "#64748B"));
-        }
-        if (btnFiltroPendentes != null) {
-            boolean ativo = (filtroAtual == FILTRO_PENDENTES);
-            btnFiltroPendentes.setBackgroundResource(ativo ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
-            btnFiltroPendentes.setTextColor(Color.parseColor(ativo ? "#FFFFFF" : "#64748B"));
-        }
-        if (btnFiltroMeus != null) {
-            boolean ativo = (filtroAtual == FILTRO_MEUS);
-            btnFiltroMeus.setBackgroundResource(ativo ? R.drawable.bg_filter_chip_active : R.drawable.bg_filter_chip_inactive);
-            btnFiltroMeus.setTextColor(Color.parseColor(ativo ? "#FFFFFF" : "#64748B"));
-        }
-    }
-
-    private void filtrarEAtualizarComandas() {
-        List<ComandaCardModel> novaFiltrada = new ArrayList<>();
-        String busca = StringHelper.normalizar(queryBusca.trim());
-
-        int totalComandasComItens = 0;
-        int totalPendentes = 0;
-        int totalFavoritas = 0;
-        int totalEntregues = 0;
-        int totalMeus = 0;
-        long somaMinutosPendentes = 0;
-        String meuCodGarcom = ResumoGarcomManager.getCodigoGarcom(this);
-
-        for (ComandaCardModel card : listaComandasMonitoradas) {
-            if (card == null) continue;
-            // Oculta comandas sem itens
-            if (!card.hasItens()) {
-                continue;
-            }
-            totalComandasComItens++;
-            if (card.isFavorita()) {
-                totalFavoritas++;
-            }
-            if (card.isEntregue()) {
-                totalEntregues++;
-            } else {
-                totalPendentes++;
-                somaMinutosPendentes += card.getMinutosDecorridos();
-            }
-
-            // Contabiliza comandas com pedidos no nome do garçom ativo
-            if (!meuCodGarcom.isEmpty() && card.getItens() != null) {
-                for (ItemComandaModel it : card.getItens()) {
-                    if (it != null && meuCodGarcom.equals(GarcomManager.normalizarCodigo(it.getCodVend()))) {
-                        totalMeus++;
-                        break;
-                    }
-                }
-            }
-        }
-
-        long mediaMinutos = totalPendentes > 0 ? (somaMinutosPendentes / totalPendentes) : 0;
-        if (tvMetricaResumo != null) {
-            tvMetricaResumo.setText(String.format(java.util.Locale.getDefault(), "⏱️ Média: %02dm • ✓ %d", mediaMinutos, totalEntregues));
-        }
-
-        if (btnFiltroTodas != null) {
-            btnFiltroTodas.setText("📋 TODAS (" + totalComandasComItens + ")");
-        }
-        if (btnFiltroFavoritas != null) {
-            btnFiltroFavoritas.setText("⭐ FAVORITAS (" + totalFavoritas + ")");
-        }
-        if (btnFiltroPendentes != null) {
-            btnFiltroPendentes.setText("⏳ PENDENTES (" + totalPendentes + ")");
-        }
-        if (btnFiltroMeus != null) {
-            btnFiltroMeus.setText("👤 MEUS (" + totalMeus + ")");
-        }
-
-        Set<String> chavesInseridas = new HashSet<>();
-        for (ComandaCardModel card : listaComandasMonitoradas) {
-            if (card == null) continue;
-            // Oculta comandas sem itens
-            if (!card.hasItens()) {
-                continue;
-            }
-
-            // Filtro das categorias selecionadas
-            if (filtroAtual == FILTRO_FAVORITAS && !card.isFavorita()) {
-                continue;
-            }
-            if (filtroAtual == FILTRO_PENDENTES && card.isEntregue()) {
-                continue;
-            }
-            if (filtroAtual == FILTRO_MEUS) {
-                boolean temMeu = false;
-                if (!meuCodGarcom.isEmpty() && card.getItens() != null) {
-                    for (ItemComandaModel it : card.getItens()) {
-                        if (it != null && meuCodGarcom.equals(GarcomManager.normalizarCodigo(it.getCodVend()))) {
-                            temMeu = true;
-                            break;
-                        }
-                    }
-                }
-                if (!temMeu) {
-                    continue;
-                }
-            }
-
-            String chave = card.getId();
-            if (chavesInseridas.contains(chave)) {
-                continue; // Não deixa comandas repetirem
-            }
-            chavesInseridas.add(chave);
-
-            if (busca.isEmpty()) {
-                novaFiltrada.add(card);
-            } else {
-                boolean matchComanda = card.getNumComanda().contains(busca);
-                boolean matchMesa = card.getMesa() > 0 && String.valueOf(card.getMesa()).contains(busca);
-                boolean matchDoc = card.getDocumento() != null && card.getDocumento().contains(busca);
-                boolean matchItem = false;
-                boolean matchGarcom = false;
-                if (card.getItens() != null) {
-                    for (ItemComandaModel it : card.getItens()) {
-                        if (it != null) {
-                            if (StringHelper.normalizar(it.getDescricao()).contains(busca)) {
-                                matchItem = true;
-                            }
-                            if (it.hasGarcom()) {
-                                String codG = GarcomManager.normalizarCodigo(it.getCodVend());
-                                String nomeG = StringHelper.normalizar(GarcomManager.getNomeGarcom(MainActivity.this, codG));
-                                if (codG.contains(busca) || nomeG.contains(busca)) {
-                                    matchGarcom = true;
-                                }
-                            }
-                            if (matchItem || matchGarcom) {
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (matchComanda || matchMesa || matchDoc || matchItem || matchGarcom) {
-                    novaFiltrada.add(card);
-                }
-            }
-        }
-
-        // Ordenação inteligente:
-        // 1. Comandas abertas primeiro (lá pra cima), entregues no final (lá pra baixo)
-        // 2. Entre as abertas, favoritas no topo absoluto (prioridade máxima do garçom)
-        // 3. Critério de desempate: mais antigas primeiro
-        Collections.sort(novaFiltrada, (c1, c2) -> {
-            if (c1.isEntregue() != c2.isEntregue()) {
-                return c1.isEntregue() ? 1 : -1;
-            }
-            if (!c1.isEntregue() && c1.isFavorita() != c2.isFavorita()) {
-                return c1.isFavorita() ? -1 : 1;
-            }
-            return Long.compare(c1.getDetectedAt(), c2.getDetectedAt());
-        });
-
-        listaComandasFiltradas.clear();
-        listaComandasFiltradas.addAll(novaFiltrada);
-
-        if (adapterComandas != null) {
-            try {
-                if (rvComandasMonitoradas != null && !rvComandasMonitoradas.isComputingLayout()) {
-                    adapterComandas.notifyDataSetChanged();
-                } else if (rvComandasMonitoradas != null) {
-                    rvComandasMonitoradas.post(() -> {
-                        try {
-                            adapterComandas.notifyDataSetChanged();
-                        } catch (Exception ignored) {}
-                    });
-                }
-            } catch (Exception ignored) {}
-        }
-
-        atualizarVisibilidadeMonitor();
-    }
-
-    private void atualizarUiEstadoServidor(EstadoServidor novoEstado, String msg) {
-        if (tvStatusServidorPill == null || btnLigarServidor == null) return;
-
-        switch (novoEstado) {
-            case OFFLINE:
-                tvStatusServidorPill.setText("● OFFLINE");
-                tvStatusServidorPill.setTextColor(Color.parseColor("#94A3B8"));
-                tvStatusServidorPill.setBackgroundResource(R.drawable.bg_dashboard_card_slate);
-                btnLigarServidor.setText("LIGAR");
-                btnLigarServidor.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#10B981")));
-                if (tvUltimaSincronizacao != null) {
-                    tvUltimaSincronizacao.setText("Servidor desligado. Toque em LIGAR para iniciar.");
-                }
-                break;
-            case CONNECTING:
-                tvStatusServidorPill.setText("◌ CONECTANDO...");
-                tvStatusServidorPill.setTextColor(Color.parseColor("#38BDF8"));
-                tvStatusServidorPill.setBackgroundResource(R.drawable.bg_dashboard_card_slate);
-                btnLigarServidor.setText("CONECTANDO...");
-                btnLigarServidor.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#0284C7")));
-                if (tvUltimaSincronizacao != null) {
-                    tvUltimaSincronizacao.setText("Consultando DataSnap Padaria...");
-                }
-                break;
-            case ONLINE:
-                tvStatusServidorPill.setText("● ONLINE");
-                tvStatusServidorPill.setTextColor(Color.parseColor("#86EFAC"));
-                tvStatusServidorPill.setBackgroundResource(R.drawable.bg_dashboard_card_emerald);
-                btnLigarServidor.setText("DESLIGAR");
-                btnLigarServidor.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#EF4444")));
-                break;
-            case ERROR:
-                tvStatusServidorPill.setText("✕ ERRO");
-                tvStatusServidorPill.setTextColor(Color.parseColor("#FCA5A5"));
-                tvStatusServidorPill.setBackgroundResource(R.drawable.bg_dashboard_card_amber);
-                btnLigarServidor.setText("RECONECTAR");
-                btnLigarServidor.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#F59E0B")));
-                if (tvUltimaSincronizacao != null && msg != null && !msg.isEmpty()) {
-                    tvUltimaSincronizacao.setText(msg);
-                }
-                break;
-        }
-
-        atualizarVisibilidadeMonitor();
-    }
-
-    private void atualizarVisibilidadeMonitor() {
-        EstadoServidor estado = monitorEngine != null ? monitorEngine.getEstado() : EstadoServidor.OFFLINE;
-
-        if (estado == EstadoServidor.OFFLINE) {
-            if (layoutConnectingServidor != null) layoutConnectingServidor.setVisibility(View.GONE);
-            if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.GONE);
-            if (layoutEmptyServidor != null) {
-                layoutEmptyServidor.setVisibility(View.VISIBLE);
-                if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Servidor Desconectado");
-                if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Toque no botão abaixo para iniciar o monitoramento das comandas em tempo real.");
-                if (btnEmptyLigarServidor != null) {
-                    btnEmptyLigarServidor.setVisibility(View.VISIBLE);
-                    btnEmptyLigarServidor.setText("▶ LIGAR SERVIDOR");
-                    btnEmptyLigarServidor.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#059669")));
-                }
-            }
-        } else if (estado == EstadoServidor.CONNECTING) {
-            if (layoutEmptyServidor != null) layoutEmptyServidor.setVisibility(View.GONE);
-            if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.GONE);
-            if (layoutConnectingServidor != null) layoutConnectingServidor.setVisibility(View.VISIBLE);
-        } else if (estado == EstadoServidor.ONLINE) {
-            if (layoutConnectingServidor != null) layoutConnectingServidor.setVisibility(View.GONE);
-            if (listaComandasFiltradas.isEmpty()) {
-                if (layoutEmptyServidor != null) {
-                    layoutEmptyServidor.setVisibility(View.VISIBLE);
-                    if (filtroAtual == FILTRO_FAVORITAS) {
-                        if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Nenhuma Mesa Favorita ⭐");
-                        if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Toque na estrela (☆) no card de qualquer comanda para separá-la como sua mesa.");
-                    } else if (filtroAtual == FILTRO_PENDENTES && !listaComandasMonitoradas.isEmpty()) {
-                        if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Todas Entregues! 🎉");
-                        if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Todas as comandas abertas já foram entregues. Toque em 'TODAS' para revê-las.");
-                    } else if (queryBusca != null && !queryBusca.trim().isEmpty()) {
-                        if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Nenhum Resultado");
-                        if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Nenhuma comanda encontrada para '" + queryBusca.trim() + "'.");
-                    } else {
-                        if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Nenhuma Comanda Aberta");
-                        if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Não há comandas abertas nas últimas 10 horas registradas no servidor.");
-                    }
-                    if (btnEmptyLigarServidor != null) btnEmptyLigarServidor.setVisibility(View.GONE);
-                }
-                if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.GONE);
-            } else {
-                if (layoutEmptyServidor != null) layoutEmptyServidor.setVisibility(View.GONE);
-                if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.VISIBLE);
-            }
-        } else if (estado == EstadoServidor.ERROR) {
-            if (layoutConnectingServidor != null) layoutConnectingServidor.setVisibility(View.GONE);
-            if (listaComandasFiltradas.isEmpty()) {
-                if (layoutEmptyServidor != null) {
-                    layoutEmptyServidor.setVisibility(View.VISIBLE);
-                    if (tvEmptyServidorTitulo != null) tvEmptyServidorTitulo.setText("Falha na Conexão");
-                    if (tvEmptyServidorDesc != null) tvEmptyServidorDesc.setText("Não foi possível comunicar com o servidor DataSnap. Verifique o IP e Porta.");
-                    if (btnEmptyLigarServidor != null) {
-                        btnEmptyLigarServidor.setVisibility(View.VISIBLE);
-                        btnEmptyLigarServidor.setText("🔄 TENTAR NOVAMENTE");
-                        btnEmptyLigarServidor.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#DC2626")));
-                    }
-                }
-                if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.GONE);
-            } else {
-                if (layoutEmptyServidor != null) layoutEmptyServidor.setVisibility(View.GONE);
-                if (rvComandasMonitoradas != null) rvComandasMonitoradas.setVisibility(View.VISIBLE);
-            }
-        }
-    }
-
-    private void exibirModalConfigServidor() {
-        Dialog dialog = new Dialog(this);
-        dialog.setContentView(R.layout.dialog_buscar_mesa_servidor);
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        }
-
-        TextView tvTitulo = dialog.findViewById(R.id.tvTituloDialogServidor);
-        TextView tvSubtitulo = dialog.findViewById(R.id.tvSubtituloDialogServidor);
-        TextView tvLabel1 = dialog.findViewById(R.id.tvLabelCampo1);
-        TextView tvLabel2 = dialog.findViewById(R.id.tvLabelCampo2);
-        EditText etIp = dialog.findViewById(R.id.etDialogMesa);
-        EditText etPorta = dialog.findViewById(R.id.etDialogComanda);
-        Button btnCancelar = dialog.findViewById(R.id.btnCancelarBuscarServidor);
-        Button btnSalvar = dialog.findViewById(R.id.btnConfirmarBuscarServidor);
-
-        if (tvTitulo != null) tvTitulo.setText("⚙️ CONFIGURAÇÃO DO SERVIDOR");
-        if (tvSubtitulo != null) tvSubtitulo.setText("Ajuste o IP e Porta do servidor DataSnap da Padaria.");
-        if (tvLabel1 != null) tvLabel1.setText("ENDEREÇO IP DO SERVIDOR");
-        if (tvLabel2 != null) tvLabel2.setText("PORTA DO SERVIDOR");
-        etIp.setHint("IP do Servidor (ex: 192.168.0.246)");
-        etIp.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
-        etIp.setText(serverClient.getServerIp());
-
-        etPorta.setHint("Porta (ex: 8075)");
-        etPorta.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        etPorta.setText(serverClient.getServerPort());
-
-        MaterialButton btnCheckUpdates = dialog.findViewById(R.id.btnVerificarUpdatesDialog);
-        if (btnCheckUpdates != null) {
-            btnCheckUpdates.setVisibility(View.VISIBLE);
-            btnCheckUpdates.setOnClickListener(v -> {
-                Toast.makeText(this, "Consultando atualizações...", Toast.LENGTH_SHORT).show();
-                updateChecker.verificarAtualizacao(new UpdateChecker.OnUpdateCheckListener() {
-                    @Override
-                    public void onUpdateAvailable(UpdateChecker.UpdateInfo info) {
-                        dialog.dismiss();
-                        UpdateChecker.exibirDialogoAtualizacao(MainActivity.this, info);
-                    }
-
-                    @Override
-                    public void onAlreadyUpToDate() {
-                        Toast.makeText(MainActivity.this, "✓ O aplicativo já está na versão mais recente!", Toast.LENGTH_LONG).show();
-                    }
-
-                    @Override
-                    public void onNoVersionPublished() {
-                        Toast.makeText(MainActivity.this, "Nenhuma nova versão publicada ainda.", Toast.LENGTH_LONG).show();
-                    }
-
-                    @Override
-                    public void onError(String erro) {
-                        Toast.makeText(MainActivity.this, "Erro: " + erro, Toast.LENGTH_LONG).show();
-                    }
-                });
-            });
-        }
-
-        MaterialButton btnToggleKeepScreenOn = dialog.findViewById(R.id.btnToggleKeepScreenOn);
-        if (btnToggleKeepScreenOn != null) {
-            btnToggleKeepScreenOn.setVisibility(View.VISIBLE);
-            android.content.SharedPreferences spSettings = getSharedPreferences("app_settings", MODE_PRIVATE);
-            boolean keepOn = spSettings.getBoolean("keep_screen_on", true);
-            atualizarBotaoKeepScreen(btnToggleKeepScreenOn, keepOn);
-
-            btnToggleKeepScreenOn.setOnClickListener(v -> {
-                boolean novoValor = !spSettings.getBoolean("keep_screen_on", true);
-                spSettings.edit().putBoolean("keep_screen_on", novoValor).apply();
-                aplicarKeepScreenOn(novoValor);
-                atualizarBotaoKeepScreen(btnToggleKeepScreenOn, novoValor);
-                Toast.makeText(this, novoValor ? "Tela configurada para NUNCA apagar" : "Tela apagará conforme padrão do Android", Toast.LENGTH_SHORT).show();
-            });
-        }
-
-        MaterialButton btnConfigResumoGarcom = dialog.findViewById(R.id.btnConfigResumoGarcom);
-        if (btnConfigResumoGarcom != null) {
-            btnConfigResumoGarcom.setVisibility(View.VISIBLE);
-            String codAtual = ResumoGarcomManager.getCodigoGarcom(this);
-            String nomeAtual = ResumoGarcomManager.getNomeGarcomAtivo(this);
-            if (!codAtual.isEmpty()) {
-                btnConfigResumoGarcom.setText("👤 RESUMO DO GARÇOM: " + (!nomeAtual.isEmpty() ? nomeAtual : ("#" + codAtual)));
-            } else {
-                btnConfigResumoGarcom.setText("👤 RESUMO DO GARÇOM (DEFINIR CÓDIGO)");
-            }
-            btnConfigResumoGarcom.setOnClickListener(v -> {
-                dialog.dismiss();
-                exibirModalResumoGarcom();
-            });
-        }
-
-        if (btnCancelar != null) btnCancelar.setOnClickListener(v -> dialog.dismiss());
-        if (btnSalvar != null) {
-            btnSalvar.setText("SALVAR CONEXÃO");
-            btnSalvar.setOnClickListener(v -> {
-                String novoIp = etIp.getText().toString().trim();
-                String novaPorta = etPorta.getText().toString().trim();
-
-                if (novoIp.isEmpty()) {
-                    etIp.setError("Digite o IP");
-                    return;
-                }
-                if (novaPorta.isEmpty()) {
-                    etPorta.setError("Digite a Porta");
-                    return;
-                }
-
-                serverClient.salvarConfiguracao(novoIp, novaPorta);
-                dialog.dismiss();
-                Toast.makeText(this, "Configurações salvas! Reconectando...", Toast.LENGTH_SHORT).show();
-
-                if (monitorEngine != null) {
-                    monitorEngine.desligarServidor();
-                    monitorEngine.ligarServidor();
-                }
-            });
-        }
-
-        dialog.show();
-    }
-
-    private void exibirDialogoCancelamentoOculto(ComandaCardModel comanda, ItemComandaModel item) {
-        if (comanda == null || item == null) return;
-        Dialog dialog = new Dialog(this);
-        dialog.setContentView(R.layout.dialog_cancelamento_oculto);
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        }
-
-        TextView tvTitulo = dialog.findViewById(R.id.tvTituloCancelamento);
-        TextView tvSubtitulo = dialog.findViewById(R.id.tvSubtituloCancelamento);
-        LinearLayout layoutDetalhes = dialog.findViewById(R.id.layoutDetalhesItemCanc);
-        TextView tvDescricao = dialog.findViewById(R.id.tvDescricaoItemCanc);
-        TextView tvMesaComanda = dialog.findViewById(R.id.tvMesaComandaItemCanc);
-        EditText etAutonum = dialog.findViewById(R.id.etAutonumCancelamento);
-        EditText etCodGarcom = dialog.findViewById(R.id.etCodGarcomCancelamento);
-        View layoutProgresso = dialog.findViewById(R.id.layoutProgressoCancelamento);
-        Button btnFechar = dialog.findViewById(R.id.btnFecharCancelamento);
-        MaterialButton btnConfirmar = dialog.findViewById(R.id.btnConfirmarCancelamento);
-
-        if (layoutDetalhes != null) layoutDetalhes.setVisibility(View.VISIBLE);
-        if (tvDescricao != null) tvDescricao.setText(item.getTextoLinha());
-        if (tvMesaComanda != null) {
-            String mesaStr = (comanda.getMesa() > 0) ? ("MESA " + String.format(Locale.getDefault(), "%02d", comanda.getMesa())) : "SEM MESA";
-            String numItemStr = (!item.getNumItem().isEmpty()) ? (" • ITEM #" + item.getNumItem()) : "";
-            tvMesaComanda.setText(mesaStr + " • CMD #" + comanda.getNumComanda() + numItemStr);
-        }
-
-        String auto = item.getAutonum();
-        if (etAutonum != null) {
-            etAutonum.setText(auto != null ? auto : "");
-            if (auto == null || auto.isEmpty()) {
-                etAutonum.setHint("Digite o autonum do item");
-            }
-        }
-
-        if (etCodGarcom != null && etCodGarcom.getText().toString().trim().isEmpty()) {
-            etCodGarcom.setText("200");
-        }
-
-        if (btnFechar != null) {
-            btnFechar.setOnClickListener(v -> dialog.dismiss());
-        }
-
-        if (btnConfirmar != null) {
-            btnConfirmar.setOnClickListener(v -> {
-                String autonumInformado = (etAutonum != null) ? etAutonum.getText().toString().trim() : "";
-                String codGarcom = (etCodGarcom != null) ? etCodGarcom.getText().toString().trim() : "200";
-
-                if (autonumInformado.isEmpty()) {
-                    if (etAutonum != null) etAutonum.setError("Informe o AUTONUM do item");
-                    return;
-                }
-                if (codGarcom.isEmpty()) {
-                    codGarcom = "200";
-                }
-
-                btnConfirmar.setEnabled(false);
-                if (btnFechar != null) btnFechar.setEnabled(false);
-                if (layoutProgresso != null) layoutProgresso.setVisibility(View.VISIBLE);
-
-                final String finalAutonum = autonumInformado;
-                serverClient.cancelarItemComanda(autonumInformado, codGarcom, new ServerComandasClient.OnCancelamentoCallback() {
-                    @Override
-                    public void onSuccess(String resposta) {
-                        if (isFinishing() || isDestroyed()) return;
-                        VibrationHelper.vibrateSuccess(MainActivity.this);
-                        Toast.makeText(MainActivity.this, "✓ Item cancelado com sucesso no servidor! (Autonum " + finalAutonum + ")", Toast.LENGTH_LONG).show();
-                        dialog.dismiss();
-                        if (monitorEngine != null) {
-                            monitorEngine.forcarAtualizacaoImediata();
-                        }
-                    }
-
-                    @Override
-                    public void onError(String erro) {
-                        if (isFinishing() || isDestroyed()) return;
-                        btnConfirmar.setEnabled(true);
-                        if (btnFechar != null) btnFechar.setEnabled(true);
-                        if (layoutProgresso != null) layoutProgresso.setVisibility(View.GONE);
-                        Toast.makeText(MainActivity.this, "Erro ao cancelar no servidor: " + erro, Toast.LENGTH_LONG).show();
-                    }
-                });
-            });
-        }
-
-        dialog.show();
-    }
-
-    private void exibirDialogoCancelamentoManualOculto() {
-        Dialog dialog = new Dialog(this);
-        dialog.setContentView(R.layout.dialog_cancelamento_oculto);
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        }
-
-        TextView tvTitulo = dialog.findViewById(R.id.tvTituloCancelamento);
-        TextView tvSubtitulo = dialog.findViewById(R.id.tvSubtituloCancelamento);
-        LinearLayout layoutDetalhes = dialog.findViewById(R.id.layoutDetalhesItemCanc);
-        TextView tvDescricao = dialog.findViewById(R.id.tvDescricaoItemCanc);
-        TextView tvMesaComanda = dialog.findViewById(R.id.tvMesaComandaItemCanc);
-        EditText etAutonum = dialog.findViewById(R.id.etAutonumCancelamento);
-        EditText etCodGarcom = dialog.findViewById(R.id.etCodGarcomCancelamento);
-        View layoutProgresso = dialog.findViewById(R.id.layoutProgressoCancelamento);
-        Button btnFechar = dialog.findViewById(R.id.btnFecharCancelamento);
-        MaterialButton btnConfirmar = dialog.findViewById(R.id.btnConfirmarCancelamento);
-
-        if (tvTitulo != null) tvTitulo.setText("CANCELAMENTO DIRETO POR AUTONUM");
-        if (tvSubtitulo != null) tvSubtitulo.setText("Acesso restrito: informe o autonum do item para cancelar.");
-        if (layoutDetalhes != null) layoutDetalhes.setVisibility(View.VISIBLE);
-        if (tvDescricao != null) tvDescricao.setText("Cancelamento Manual no Servidor DataSnap");
-        if (tvMesaComanda != null) tvMesaComanda.setText("Digite o número AUTONUM gravado no banco de dados");
-
-        if (etAutonum != null) {
-            etAutonum.setText("");
-            etAutonum.setHint("Ex: 849201");
-            etAutonum.requestFocus();
-        }
-
-        if (etCodGarcom != null && etCodGarcom.getText().toString().trim().isEmpty()) {
-            etCodGarcom.setText("200");
-        }
-
-        if (btnFechar != null) {
-            btnFechar.setOnClickListener(v -> dialog.dismiss());
-        }
-
-        if (btnConfirmar != null) {
-            btnConfirmar.setOnClickListener(v -> {
-                String autonumInformado = (etAutonum != null) ? etAutonum.getText().toString().trim() : "";
-                String codGarcom = (etCodGarcom != null) ? etCodGarcom.getText().toString().trim() : "200";
-
-                if (autonumInformado.isEmpty()) {
-                    if (etAutonum != null) etAutonum.setError("Informe o AUTONUM do item");
-                    return;
-                }
-                if (codGarcom.isEmpty()) {
-                    codGarcom = "200";
-                }
-
-                btnConfirmar.setEnabled(false);
-                if (btnFechar != null) btnFechar.setEnabled(false);
-                if (layoutProgresso != null) layoutProgresso.setVisibility(View.VISIBLE);
-
-                final String finalAutonum = autonumInformado;
-                serverClient.cancelarItemComanda(autonumInformado, codGarcom, new ServerComandasClient.OnCancelamentoCallback() {
-                    @Override
-                    public void onSuccess(String resposta) {
-                        if (isFinishing() || isDestroyed()) return;
-                        VibrationHelper.vibrateSuccess(MainActivity.this);
-                        Toast.makeText(MainActivity.this, "✓ Autonum " + finalAutonum + " cancelado no servidor!", Toast.LENGTH_LONG).show();
-                        dialog.dismiss();
-                        if (monitorEngine != null) {
-                            monitorEngine.forcarAtualizacaoImediata();
-                        }
-                    }
-
-                    @Override
-                    public void onError(String erro) {
-                        if (isFinishing() || isDestroyed()) return;
-                        btnConfirmar.setEnabled(true);
-                        if (btnFechar != null) btnFechar.setEnabled(true);
-                        if (layoutProgresso != null) layoutProgresso.setVisibility(View.GONE);
-                        Toast.makeText(MainActivity.this, "Erro ao cancelar no servidor: " + erro, Toast.LENGTH_LONG).show();
-                    }
-                });
-            });
-        }
-
-        dialog.show();
-    }
-
-    private void atualizarVisualResumoGarcom() {
-        ResumoGarcomManager.ResumoGarcomDados dados = ResumoGarcomManager.calcularEAtualizar(this, listaComandasMonitoradas);
-        if (tvBarraGarcomIdentificacao != null) {
-            tvBarraGarcomIdentificacao.setText(dados.getTituloGarcom());
-        }
-        if (tvBarraGarcomSubtitulo != null) {
-            if (dados.temCodigoConfigurado()) {
-                if (dados.comandasAtivasAgora > 0) {
-                    tvBarraGarcomSubtitulo.setText("Em " + dados.comandasAtivasAgora + " comanda(s) aberta(s) agora");
-                } else {
-                    tvBarraGarcomSubtitulo.setText("Sem comandas abertas no momento");
-                }
-            } else {
-                tvBarraGarcomSubtitulo.setText("Toque aqui para definir seu código");
-            }
-        }
-        if (tvBarraGarcomQtdPedidos != null) {
-            if (dados.temCodigoConfigurado()) {
-                String pedidosTxt = dados.totalPedidosHoje == 1 ? "1 pedido" : (dados.totalPedidosHoje + " pedidos");
-                tvBarraGarcomQtdPedidos.setText(pedidosTxt);
-            } else {
-                tvBarraGarcomQtdPedidos.setText("--");
-            }
-        }
-        if (tvBarraGarcomAtivosPendente != null) {
-            if (dados.temCodigoConfigurado()) {
-                tvBarraGarcomAtivosPendente.setText(dados.pedidosAbertosAgora + " ativos");
-            } else {
-                tvBarraGarcomAtivosPendente.setText("0 ativos");
-            }
-        }
-        if (tvBarraGarcomFaturamento != null) {
-            if (dados.temCodigoConfigurado()) {
-                tvBarraGarcomFaturamento.setText(dados.getFaturamentoHojeFormatado());
-            } else {
-                tvBarraGarcomFaturamento.setText("R$ 0,00");
-            }
-        }
-    }
-
-    private void exibirModalResumoGarcom() {
-        Dialog dialog = new Dialog(this);
-        dialog.setContentView(R.layout.dialog_config_resumo_garcom);
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        }
-
-        TextView tvStatusNome = dialog.findViewById(R.id.tvStatusResumoGarcomNome);
-        TextView tvStatusValores = dialog.findViewById(R.id.tvStatusResumoGarcomValores);
-        LinearLayout layoutChips = dialog.findViewById(R.id.layoutChipsGarcons);
-        EditText etCodGarcom = dialog.findViewById(R.id.etCodGarcomResumo);
-        TextView tvNomeDetectado = dialog.findViewById(R.id.tvNomeGarcomDetectado);
-        Button btnZerar = dialog.findViewById(R.id.btnZerarTurnoHoje);
-        Button btnFechar = dialog.findViewById(R.id.btnFecharResumoGarcom);
-        MaterialButton btnSalvar = dialog.findViewById(R.id.btnSalvarCodGarcom);
-
+        // Garante que o garçom padrão seja o 223 (Wanderson)
         String codAtual = ResumoGarcomManager.getCodigoGarcom(this);
-        if (etCodGarcom != null) {
-            etCodGarcom.setText(codAtual);
-            if (!codAtual.isEmpty()) {
-                etCodGarcom.setSelection(codAtual.length());
-            }
+        if (codAtual.isEmpty()) {
+            ResumoGarcomManager.setCodigoGarcom(this, "223");
         }
 
-        Runnable atualizarCardStatus = () -> {
-            ResumoGarcomManager.ResumoGarcomDados dados = ResumoGarcomManager.calcularEAtualizar(this, listaComandasMonitoradas);
-            if (tvStatusNome != null) {
-                if (dados.temCodigoConfigurado()) {
-                    tvStatusNome.setText("👤 " + dados.nomeGarcom + " (#" + dados.codigoGarcom + ")");
-                } else {
-                    tvStatusNome.setText("👤 Nenhum garçom configurado");
+        vincularViews();
+        configurarBotoes();
+
+        // Solicita permissão de notificações em Android 13+
+        solicitarPermissaoNotificacoes();
+
+        // Registra listeners de cancelamento e monitoramento
+        cancelamentoManager.registrarListener(this);
+
+        // Verifica atualizações remotas discretamente
+        verificarAtualizacaoApp();
+
+        // Atualiza a tela inicialmente com os dados salvos
+        atualizarDadosDashboard();
+    }
+
+    private void vincularViews() {
+        tvStatusServidorPill = findViewById(R.id.tvStatusServidorPill);
+        btnAtualizar = findViewById(R.id.btnAtualizar);
+        btnConfigGarcom = findViewById(R.id.btnConfigGarcom);
+        tvNomeGarcomAtivo = findViewById(R.id.tvNomeGarcomAtivo);
+        tvUltimaSincronizacao = findViewById(R.id.tvUltimaSincronizacao);
+
+        cardItemPendenteConfirmacao = findViewById(R.id.cardItemPendenteConfirmacao);
+        tvBadgeContadorPendentes = findViewById(R.id.tvBadgeContadorPendentes);
+        tvPendenteDescricao = findViewById(R.id.tvPendenteDescricao);
+        tvPendenteMesaComanda = findViewById(R.id.tvPendenteMesaComanda);
+        btnConfirmarCancelado = findViewById(R.id.btnConfirmarCancelado);
+        btnDescartarCancelado = findViewById(R.id.btnDescartarCancelado);
+
+        tvFaturamentoHoje = findViewById(R.id.tvFaturamentoHoje);
+        tvQtdItensHoje = findViewById(R.id.tvQtdItensHoje);
+        tvAbertosAgora = findViewById(R.id.tvAbertosAgora);
+        tvTituloMes = findViewById(R.id.tvTituloMes);
+        tvFaturamentoMes = findViewById(R.id.tvFaturamentoMes);
+        tvQtdItensMes = findViewById(R.id.tvQtdItensMes);
+        tvCancelamentosHoje = findViewById(R.id.tvCancelamentosHoje);
+
+        layoutHistoricoDias = findViewById(R.id.layoutHistoricoDias);
+        tvVazioDias = findViewById(R.id.tvVazioDias);
+        layoutHistoricoCancelamentos = findViewById(R.id.layoutHistoricoCancelamentos);
+        tvVazioCancelamentos = findViewById(R.id.tvVazioCancelamentos);
+    }
+
+    private void configurarBotoes() {
+        // Botão de atualização manual com animação suave de giro
+        if (btnAtualizar != null) {
+            btnAtualizar.setOnClickListener(v -> {
+                RotateAnimation rotate = new RotateAnimation(0, 360,
+                        Animation.RELATIVE_TO_SELF, 0.5f,
+                        Animation.RELATIVE_TO_SELF, 0.5f);
+                rotate.setDuration(600);
+                v.startAnimation(rotate);
+
+                if (monitorEngine != null) {
+                    monitorEngine.forcarAtualizacaoImediata();
                 }
-            }
-            if (tvStatusValores != null) {
-                if (dados.temCodigoConfigurado()) {
-                    String ativosTxt = dados.pedidosAbertosAgora > 0 ? (" • " + dados.pedidosAbertosAgora + " ativos agora") : "";
-                    tvStatusValores.setText("Pedidos hoje: " + dados.totalPedidosHoje + " • Faturamento: " + dados.getFaturamentoHojeFormatado() + ativosTxt);
-                } else {
-                    tvStatusValores.setText("Selecione um garçom abaixo para começar a contabilizar.");
-                }
-            }
-        };
-        atualizarCardStatus.run();
-
-        if (etCodGarcom != null && tvNomeDetectado != null) {
-            etCodGarcom.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    String cod = s.toString().trim();
-                    if (cod.isEmpty()) {
-                        tvNomeDetectado.setText("Digite o código do garçom");
-                        tvNomeDetectado.setTextColor(Color.parseColor("#94A3B8"));
-                    } else {
-                        String nome = GarcomManager.getNomeGarcom(MainActivity.this, cod);
-                        tvNomeDetectado.setText("✓ Garçom identificado: " + nome);
-                        tvNomeDetectado.setTextColor(Color.parseColor("#059669"));
-                    }
-                }
-                @Override
-                public void afterTextChanged(Editable s) {}
-            });
-            String codInicial = etCodGarcom.getText().toString().trim();
-            if (!codInicial.isEmpty()) {
-                tvNomeDetectado.setText("✓ Garçom identificado: " + GarcomManager.getNomeGarcom(this, codInicial));
-                tvNomeDetectado.setTextColor(Color.parseColor("#059669"));
-            }
-        }
-
-        if (layoutChips != null) {
-            layoutChips.removeAllViews();
-            java.util.Map<String, String> garcons = GarcomManager.getGarconsPadrao();
-            for (java.util.Map.Entry<String, String> entry : garcons.entrySet()) {
-                String codG = entry.getKey();
-                String nomeG = entry.getValue();
-
-                TextView chip = new TextView(this);
-                chip.setText(codG + " • " + nomeG);
-                chip.setTextSize(11f);
-                chip.setTypeface(null, android.graphics.Typeface.BOLD);
-                chip.setPadding(26, 14, 26, 14);
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                );
-                lp.setMarginEnd(14);
-                chip.setLayoutParams(lp);
-
-                boolean selecionado = codAtual.equals(codG);
-                if (selecionado) {
-                    chip.setBackgroundResource(R.drawable.bg_filter_chip_active);
-                    chip.setTextColor(Color.WHITE);
-                } else {
-                    chip.setBackgroundResource(R.drawable.bg_filter_chip_inactive);
-                    chip.setTextColor(Color.parseColor("#475569"));
-                }
-
-                chip.setOnClickListener(v -> {
-                    if (etCodGarcom != null) {
-                        etCodGarcom.setText(codG);
-                        etCodGarcom.setSelection(codG.length());
-                    }
-                    for (int i = 0; i < layoutChips.getChildCount(); i++) {
-                        View c = layoutChips.getChildAt(i);
-                        if (c instanceof TextView) {
-                            ((TextView) c).setBackgroundResource(R.drawable.bg_filter_chip_inactive);
-                            ((TextView) c).setTextColor(Color.parseColor("#475569"));
-                        }
-                    }
-                    chip.setBackgroundResource(R.drawable.bg_filter_chip_active);
-                    chip.setTextColor(Color.WHITE);
-                });
-
-                layoutChips.addView(chip);
-            }
-        }
-
-        if (btnZerar != null) {
-            btnZerar.setOnClickListener(v -> {
-                String codParaZerar = (etCodGarcom != null) ? etCodGarcom.getText().toString().trim() : "";
-                if (codParaZerar.isEmpty()) codParaZerar = codAtual;
-                if (codParaZerar.isEmpty()) {
-                    Toast.makeText(this, "Nenhum código para zerar", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                final String finalCod = codParaZerar;
-                new AlertDialog.Builder(this)
-                        .setTitle("Zerar Resumo de Hoje?")
-                        .setMessage("Deseja realmente zerar o acumulado de pedidos e faturamento do garçom #" + finalCod + " para o turno de hoje?")
-                        .setPositiveButton("Sim, zerar", (d, which) -> {
-                            ResumoGarcomManager.zerarResumoHoje(MainActivity.this, finalCod);
-                            atualizarCardStatus.run();
-                            atualizarVisualResumoGarcom();
-                            Toast.makeText(MainActivity.this, "✓ Turno de hoje zerado para #" + finalCod, Toast.LENGTH_SHORT).show();
-                        })
-                        .setNegativeButton("Não", null)
-                        .show();
+                Toast.makeText(MainActivity.this, "Consultando servidor...", Toast.LENGTH_SHORT).show();
             });
         }
 
-        if (btnFechar != null) {
-            btnFechar.setOnClickListener(v -> dialog.dismiss());
+        // Botão para ajustar o código do garçom
+        if (btnConfigGarcom != null) {
+            btnConfigGarcom.setOnClickListener(v -> exibirDialogoConfigGarcom());
         }
-
-        if (btnSalvar != null) {
-            btnSalvar.setOnClickListener(v -> {
-                String novoCod = (etCodGarcom != null) ? etCodGarcom.getText().toString().trim() : "";
-                if (novoCod.isEmpty()) {
-                    if (etCodGarcom != null) etCodGarcom.setError("Digite o código do garçom");
-                    return;
-                }
-                ResumoGarcomManager.setCodigoGarcom(MainActivity.this, novoCod);
-                atualizarVisualResumoGarcom();
-                String nomeSalvo = GarcomManager.getNomeGarcom(MainActivity.this, novoCod);
-                Toast.makeText(MainActivity.this, "✓ Resumo configurado para: " + nomeSalvo + " (#" + novoCod + ")", Toast.LENGTH_LONG).show();
-                dialog.dismiss();
-            });
+        if (tvNomeGarcomAtivo != null) {
+            tvNomeGarcomAtivo.setOnClickListener(v -> exibirDialogoConfigGarcom());
         }
-
-        dialog.show();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        atualizarVisualResumoGarcom();
-
-        // Inicia contador suave de segundos a cada 1s para o tempo de espera das comandas
-        if (runnableTimer1s == null) {
-            runnableTimer1s = new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        if (!isFinishing() && !isDestroyed() && rvComandasMonitoradas != null && !rvComandasMonitoradas.isComputingLayout()) {
-                            if (adapterComandas != null && monitorEngine != null && monitorEngine.isAtivo()) {
-                                adapterComandas.atualizarContadoresSegundos();
-                            }
-                        }
-                    } catch (Exception ignored) {}
-                    timer1sHandler.postDelayed(this, 1000);
-                }
-            };
+        if (monitorEngine != null) {
+            monitorEngine.registrarCallback(this);
+            if (!monitorEngine.isAtivo()) {
+                monitorEngine.ligarServidor();
+            }
         }
-        timer1sHandler.removeCallbacks(runnableTimer1s);
-        timer1sHandler.post(runnableTimer1s);
+        atualizarDadosDashboard();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (runnableTimer1s != null) {
-            timer1sHandler.removeCallbacks(runnableTimer1s);
+        if (monitorEngine != null) {
+            monitorEngine.removerCallback(this);
         }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (monitorEngine != null && monitorCallback != null) {
-            monitorEngine.removerCallback(monitorCallback);
-        }
-        if (timer1sHandler != null) {
-            timer1sHandler.removeCallbacksAndMessages(null);
-        }
-    }
-
-    private void verificarEPedirTodasPermissoes() {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                    requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFICACOES);
-                }
-            }
-        } catch (Exception ignored) {}
-    }
-
-    private void aplicarKeepScreenOn(boolean keepOn) {
-        if (keepOn) {
-            getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        } else {
-            getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        }
-    }
-
-    private void atualizarIconeSomAlerta(boolean ativo) {
-        if (btnToggleSomAlerta != null) {
-            btnToggleSomAlerta.setText(ativo ? "🔔" : "🔕");
-            btnToggleSomAlerta.setAlpha(ativo ? 1.0f : 0.55f);
-        }
-    }
-
-    private void atualizarBotaoKeepScreen(MaterialButton btn, boolean keepOn) {
-        if (keepOn) {
-            btn.setText("💡 MANTER TELA SEMPRE LIGADA: LIGADO");
-            btn.setTextColor(Color.parseColor("#0284C7"));
-        } else {
-            btn.setText("💤 MANTER TELA SEMPRE LIGADA: DESLIGADO");
-            btn.setTextColor(Color.parseColor("#64748B"));
+        if (cancelamentoManager != null) {
+            cancelamentoManager.removerListener(this);
         }
     }
 
     /**
-     * LinearLayoutManager seguro contra corridas de thread e inconsistencias transitorias do RecyclerView
+     * Atualiza os números, cards e históricos da interface
      */
-    public static class SafeLinearLayoutManager extends LinearLayoutManager {
-        public SafeLinearLayoutManager(Context context) {
-            super(context);
+    public synchronized void atualizarDadosDashboard() {
+        String cod = ResumoGarcomManager.getCodigoGarcom(this);
+        String nome = GarcomManager.getNomeGarcom(this, cod);
+
+        if (nome == null || nome.isEmpty()) {
+            nome = "Garçom";
         }
 
-        @Override
-        public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
-            try {
-                super.onLayoutChildren(recycler, state);
-            } catch (IndexOutOfBoundsException | IllegalStateException e) {
-                // Previne eventuais corridas transitorias do RecyclerView durante updates rapidos
+        if (tvNomeGarcomAtivo != null) {
+            tvNomeGarcomAtivo.setText("👤 " + nome + " (#" + cod + ")");
+        }
+
+        // 1. Faturamento Hoje
+        double fatHoje = vendasManager.getFaturamentoHoje(cod);
+        int qtdHoje = vendasManager.getQtdItensHoje(cod);
+        double abertosHoje = vendasManager.getFaturamentoAbertoAgora();
+        int qtdAbertosHoje = vendasManager.getQtdItensAbertoAgora();
+
+        if (tvFaturamentoHoje != null) {
+            tvFaturamentoHoje.setText(VendasFaturamentoManager.formatarMoeda(fatHoje));
+        }
+        if (tvQtdItensHoje != null) {
+            tvQtdItensHoje.setText(qtdHoje + (qtdHoje == 1 ? " produto vendido hoje" : " produtos vendidos hoje"));
+        }
+        if (tvAbertosAgora != null) {
+            if (abertosHoje > 0) {
+                tvAbertosAgora.setText("🟢 " + VendasFaturamentoManager.formatarMoeda(abertosHoje) + " em mesas abertas agora (" + qtdAbertosHoje + " itens)");
+                tvAbertosAgora.setTextColor(Color.parseColor("#FDE68A"));
+            } else {
+                tvAbertosAgora.setText("⚪ Nenhuma mesa aberta no momento");
+                tvAbertosAgora.setTextColor(Color.parseColor("#94A3B8"));
+            }
+        }
+
+        // 2. Faturamento Mês
+        Calendar cal = Calendar.getInstance();
+        String mesNome = new DateFormatSymbols(new Locale("pt", "BR")).getMonths()[cal.get(Calendar.MONTH)];
+        if (mesNome != null && !mesNome.isEmpty()) {
+            mesNome = mesNome.substring(0, 1).toUpperCase(Locale.getDefault()) + mesNome.substring(1);
+        }
+        int ano = cal.get(Calendar.YEAR);
+
+        if (tvTituloMes != null) {
+            tvTituloMes.setText("FATURAMENTO NO MÊS (" + mesNome.toUpperCase(Locale.getDefault()) + "/" + ano + ")");
+        }
+
+        double fatMes = vendasManager.getFaturamentoMes(cod);
+        int qtdMes = vendasManager.getQtdItensMes(cod);
+
+        if (tvFaturamentoMes != null) {
+            tvFaturamentoMes.setText(VendasFaturamentoManager.formatarMoeda(fatMes));
+        }
+        if (tvQtdItensMes != null) {
+            tvQtdItensMes.setText(qtdMes + (qtdMes == 1 ? " venda acumulada no mês" : " vendas acumuladas no mês"));
+        }
+
+        // 3. Cancelamentos Hoje
+        double cancHoje = cancelamentoManager.getTotalCanceladoHoje();
+        int qtdCancHoje = cancelamentoManager.getQtdCanceladoHoje();
+
+        if (tvCancelamentosHoje != null) {
+            if (cancHoje > 0) {
+                tvCancelamentosHoje.setText(VendasFaturamentoManager.formatarMoeda(cancHoje) + " (" + qtdCancHoje + (qtdCancHoje == 1 ? " item)" : " itens)"));
+                tvCancelamentosHoje.setTextColor(Color.parseColor("#EF4444"));
+            } else {
+                tvCancelamentosHoje.setText("R$ 0,00 (0 itens cancelados)");
+                tvCancelamentosHoje.setTextColor(Color.parseColor("#10B981"));
+            }
+        }
+
+        // 4. Banner de Item Pendente de Confirmação
+        atualizarBannerItemPendente();
+
+        // 5. Histórico diário do mês
+        renderizarHistoricoDias(cod);
+
+        // 6. Histórico de cancelamentos confirmados
+        renderizarHistoricoCancelamentos();
+    }
+
+    private void atualizarBannerItemPendente() {
+        if (cardItemPendenteConfirmacao == null) return;
+
+        List<ItemCanceladoModel> pendentes = cancelamentoManager.getItensPendentes();
+        if (pendentes.isEmpty()) {
+            cardItemPendenteConfirmacao.setVisibility(View.GONE);
+            return;
+        }
+
+        ItemCanceladoModel itemAtual = pendentes.get(0);
+        cardItemPendenteConfirmacao.setVisibility(View.VISIBLE);
+
+        if (tvBadgeContadorPendentes != null) {
+            tvBadgeContadorPendentes.setText(pendentes.size() + (pendentes.size() == 1 ? " pendente" : " pendentes"));
+        }
+        if (tvPendenteDescricao != null) {
+            tvPendenteDescricao.setText(itemAtual.getLinhaResumo());
+        }
+        if (tvPendenteMesaComanda != null) {
+            tvPendenteMesaComanda.setText(itemAtual.getIdentificadorComanda() + " • Detectado às " + itemAtual.getHoraFormatada());
+        }
+
+        if (btnConfirmarCancelado != null) {
+            btnConfirmarCancelado.setOnClickListener(v -> {
+                cancelamentoManager.confirmarCancelamento(itemAtual);
+                Toast.makeText(MainActivity.this, "Cancelamento confirmado e registrado!", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        if (btnDescartarCancelado != null) {
+            btnDescartarCancelado.setOnClickListener(v -> {
+                cancelamentoManager.descartarCancelamento(itemAtual);
+                Toast.makeText(MainActivity.this, "Item mantido como venda normal.", Toast.LENGTH_SHORT).show();
+            });
+        }
+    }
+
+    private void renderizarHistoricoDias(String codGarcom) {
+        if (layoutHistoricoDias == null) return;
+        layoutHistoricoDias.removeAllViews();
+
+        List<VendasFaturamentoManager.DiaFaturamento> dias = vendasManager.getHistoricoDiasMes(codGarcom);
+        if (dias.isEmpty()) {
+            if (tvVazioDias != null) tvVazioDias.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        if (tvVazioDias != null) tvVazioDias.setVisibility(View.GONE);
+
+        LayoutInflater inflater = LayoutInflater.from(this);
+        for (VendasFaturamentoManager.DiaFaturamento dia : dias) {
+            View itemView = inflater.inflate(R.layout.item_historico_dia, layoutHistoricoDias, false);
+            TextView tvDiaLabel = itemView.findViewById(R.id.tvDiaLabel);
+            TextView tvDiaQtdItens = itemView.findViewById(R.id.tvDiaQtdItens);
+            TextView tvDiaFaturamento = itemView.findViewById(R.id.tvDiaFaturamento);
+            TextView tvDiaCancelado = itemView.findViewById(R.id.tvDiaCancelado);
+
+            tvDiaLabel.setText(dia.labelExibicao);
+            tvDiaQtdItens.setText(dia.qtdItens + (dia.qtdItens == 1 ? " produto vendido" : " produtos vendidos"));
+            tvDiaFaturamento.setText(dia.getFaturamentoFormatado());
+
+            if (dia.cancelado > 0) {
+                tvDiaCancelado.setVisibility(View.VISIBLE);
+                tvDiaCancelado.setText("- " + dia.getCanceladoFormatado() + " canc.");
+            } else {
+                tvDiaCancelado.setVisibility(View.GONE);
+            }
+
+            layoutHistoricoDias.addView(itemView);
+        }
+    }
+
+    private void renderizarHistoricoCancelamentos() {
+        if (layoutHistoricoCancelamentos == null) return;
+        layoutHistoricoCancelamentos.removeAllViews();
+
+        List<ItemCanceladoModel> confirmados = cancelamentoManager.getHistoricoConfirmados();
+        if (confirmados.isEmpty()) {
+            if (tvVazioCancelamentos != null) tvVazioCancelamentos.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        if (tvVazioCancelamentos != null) tvVazioCancelamentos.setVisibility(View.GONE);
+
+        LayoutInflater inflater = LayoutInflater.from(this);
+        int maxExibir = Math.min(10, confirmados.size());
+        for (int i = 0; i < maxExibir; i++) {
+            ItemCanceladoModel c = confirmados.get(i);
+            View itemView = inflater.inflate(R.layout.item_historico_cancelamento, layoutHistoricoCancelamentos, false);
+            TextView tvCancDescricao = itemView.findViewById(R.id.tvCancDescricao);
+            TextView tvCancMesaHora = itemView.findViewById(R.id.tvCancMesaHora);
+            TextView tvCancValor = itemView.findViewById(R.id.tvCancValor);
+
+            tvCancDescricao.setText(c.getQtde() + "x " + c.getDescricao());
+            tvCancMesaHora.setText(c.getIdentificadorComanda() + " • " + c.getHoraFormatada() + " (" + c.getDataStr() + ")");
+            tvCancValor.setText("- " + c.getValorFormatado());
+
+            layoutHistoricoCancelamentos.addView(itemView);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DETECÇÃO DE CANCELAMENTO - PERGUNTA AO USUÁRIO
+    // ═══════════════════════════════════════════════════════════════
+    @Override
+    public void onNovoItemParaConfirmar(ItemCanceladoModel item) {
+        if (item == null) return;
+
+        // Se a atividade estiver visível, abre o diálogo de pergunta imediatamente
+        if (!isFinishing() && !isDestroyed()) {
+            exibirDialogoPerguntaCancelamento(item);
+        }
+        atualizarDadosDashboard();
+    }
+
+    @Override
+    public void onCancelamentosAtualizados() {
+        atualizarDadosDashboard();
+    }
+
+    private void exibirDialogoPerguntaCancelamento(ItemCanceladoModel item) {
+        if (isFinishing() || isDestroyed()) return;
+        if (dialogCancelamentoAtivo != null && dialogCancelamentoAtivo.isShowing()) {
+            // Já existe um diálogo aberto, o banner na tela tratará o próximo
+            return;
+        }
+
+        VibrationHelper.vibrateLongPress(this);
+
+        String msg = "O produto abaixo não consta mais na comanda:\n\n"
+                + "📦 " + item.getLinhaResumo() + "\n"
+                + "📍 " + item.getIdentificadorComanda() + "\n\n"
+                + "Este item foi realmente cancelado pelo cliente ou pelo gerente?";
+
+        dialogCancelamentoAtivo = new AlertDialog.Builder(this)
+                .setTitle("⚠️ Item Removido da Comanda")
+                .setMessage(msg)
+                .setCancelable(false)
+                .setPositiveButton("❌ Sim, foi Cancelado", (d, which) -> {
+                    cancelamentoManager.confirmarCancelamento(item);
+                    Toast.makeText(MainActivity.this, "Cancelamento registrado com sucesso!", Toast.LENGTH_SHORT).show();
+                    dialogCancelamentoAtivo = null;
+                })
+                .setNegativeButton("✅ Não, foi Pago / Normal", (d, which) -> {
+                    cancelamentoManager.descartarCancelamento(item);
+                    Toast.makeText(MainActivity.this, "Item mantido como venda.", Toast.LENGTH_SHORT).show();
+                    dialogCancelamentoAtivo = null;
+                })
+                .show();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DIÁLOGO PARA CONFIGURAR CÓDIGO DO GARÇOM
+    // ═══════════════════════════════════════════════════════════════
+    private void exibirDialogoConfigGarcom() {
+        if (isFinishing() || isDestroyed()) return;
+
+        final EditText input = new EditText(this);
+        input.setHint("Ex: 223");
+        String codAtual = ResumoGarcomManager.getCodigoGarcom(this);
+        input.setText(codAtual);
+        input.setSelection(input.getText().length());
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (18 * getResources().getDisplayMetrics().density);
+        container.setPadding(pad, pad / 2, pad, pad / 2);
+
+        TextView tvDica = new TextView(this);
+        tvDica.setText("Garçons cadastrados no sistema:\n• 223: Wanderson\n• 200: Cauã\n• 217: Miguel\n• 224: Lucas\n• 40: Kamila\n• 65: Geovana");
+        tvDica.setTextSize(12.5f);
+        tvDica.setTextColor(Color.parseColor("#64748B"));
+        tvDica.setPadding(0, 0, 0, pad / 2);
+
+        container.addView(tvDica);
+        container.addView(input);
+
+        new AlertDialog.Builder(this)
+                .setTitle("⚙️ Meu Código de Garçom")
+                .setMessage("Digite o seu número para calcular suas vendas e monitorar cancelamentos:")
+                .setView(container)
+                .setPositiveButton("Salvar", (d, which) -> {
+                    String novoCod = input.getText().toString().trim();
+                    if (!novoCod.isEmpty()) {
+                        ResumoGarcomManager.setCodigoGarcom(MainActivity.this, novoCod);
+                        String nome = GarcomManager.getNomeGarcom(MainActivity.this, novoCod);
+                        Toast.makeText(MainActivity.this, "Garçom definido: " + nome + " (#" + novoCod + ")", Toast.LENGTH_SHORT).show();
+                        atualizarDadosDashboard();
+                        if (monitorEngine != null) {
+                            monitorEngine.forcarAtualizacaoImediata();
+                        }
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // CALLBACKS DO MONITOR ENGINE
+    // ═══════════════════════════════════════════════════════════════
+    @Override
+    public void onEstadoAlterado(EstadoServidor novoEstado, String mensagem) {
+        runOnUiThread(() -> {
+            if (tvStatusServidorPill == null) return;
+            if (novoEstado == EstadoServidor.ONLINE) {
+                tvStatusServidorPill.setText("● ONLINE");
+                tvStatusServidorPill.setTextColor(Color.parseColor("#10B981"));
+            } else if (novoEstado == EstadoServidor.CONNECTING) {
+                tvStatusServidorPill.setText("● CONECTANDO");
+                tvStatusServidorPill.setTextColor(Color.parseColor("#F59E0B"));
+            } else if (novoEstado == EstadoServidor.ERROR) {
+                tvStatusServidorPill.setText("● ERRO REDE");
+                tvStatusServidorPill.setTextColor(Color.parseColor("#EF4444"));
+            } else {
+                tvStatusServidorPill.setText("● OFFLINE");
+                tvStatusServidorPill.setTextColor(Color.parseColor("#94A3B8"));
+            }
+        });
+    }
+
+    @Override
+    public void onComandasAtualizadas(List<ComandaCardModel> comandas, String ultimaSincronizacao) {
+        runOnUiThread(() -> {
+            if (tvUltimaSincronizacao != null && ultimaSincronizacao != null && !ultimaSincronizacao.isEmpty()) {
+                tvUltimaSincronizacao.setText("⏱ Sincronizado às " + ultimaSincronizacao);
+            }
+            atualizarDadosDashboard();
+        });
+    }
+
+    private void verificarAtualizacaoApp() {
+        try {
+            UpdateChecker checker = new UpdateChecker(this);
+            checker.verificarAtualizacao(new UpdateChecker.OnUpdateCheckListener() {
+                @Override
+                public void onUpdateAvailable(UpdateChecker.UpdateInfo info) {
+                    runOnUiThread(() -> {
+                        if (!isFinishing() && !isDestroyed()) {
+                            UpdateChecker.exibirDialogoAtualizacao(MainActivity.this, info);
+                        }
+                    });
+                }
+
+                @Override
+                public void onAlreadyUpToDate() {}
+
+                @Override
+                public void onNoVersionPublished() {}
+
+                @Override
+                public void onError(String erro) {}
+            });
+        } catch (Exception ignored) {}
+    }
+
+    private void solicitarPermissaoNotificacoes() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 101);
             }
         }
     }

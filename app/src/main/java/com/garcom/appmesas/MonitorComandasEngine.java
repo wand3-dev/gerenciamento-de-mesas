@@ -624,6 +624,12 @@ public class MonitorComandasEngine {
                 setEstado(EstadoServidor.ONLINE, "● SERVIDOR ONLINE");
 
                 List<ComandaCardModel> listaFinal = getListaComandas();
+                try {
+                    String codGarcom = ResumoGarcomManager.getCodigoGarcom(context);
+                    VendasFaturamentoManager.getInstance(context).processarCicloPolling(codGarcom, listaFinal);
+                    CancelamentoDetectorManager.getInstance(context).processarCicloPolling(codGarcom, listaFinal);
+                } catch (Exception ignored) {}
+
                 mainHandler.post(() -> {
                     for (MonitorCallback cb : callbacks) {
                         cb.onComandasAtualizadas(listaFinal, ultimaSincronizacao);

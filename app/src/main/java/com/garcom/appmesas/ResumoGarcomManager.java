@@ -71,9 +71,9 @@ public class ResumoGarcomManager {
     }
 
     public static String getCodigoGarcom(Context context) {
-        if (context == null) return "";
+        if (context == null) return "223";
         SharedPreferences sp = context.getSharedPreferences(PREF_RESUMO, Context.MODE_PRIVATE);
-        String salvo = sp.getString(KEY_COD_GARCOM, "");
+        String salvo = sp.getString(KEY_COD_GARCOM, "223");
         if (salvo != null && !salvo.trim().isEmpty()) {
             return GarcomManager.normalizarCodigo(salvo);
         }
@@ -84,7 +84,7 @@ public class ResumoGarcomManager {
                 return GarcomManager.normalizarCodigo(codSessao);
             }
         } catch (Exception ignored) {}
-        return "";
+        return "223";
     }
 
     public static void setCodigoGarcom(Context context, String codGarcom) {

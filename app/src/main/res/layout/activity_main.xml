@@ -9,17 +9,17 @@
     android:fitsSystemWindows="true">
 
     <!-- ═══════════════════════════════════════════════════════════════
-         1. CABEÇALHO COMPACTO & MINIMALISTA
+         1. CABEÇALHO EXECUTIVO MINIMALISTA
     ═══════════════════════════════════════════════════════════════ -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:background="@drawable/bg_header_luxury"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
         android:elevation="4dp">
 
         <RelativeLayout
@@ -51,24 +51,22 @@
                         android:layout_height="wrap_content"
                         android:text="PORTUGÁLIA"
                         android:textColor="#FDE68A"
-                        android:textSize="18sp"
+                        android:textSize="17sp"
                         android:textStyle="bold"
-                        android:letterSpacing="0.08" />
+                        android:letterSpacing="0.06" />
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/tvNomeUsuarioLogado"
+                    android:id="@+id/tvSubtituloHeader"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Monitor de Comandas"
+                    android:text="Painel de Vendas &amp; Faturamento"
                     android:textColor="#94A3B8"
-                    android:textSize="10.5sp"
-                    android:textStyle="bold"
-                    android:clickable="true"
-                    android:focusable="true" />
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Ações do Servidor à direita -->
+            <!-- Ações à direita -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -92,442 +90,460 @@
                     android:textSize="10.5sp"
                     android:textStyle="bold" />
 
-                <!-- Botão Central Ligar / Desligar -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnLigarServidor"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginStart="8dp"
-                    android:text="LIGAR"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    app:cornerRadius="8dp"
-                    android:backgroundTint="#10B981"
-                    android:textColor="#FFFFFF"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp" />
-
-                <!-- Botão Som de Nova Comanda (Sino / Mudo) -->
+                <!-- Botão Atualizar Manual -->
                 <TextView
-                    android:id="@+id/btnToggleSomAlerta"
-                    android:layout_width="34dp"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="2dp"
+                    android:id="@+id/btnAtualizar"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="8dp"
                     android:gravity="center"
-                    android:text="🔔"
+                    android:text="🔄"
                     android:textSize="15sp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true" />
 
-                <!-- Botão Configurações IP -->
+                <!-- Botão Configurações do Garçom -->
                 <TextView
-                    android:id="@+id/btnConfigIpPorta"
-                    android:layout_width="34dp"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="2dp"
+                    android:id="@+id/btnConfigGarcom"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="4dp"
                     android:gravity="center"
                     android:text="⚙️"
-                    android:textSize="15sp"
+                    android:textSize="16sp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true" />
             </LinearLayout>
+
         </RelativeLayout>
-    </LinearLayout>
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         1.5. BARRA DE RESUMO DO GARÇOM (TURNO / DIA)
-    ═══════════════════════════════════════════════════════════════ -->
-    <LinearLayout
-        android:id="@+id/layoutBarraResumoGarcom"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="12dp"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/bg_barra_resumo_garcom"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="7dp"
-        android:paddingBottom="7dp"
-        android:clickable="true"
-        android:focusable="true">
-
-        <!-- Lado Esquerdo: Identificação do Garçom -->
+        <!-- Barra inferior do cabeçalho com identificação do garçom -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
 
             <TextView
-                android:id="@+id/tvBarraGarcomIdentificacao"
-                android:layout_width="wrap_content"
+                android:id="@+id/tvNomeGarcomAtivo"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="👤 Cauã (#200)"
-                android:textColor="#0F172A"
-                android:textSize="12.5sp"
-                android:textStyle="bold"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-            <TextView
-                android:id="@+id/tvBarraGarcomSubtitulo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
-                android:text="Resumo do Turno • Toque para configurar"
-                android:textColor="#64748B"
-                android:textSize="10sp" />
-        </LinearLayout>
-
-        <!-- Indicador 1: Pedidos / Itens -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="end"
-            android:layout_marginEnd="10dp">
-
-            <TextView
-                android:id="@+id/tvBarraGarcomQtdPedidos"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0 pedidos"
-                android:textColor="#0369A1"
+                android:layout_weight="1"
+                android:text="👤 Garçom Wanderson (#223)"
+                android:textColor="#E2E8F0"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/tvBarraGarcomAtivosPendente"
+                android:id="@+id/tvUltimaSincronizacao"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
-                android:text="0 ativos"
+                android:text="⏱ Aguardando sincronização..."
                 android:textColor="#94A3B8"
-                android:textSize="9.5sp" />
-        </LinearLayout>
-
-        <!-- Indicador 2: Faturamento Total em R$ -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="end"
-            android:background="#FEF3C7"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingTop="3dp"
-            android:paddingBottom="3dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="FATURAMENTO"
-                android:textColor="#B45309"
-                android:textSize="8sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvBarraGarcomFaturamento"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="R$ 0,00"
-                android:textColor="#92400E"
-                android:textSize="12.5sp"
-                android:textStyle="bold" />
+                android:textSize="10.5sp" />
         </LinearLayout>
 
     </LinearLayout>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         2. BARRA DE BUSCA RÁPIDA & STATUS DE SINCRONIZAÇÃO
+         2. BANNER DE CONFIRMAÇÃO DE CANCELAMENTO (DINÂMICO)
+         Aparece automaticamente quando um produto com o número 223 sumir!
     ═══════════════════════════════════════════════════════════════ -->
     <LinearLayout
+        android:id="@+id/cardItemPendenteConfirmacao"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="4dp">
+        android:layout_marginStart="14dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_card_warning_banner"
+        android:padding="14dp"
+        android:elevation="3dp"
+        android:visibility="gone">
 
         <LinearLayout
-            android:id="@+id/layoutSearchContainer"
             android:layout_width="match_parent"
-            android:layout_height="42dp"
-            android:background="@drawable/bg_search_bar"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp">
+            android:gravity="center_vertical">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🔍"
-                android:textSize="14sp"
-                android:layout_marginEnd="8dp" />
+                android:text="⚠️"
+                android:textSize="20sp" />
 
-            <EditText
-                android:id="@+id/etBuscarMesa"
+            <TextView
+                android:id="@+id/tvTituloAlertaPendente"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:background="@null"
-                android:hint="Buscar número da comanda ou doc..."
-                android:textColor="#0F172A"
-                android:textColorHint="#94A3B8"
-                android:textSize="13sp"
-                android:inputType="text"
-                android:maxLines="1" />
+                android:layout_marginStart="8dp"
+                android:text="Item Removido da Comanda!"
+                android:textColor="#991B1B"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/btnClearSearch"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:gravity="center"
-                android:text="✕"
-                android:textColor="#94A3B8"
-                android:textSize="13sp"
-                android:visibility="gone" />
-        </LinearLayout>
-
-        <!-- Última Sincronização Sutil -->
-        <TextView
-            android:id="@+id/tvUltimaSincronizacao"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:layout_marginStart="4dp"
-            android:text="Servidor desligado. Toque em LIGAR para iniciar."
-            android:textColor="#64748B"
-            android:textSize="10.5sp"
-            android:maxLines="1"
-            android:ellipsize="end" />
-    </LinearLayout>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         3. FILTROS RÁPIDOS (TODAS vs FAVORITAS vs PENDENTES) & MÉTRICAS DO TURNO
-    ═══════════════════════════════════════════════════════════════ -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="2dp"
-        android:paddingBottom="6dp">
-
-        <HorizontalScrollView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:scrollbars="none"
-            android:overScrollMode="never">
-
-            <LinearLayout
+                android:id="@+id/tvBadgeContadorPendentes"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:id="@+id/btnFiltroTodas"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:background="@drawable/bg_filter_chip_active"
-                    android:gravity="center"
-                    android:paddingStart="11dp"
-                    android:paddingEnd="11dp"
-                    android:text="📋 TODAS (0)"
-                    android:textColor="#FFFFFF"
-                    android:textSize="11.5sp"
-                    android:textStyle="bold"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <TextView
-                    android:id="@+id/btnFiltroFavoritas"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="6dp"
-                    android:background="@drawable/bg_filter_chip_inactive"
-                    android:gravity="center"
-                    android:paddingStart="11dp"
-                    android:paddingEnd="11dp"
-                    android:text="⭐ FAVORITAS (0)"
-                    android:textColor="#64748B"
-                    android:textSize="11.5sp"
-                    android:textStyle="bold"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <TextView
-                    android:id="@+id/btnFiltroPendentes"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="6dp"
-                    android:background="@drawable/bg_filter_chip_inactive"
-                    android:gravity="center"
-                    android:paddingStart="11dp"
-                    android:paddingEnd="11dp"
-                    android:text="⏳ PENDENTES (0)"
-                    android:textColor="#64748B"
-                    android:textSize="11.5sp"
-                    android:textStyle="bold"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <TextView
-                    android:id="@+id/btnFiltroMeus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="6dp"
-                    android:background="@drawable/bg_filter_chip_inactive"
-                    android:gravity="center"
-                    android:paddingStart="11dp"
-                    android:paddingEnd="11dp"
-                    android:text="👤 MEUS (0)"
-                    android:textColor="#64748B"
-                    android:textSize="11.5sp"
-                    android:textStyle="bold"
-                    android:clickable="true"
-                    android:focusable="true" />
-            </LinearLayout>
-        </HorizontalScrollView>
-
-        <!-- Métrica Rápida do Turno -->
-        <LinearLayout
-            android:id="@+id/layoutMetricasTurno"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:background="@drawable/bg_dashboard_card_slate"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingTop="5dp"
-            android:paddingBottom="5dp">
-
-            <TextView
-                android:id="@+id/tvMetricaResumo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="⏱️ Média: 00m • ✓ 0"
-                android:textColor="#475569"
+                android:background="@drawable/bg_badge_notif"
+                android:paddingStart="7dp"
+                android:paddingEnd="7dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:text="1 pendente"
+                android:textColor="#FFFFFF"
                 android:textSize="10.5sp"
                 android:textStyle="bold" />
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvPendenteDescricao"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="1x PF FRANGO GRELHADO — R$ 22,99"
+            android:textColor="#1E293B"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvPendenteMesaComanda"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="Mesa 04 • CMD #22 • Detectado agora"
+            android:textColor="#64748B"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="O produto sumiu da comanda. Este item foi cancelado?"
+            android:textColor="#7F1D1D"
+            android:textSize="12sp"
+            android:textStyle="italic" />
+
+        <!-- Botões de Ação Imediata -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="10dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnConfirmarCancelado"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:text="❌ Sim, foi Cancelado"
+                android:textSize="11.5sp"
+                android:textStyle="bold"
+                android:backgroundTint="#DC2626"
+                app:cornerRadius="10dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDescartarCancelado"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:text="✅ Não, foi Pago / Normal"
+                android:textSize="11.5sp"
+                android:textStyle="bold"
+                android:backgroundTint="#059669"
+                app:cornerRadius="10dp" />
+        </LinearLayout>
+
     </LinearLayout>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         4. ÁREA PRINCIPAL (COMANDAS / ESTADOS VAZIO E CARREGAMENTO)
+         3. CONTEÚDO PRINCIPAL (DASHBOARD SCROLLÁVEL)
     ═══════════════════════════════════════════════════════════════ -->
-    <FrameLayout
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:fillViewport="true">
 
-        <!-- Estado Offline / Servidor Desconectado -->
         <LinearLayout
-            android:id="@+id/layoutEmptyServidor"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center"
-            android:padding="28dp"
-            android:visibility="visible">
+            android:padding="14dp">
 
-            <TextView
-                android:id="@+id/tvEmptyServidorIcone"
-                android:layout_width="wrap_content"
+            <!-- ── CARD 1: FATURAMENTO HOJE ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🔌"
-                android:textSize="50sp" />
+                android:orientation="vertical"
+                android:background="@drawable/bg_card_finance"
+                android:padding="18dp"
+                android:elevation="3dp">
 
-            <TextView
-                android:id="@+id/tvEmptyServidorTitulo"
-                android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="FATURAMENTO HOJE"
+                        android:textColor="#A7F3D0"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📅 DIA"
+                        android:textColor="#D1FAE5"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvFaturamentoHoje"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="R$ 0,00"
+                    android:textColor="#FFFFFF"
+                    android:textSize="32sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-black" />
+
+                <TextView
+                    android:id="@+id/tvQtdItensHoje"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="0 produtos vendidos hoje"
+                    android:textColor="#E2E8F0"
+                    android:textSize="13sp" />
+
+                <!-- Detalhe de mesas abertas agora -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_dashboard_card_slate"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp">
+
+                    <TextView
+                        android:id="@+id/tvAbertosAgora"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🟢 R$ 0,00 em mesas abertas agora"
+                        android:textColor="#FDE68A"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- ── CARD 2: FATURAMENTO NO MÊS ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card_finance_month"
+                android:padding="18dp"
                 android:layout_marginTop="12dp"
-                android:text="Servidor Desconectado"
-                android:textColor="#1E293B"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:elevation="2dp">
 
-            <TextView
-                android:id="@+id/tvEmptyServidorDesc"
-                android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tvTituloMes"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="FATURAMENTO NO MÊS"
+                        android:textColor="#94A3B8"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📊 ACUMULADO"
+                        android:textColor="#64748B"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvFaturamentoMes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="R$ 0,00"
+                    android:textColor="#FFFFFF"
+                    android:textSize="26sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvQtdItensMes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="0 vendas acumuladas no mês"
+                    android:textColor="#94A3B8"
+                    android:textSize="12.5sp" />
+
+            </LinearLayout>
+
+            <!-- ── CARD 3: CANCELAMENTOS ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center"
-                android:text="Toque no botão abaixo para iniciar o monitoramento das comandas em tempo real."
-                android:textColor="#64748B"
-                android:textSize="13sp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_card_cancelamento"
+                android:padding="14dp"
+                android:layout_marginTop="12dp"
+                android:elevation="1dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnEmptyLigarServidor"
-                android:layout_width="wrap_content"
-                android:layout_height="44dp"
-                android:layout_marginTop="18dp"
-                android:text="▶ LIGAR SERVIDOR"
-                android:textSize="12.5sp"
-                android:textStyle="bold"
-                app:cornerRadius="10dp"
-                android:backgroundTint="#059669"
-                android:textColor="#FFFFFF"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🚫"
+                    android:textSize="24sp"
+                    android:layout_marginEnd="12dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cancelamentos Hoje"
+                        android:textColor="#475569"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvCancelamentosHoje"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:text="R$ 0,00 (0 itens)"
+                        android:textColor="#EF4444"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvStatusMonitoramento"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🛡️ Monitor Ativo"
+                    android:textColor="#059669"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <!-- ── SEÇÃO 4: HISTÓRICO DE DIAS DO MÊS ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="18dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📅 VENDAS POR DIA (ESTE MÊS)"
+                    android:textColor="#475569"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tvVazioDias"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Nenhuma venda acumulada registrada ainda este mês."
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp"
+                    android:gravity="center"
+                    android:padding="16dp"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:id="@+id/layoutHistoricoDias"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+            </LinearLayout>
+
+            <!-- ── SEÇÃO 5: HISTÓRICO DE CANCELAMENTOS CONFIRMADOS ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="24dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🚫 HISTÓRICO DE CANCELAMENTOS"
+                    android:textColor="#475569"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.05"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tvVazioCancelamentos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Nenhum produto cancelado registrado."
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp"
+                    android:gravity="center"
+                    android:padding="14dp" />
+
+                <LinearLayout
+                    android:id="@+id/layoutHistoricoCancelamentos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+            </LinearLayout>
+
         </LinearLayout>
 
-        <!-- Estado Conectando ao Servidor -->
-        <LinearLayout
-            android:id="@+id/layoutConnectingServidor"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="24dp"
-            android:visibility="gone">
-
-            <ProgressBar
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:indeterminateTint="#0284C7" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="Consultando Comandas..."
-                android:textColor="#0F172A"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Buscando no DataSnap..."
-                android:textColor="#64748B"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-        <!-- Lista de Comandas Monitoradas em Linha (Sem cards, Sem mesas) -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvComandasMonitoradas"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingBottom="14dp"
-            android:visibility="gone" />
-
-    </FrameLayout>
+    </ScrollView>
 
 </LinearLayout>

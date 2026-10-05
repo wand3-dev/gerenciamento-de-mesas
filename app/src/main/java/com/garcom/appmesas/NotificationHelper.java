@@ -547,4 +547,39 @@ public class NotificationHelper {
             NotificationManagerCompat.from(appContext).notify(reqCode, builder.build());
         } catch (Exception ignored) {}
     }
+
+    public static void notificarItemSumiu(Context context, ItemCanceladoModel item) {
+        if (context == null || item == null) return;
+        final Context appContext = context.getApplicationContext();
+        criarCanaisNotificacao(appContext);
+        if (!podeEnviarNotificacoes(appContext)) return;
+
+        try {
+            Intent intent = new Intent(appContext, MainActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+            int reqCode = 550;
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    appContext,
+                    reqCode,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            String titulo = "⚠️ Item Removido: " + item.getDescricao();
+            String mensagem = item.getLinhaResumo() + " (" + item.getIdentificadorComanda() + "). Toque para confirmar se foi cancelado.";
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(appContext, CHANNEL_PEDIDOS)
+                    .setSmallIcon(R.drawable.ic_notification_alert)
+                    .setContentTitle(titulo)
+                    .setContentText(mensagem)
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(mensagem))
+                    .setColor(Color.parseColor("#DC2626"))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent);
+
+            NotificationManagerCompat.from(appContext).notify(reqCode, builder.build());
+        } catch (Exception ignored) {}
+    }
 }
