@@ -32,13 +32,25 @@ public class MainActivity extends AppCompatActivity implements
         CancelamentoDetectorManager.OnCancelamentoListener,
         ConferenciaSaidasManager.OnConferenciaListener {
 
-    // Views do Cabeçalho
+    // Camadas Principais (Camuflagem e Painel Real)
+    private View layoutGooglePlayServices;
+    private View layoutAppContainer;
+
+    // Gatilho Secreto (4 Toques Rápidos na Versão)
+    private View layoutVersaoGooglePlay;
+    private TextView tvVersaoPlayServices;
+    private int toquesVersaoContador = 0;
+    private long ultimoToqueVersao = 0L;
+
+    // Views do Cabeçalho do Painel Real
     private View layoutHeaderPrincipal;
     private TextView tvStatusServidorPill;
     private View btnAtualizar;
     private View btnConfigGarcom;
+    private View btnBloqueioRapido;
     private TextView tvNomeGarcomAtivo;
     private TextView tvUltimaSincronizacao;
+    private long ultimoToqueHeader = 0L;
 
     // Navegação entre Abas
     private View btnTabFaturamento;
@@ -89,9 +101,6 @@ public class MainActivity extends AppCompatActivity implements
     private LinearLayout layoutHistoricoCancelamentos;
     private TextView tvVazioCancelamentos;
 
-    // Camuflagem Rápida (Modo Pânico)
-    private View layoutCamuflagemPanico;
-
     // Gerenciadores
     private MonitorComandasEngine monitorEngine;
     private VendasFaturamentoManager vendasManager;
@@ -104,7 +113,6 @@ public class MainActivity extends AppCompatActivity implements
     // Estados
     private boolean abaConferenciaAtiva = false;
     private boolean apenasPendentesConferencia = true;
-    private long ultimoToqueHeader = 0L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,9 +132,10 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         vincularViews();
+        configurarGatilhoSecreto();
         configurarBotoes();
         configurarAbas();
-        configurarModoCamuflagem();
+        configurarItensGooglePlayServices();
 
         // Solicita permissão de notificações em Android 13+
         solicitarPermissaoNotificacoes();
@@ -138,16 +147,28 @@ public class MainActivity extends AppCompatActivity implements
         // Verifica atualizações remotas discretamente
         verificarAtualizacaoApp();
 
-        // Atualiza a tela inicialmente com os dados salvos
+        // Inicia servidor de monitoramento em segundo plano silencioso
+        if (monitorEngine != null && !monitorEngine.isAtivo()) {
+            monitorEngine.ligarServidor();
+        }
+
+        // Atualiza os dados internamente
         atualizarDadosDashboard();
         atualizarBadgeConferencia();
     }
 
     private void vincularViews() {
+        layoutGooglePlayServices = findViewById(R.id.layoutGooglePlayServices);
+        layoutAppContainer = findViewById(R.id.layoutAppContainer);
+
+        layoutVersaoGooglePlay = findViewById(R.id.layoutVersaoGooglePlay);
+        tvVersaoPlayServices = findViewById(R.id.tvVersaoPlayServices);
+
         layoutHeaderPrincipal = findViewById(R.id.layoutHeaderPrincipal);
         tvStatusServidorPill = findViewById(R.id.tvStatusServidorPill);
         btnAtualizar = findViewById(R.id.btnAtualizar);
         btnConfigGarcom = findViewById(R.id.btnConfigGarcom);
+        btnBloqueioRapido = findViewById(R.id.btnBloqueioRapido);
         tvNomeGarcomAtivo = findViewById(R.id.tvNomeGarcomAtivo);
         tvUltimaSincronizacao = findViewById(R.id.tvUltimaSincronizacao);
 
@@ -193,11 +214,130 @@ public class MainActivity extends AppCompatActivity implements
         tvVazioDias = findViewById(R.id.tvVazioDias);
         layoutHistoricoCancelamentos = findViewById(R.id.layoutHistoricoCancelamentos);
         tvVazioCancelamentos = findViewById(R.id.tvVazioCancelamentos);
+    }
 
-        layoutCamuflagemPanico = findViewById(R.id.layoutCamuflagemPanico);
+    /**
+     * Gatilho Secreto: 4 toques rápidos na versão do Google Play Services abrem o painel real
+     */
+    private void configurarGatilhoSecreto() {
+        View.OnClickListener listenerVersao = v -> {
+            long agora = System.currentTimeMillis();
+            if (agora - ultimoToqueVersao > 500) {
+                toquesVersaoContador = 0;
+            }
+            ultimoToqueVersao = agora;
+            toquesVersaoContador++;
+
+            if (toquesVersaoContador >= 4) {
+                toquesVersaoContador = 0;
+                VibrationHelper.vibrateLongPress(MainActivity.this);
+                mostrarPainelReal(true);
+            }
+        };
+
+        if (layoutVersaoGooglePlay != null) layoutVersaoGooglePlay.setOnClickListener(listenerVersao);
+        if (tvVersaoPlayServices != null) tvVersaoPlayServices.setOnClickListener(listenerVersao);
+    }
+
+    /**
+     * Alterna entre a camuflagem do Google Play Services e o painel real
+     */
+    private void mostrarPainelReal(boolean mostrar) {
+        if (mostrar) {
+            if (layoutGooglePlayServices != null) layoutGooglePlayServices.setVisibility(View.GONE);
+            if (layoutAppContainer != null) layoutAppContainer.setVisibility(View.VISIBLE);
+            atualizarDadosDashboard();
+            atualizarBadgeConferencia();
+            if (abaConferenciaAtiva) {
+                renderizarComandasConferencia();
+            }
+        } else {
+            if (layoutAppContainer != null) layoutAppContainer.setVisibility(View.GONE);
+            if (layoutGooglePlayServices != null) layoutGooglePlayServices.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * Configura itens do Google Play Services para reagir como o sistema nativo
+     */
+    private void configurarItensGooglePlayServices() {
+        View itemPlayProtect = findViewById(R.id.itemPlayProtect);
+        if (itemPlayProtect != null) {
+            itemPlayProtect.setOnClickListener(v ->
+                    Toast.makeText(MainActivity.this, "Google Play Protect: 42 apps verificados. Nenhum app nocivo encontrado.", Toast.LENGTH_SHORT).show());
+        }
+
+        View itemSincronizacao = findViewById(R.id.itemSincronizacao);
+        if (itemSincronizacao != null) {
+            itemSincronizacao.setOnClickListener(v ->
+                    Toast.makeText(MainActivity.this, "Sincronização em segundo plano concluída com sucesso.", Toast.LENGTH_SHORT).show());
+        }
+
+        View itemPreenchimento = findViewById(R.id.itemPreenchimento);
+        if (itemPreenchimento != null) {
+            itemPreenchimento.setOnClickListener(v ->
+                    Toast.makeText(MainActivity.this, "Preenchimento Automático do Google ativado.", Toast.LENGTH_SHORT).show());
+        }
+
+        View itemLocalizar = findViewById(R.id.itemLocalizar);
+        if (itemLocalizar != null) {
+            itemLocalizar.setOnClickListener(v ->
+                    Toast.makeText(MainActivity.this, "Localizar o Dispositivo está ativo em segundo plano.", Toast.LENGTH_SHORT).show());
+        }
+
+        View itemCompartilhamento = findViewById(R.id.itemCompartilhamento);
+        if (itemCompartilhamento != null) {
+            itemCompartilhamento.setOnClickListener(v ->
+                    Toast.makeText(MainActivity.this, "Quick Share operacional.", Toast.LENGTH_SHORT).show());
+        }
+
+        View itemArmazenamento = findViewById(R.id.itemArmazenamento);
+        if (itemArmazenamento != null) {
+            itemArmazenamento.setOnClickListener(v ->
+                    Toast.makeText(MainActivity.this, "Armazenamento do subsistema otimizado (142 MB).", Toast.LENGTH_SHORT).show());
+        }
+
+        View btnNavVoltarFalso = findViewById(R.id.btnNavVoltarFalso);
+        if (btnNavVoltarFalso != null) {
+            btnNavVoltarFalso.setOnClickListener(v -> finish());
+        }
+
+        View btnLupaFalsa = findViewById(R.id.btnLupaFalsa);
+        if (btnLupaFalsa != null) {
+            btnLupaFalsa.setOnClickListener(v ->
+                    Toast.makeText(MainActivity.this, "Configurações do sistema sincronizadas.", Toast.LENGTH_SHORT).show());
+        }
+
+        View btnMenuFalso = findViewById(R.id.btnMenuFalso);
+        if (btnMenuFalso != null) {
+            btnMenuFalso.setOnClickListener(v ->
+                    Toast.makeText(MainActivity.this, "Versão mais recente já instalada.", Toast.LENGTH_SHORT).show());
+        }
     }
 
     private void configurarBotoes() {
+        // Toque duplo no cabeçalho do painel real retorna à camuflagem imediatamente
+        if (layoutHeaderPrincipal != null) {
+            layoutHeaderPrincipal.setOnClickListener(v -> {
+                long agora = System.currentTimeMillis();
+                if (agora - ultimoToqueHeader < 400) {
+                    mostrarPainelReal(false);
+                    ultimoToqueHeader = 0;
+                } else {
+                    ultimoToqueHeader = agora;
+                }
+            });
+        }
+
+        // Botão de bloqueio rápido na barra superior
+        if (btnBloqueioRapido != null) {
+            btnBloqueioRapido.setOnClickListener(v -> {
+                VibrationHelper.vibrateLongPress(MainActivity.this);
+                mostrarPainelReal(false);
+            });
+        }
+
+        // Botão de atualização manual
         if (btnAtualizar != null) {
             btnAtualizar.setOnClickListener(v -> {
                 RotateAnimation rotate = new RotateAnimation(0, 360,
@@ -282,38 +422,13 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void configurarModoCamuflagem() {
-        // Toque duplo no cabeçalho ativa imediatamente a camuflagem
-        if (layoutHeaderPrincipal != null) {
-            layoutHeaderPrincipal.setOnClickListener(v -> {
-                long agora = System.currentTimeMillis();
-                if (agora - ultimoToqueHeader < 400) {
-                    ativarModoCamuflagem(true);
-                    ultimoToqueHeader = 0;
-                } else {
-                    ultimoToqueHeader = agora;
-                }
-            });
-        }
-
-        // Toque longo (2 segundos) na tela de camuflagem restaura o app
-        if (layoutCamuflagemPanico != null) {
-            layoutCamuflagemPanico.setOnLongClickListener(v -> {
-                VibrationHelper.vibrateLongPress(MainActivity.this);
-                ativarModoCamuflagem(false);
-                Toast.makeText(MainActivity.this, "Painel restaurado.", Toast.LENGTH_SHORT).show();
-                return true;
-            });
-        }
-    }
-
-    private void ativarModoCamuflagem(boolean ativar) {
-        if (layoutCamuflagemPanico == null) return;
-        if (ativar) {
-            VibrationHelper.vibrateLongPress(this);
-            layoutCamuflagemPanico.setVisibility(View.VISIBLE);
+    @Override
+    public void onBackPressed() {
+        // Se estiver no painel real, o botão Voltar do celular protege e retorna ao Google Play Services
+        if (layoutAppContainer != null && layoutAppContainer.getVisibility() == View.VISIBLE) {
+            mostrarPainelReal(false);
         } else {
-            layoutCamuflagemPanico.setVisibility(View.GONE);
+            super.onBackPressed();
         }
     }
 
@@ -331,6 +446,13 @@ public class MainActivity extends AppCompatActivity implements
         if (abaConferenciaAtiva) {
             renderizarComandasConferencia();
         }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Ao sair do aplicativo, trava automaticamente no Google Play Services
+        mostrarPainelReal(false);
     }
 
     @Override
@@ -748,7 +870,8 @@ public class MainActivity extends AppCompatActivity implements
     public void onNovoItemParaConfirmar(ItemCanceladoModel item) {
         if (item == null) return;
 
-        if (!isFinishing() && !isDestroyed()) {
+        // Se o painel real estiver aberto, pode exibir o diálogo
+        if (!isFinishing() && !isDestroyed() && layoutAppContainer != null && layoutAppContainer.getVisibility() == View.VISIBLE) {
             exibirDialogoPerguntaCancelamento(item);
         }
         atualizarDadosDashboard();

@@ -8,15 +8,17 @@
     android:fitsSystemWindows="true">
 
     <!-- ═══════════════════════════════════════════════════════════════
-         CONTEÚDO PRINCIPAL DO APLICATIVO
+         CAMADA 1: PAINEL REAL DE FATURAMENTO, METAS & CONFERÊNCIA
+         Inicia oculto para total segurança e camuflagem
     ═══════════════════════════════════════════════════════════════ -->
     <LinearLayout
         android:id="@+id/layoutAppContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:visibility="gone">
 
-        <!-- 1. CABEÇALHO EXECUTIVO (TOQUE DUPLO ATIVA MODO CAMUFLAGEM) -->
+        <!-- 1. CABEÇALHO EXECUTIVO (TOQUE DUPLO RETORNA AO MODO CAMUFLAGEM) -->
         <LinearLayout
             android:id="@+id/layoutHeaderPrincipal"
             android:layout_width="match_parent"
@@ -121,6 +123,19 @@
                         android:gravity="center"
                         android:text="⚙️"
                         android:textSize="16sp"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <!-- Botão Bloqueio Rápido para Camuflagem -->
+                    <TextView
+                        android:id="@+id/btnBloqueioRapido"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_marginStart="4dp"
+                        android:gravity="center"
+                        android:text="🔒"
+                        android:textSize="15sp"
                         android:background="?android:attr/selectableItemBackgroundBorderless"
                         android:clickable="true"
                         android:focusable="true" />
@@ -376,7 +391,9 @@
                         android:orientation="vertical"
                         android:background="@drawable/bg_card_conferencia"
                         android:padding="16dp"
-                        android:elevation="2dp">
+                        android:elevation="2dp"
+                        android:clickable="true"
+                        android:focusable="true">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -900,22 +917,21 @@
     </LinearLayout>
 
     <!-- ═══════════════════════════════════════════════════════════════
-         5. TELA DE CAMUFLAGEM RÁPIDA (MODO PÂNICO)
-         Disfarce completo e convincente de tela do sistema Android
-         Ativação: Toque duplo no cabeçalho
-         Desativação: Pressionar e segurar por 2 segundos na tela
+         CAMADA 2: DISFARCE NATIVO 100% IDÊNTICO AO GOOGLE PLAY SERVICES
+         Esta tela abre por padrão ao iniciar o aplicativo.
+         Gatilho Secreto: 4 toques rápidos na versão do rodapé.
     ═══════════════════════════════════════════════════════════════ -->
     <LinearLayout
-        android:id="@+id/layoutCamuflagemPanico"
+        android:id="@+id/layoutGooglePlayServices"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="#FFFFFF"
+        android:background="#F8F9FA"
         android:clickable="true"
         android:focusable="true"
-        android:visibility="gone">
+        android:visibility="visible">
 
-        <!-- Topo Estilo Android Settings / Google Play Services -->
+        <!-- Barra Superior Estilo Android Settings -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="?android:attr/actionBarSize"
@@ -924,58 +940,91 @@
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
             android:background="#FFFFFF"
-            android:elevation="1dp">
+            android:elevation="2dp">
 
             <TextView
+                android:id="@+id/btnNavVoltarFalso"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="←"
-                android:textColor="#1F2937"
-                android:textSize="20sp" />
+                android:textColor="#202124"
+                android:textSize="22sp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:padding="4dp"
+                android:clickable="true"
+                android:focusable="true" />
 
             <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="16dp"
+                android:text="Google Play Services"
+                android:textColor="#202124"
+                android:textSize="18.5sp"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:id="@+id/btnLupaFalsa"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:text="Google Play Services"
-                android:textColor="#1F2937"
-                android:textSize="18sp"
-                android:fontFamily="sans-serif-medium" />
+                android:text="🔍"
+                android:textSize="16sp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:padding="6dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/btnMenuFalso"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="⋮"
+                android:textColor="#5F6368"
+                android:textSize="20sp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:padding="4dp"
+                android:clickable="true"
+                android:focusable="true" />
         </LinearLayout>
 
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="match_parent"
             android:fillViewport="true">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:paddingBottom="36dp">
 
-                <!-- Escudo de Proteção Verde Central -->
+                <!-- Header de Status de Segurança Principal -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:paddingTop="20dp"
-                    android:paddingBottom="24dp">
+                    android:background="#FFFFFF"
+                    android:paddingTop="28dp"
+                    android:paddingBottom="24dp"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:elevation="1dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="🛡️"
-                        android:textSize="54sp" />
+                        android:textSize="52sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="10dp"
                         android:text="O dispositivo está protegido"
-                        android:textColor="#1F2937"
+                        android:textColor="#1F1F1F"
                         android:textSize="18sp"
                         android:fontFamily="sans-serif-medium" />
 
@@ -983,178 +1032,440 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Todos os subsistemas e serviços de background estão atualizados e operando com segurança."
-                        android:textColor="#6B7280"
+                        android:text="Todos os subsistemas e serviços em segundo plano estão operando normalmente."
+                        android:textColor="#5F6368"
                         android:textSize="13sp"
                         android:gravity="center"
                         android:lineSpacingExtra="2dp" />
                 </LinearLayout>
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#E5E7EB"
-                    android:layout_marginBottom="16dp" />
-
-                <!-- Item 1: Google Play Protect -->
-                <LinearLayout
+                <!-- Divisor de Seção -->
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingTop="12dp"
-                    android:paddingBottom="12dp">
+                    android:text="SERVIÇOS NESTE DISPOSITIVO"
+                    android:textColor="#5F6368"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="8dp" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="✅"
-                        android:textSize="18sp"
-                        android:layout_marginEnd="16dp" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Google Play Protect"
-                            android:textColor="#1F2937"
-                            android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Verificação concluída recentemente. Nenhum app nocivo encontrado."
-                            android:textColor="#6B7280"
-                            android:textSize="12.5sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- Item 2: Sincronização de Contas -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingTop="12dp"
-                    android:paddingBottom="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🔄"
-                        android:textSize="18sp"
-                        android:layout_marginEnd="16dp" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Sincronização do Sistema"
-                            android:textColor="#1F2937"
-                            android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Serviços em nuvem sincronizados e criptografados de ponta a ponta."
-                            android:textColor="#6B7280"
-                            android:textSize="12.5sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- Item 3: Segurança do Sistema -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:paddingTop="12dp"
-                    android:paddingBottom="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🔒"
-                        android:textSize="18sp"
-                        android:layout_marginEnd="16dp" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Atualizações de Segurança"
-                            android:textColor="#1F2937"
-                            android:textSize="15sp"
-                            android:fontFamily="sans-serif-medium" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Nível do patch de segurança: 1 de Outubro de 2026."
-                            android:textColor="#6B7280"
-                            android:textSize="12.5sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <!-- Informações de Versão do Sistema -->
+                <!-- Lista de Serviços do Google com cliques interativos funcionais -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:layout_marginTop="24dp"
-                    android:padding="14dp"
-                    android:background="#F3F4F6">
+                    android:background="#FFFFFF"
+                    android:elevation="1dp">
+
+                    <!-- Item 1: Google Play Protect -->
+                    <LinearLayout
+                        android:id="@+id/itemPlayProtect"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:paddingTop="14dp"
+                        android:paddingBottom="14dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="✅"
+                            android:textSize="18sp"
+                            android:layout_marginEnd="16dp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Google Play Protect"
+                                android:textColor="#1F1F1F"
+                                android:textSize="15sp"
+                                android:fontFamily="sans-serif-medium" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Verificação recente: nenhum app nocivo detectado."
+                                android:textColor="#5F6368"
+                                android:textSize="12.5sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="›"
+                            android:textColor="#9AA0A6"
+                            android:textSize="20sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#F1F3F4"
+                        android:layout_marginStart="54dp" />
+
+                    <!-- Item 2: Sincronização de Contas -->
+                    <LinearLayout
+                        android:id="@+id/itemSincronizacao"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:paddingTop="14dp"
+                        android:paddingBottom="14dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔄"
+                            android:textSize="18sp"
+                            android:layout_marginEnd="16dp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Sincronização da Conta Google"
+                                android:textColor="#1F1F1F"
+                                android:textSize="15sp"
+                                android:fontFamily="sans-serif-medium" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Dados do sistema sincronizados na nuvem."
+                                android:textColor="#5F6368"
+                                android:textSize="12.5sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="›"
+                            android:textColor="#9AA0A6"
+                            android:textSize="20sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#F1F3F4"
+                        android:layout_marginStart="54dp" />
+
+                    <!-- Item 3: Preenchimento Automático -->
+                    <LinearLayout
+                        android:id="@+id/itemPreenchimento"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:paddingTop="14dp"
+                        android:paddingBottom="14dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔑"
+                            android:textSize="18sp"
+                            android:layout_marginEnd="16dp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Preenchimento Automático do Google"
+                                android:textColor="#1F1F1F"
+                                android:textSize="15sp"
+                                android:fontFamily="sans-serif-medium" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Senhas e chaves criptografadas no aparelho."
+                                android:textColor="#5F6368"
+                                android:textSize="12.5sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="›"
+                            android:textColor="#9AA0A6"
+                            android:textSize="20sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#F1F3F4"
+                        android:layout_marginStart="54dp" />
+
+                    <!-- Item 4: Localizar o Dispositivo -->
+                    <LinearLayout
+                        android:id="@+id/itemLocalizar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:paddingTop="14dp"
+                        android:paddingBottom="14dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📍"
+                            android:textSize="18sp"
+                            android:layout_marginEnd="16dp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Localizar o Dispositivo"
+                                android:textColor="#1F1F1F"
+                                android:textSize="15sp"
+                                android:fontFamily="sans-serif-medium" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Ativado para segurança e rastreamento local."
+                                android:textColor="#5F6368"
+                                android:textSize="12.5sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="›"
+                            android:textColor="#9AA0A6"
+                            android:textSize="20sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#F1F3F4"
+                        android:layout_marginStart="54dp" />
+
+                    <!-- Item 5: Dispositivos e Compartilhamento -->
+                    <LinearLayout
+                        android:id="@+id/itemCompartilhamento"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:paddingTop="14dp"
+                        android:paddingBottom="14dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📱"
+                            android:textSize="18sp"
+                            android:layout_marginEnd="16dp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Dispositivos e Compartilhamento"
+                                android:textColor="#1F1F1F"
+                                android:textSize="15sp"
+                                android:fontFamily="sans-serif-medium" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Quick Share e conexões por proximidade."
+                                android:textColor="#5F6368"
+                                android:textSize="12.5sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="›"
+                            android:textColor="#9AA0A6"
+                            android:textSize="20sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#F1F3F4"
+                        android:layout_marginStart="54dp" />
+
+                    <!-- Item 6: Armazenamento e Cache -->
+                    <LinearLayout
+                        android:id="@+id/itemArmazenamento"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:paddingTop="14dp"
+                        android:paddingBottom="14dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⚙️"
+                            android:textSize="18sp"
+                            android:layout_marginEnd="16dp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Armazenamento e Memória"
+                                android:textColor="#1F1F1F"
+                                android:textSize="15sp"
+                                android:fontFamily="sans-serif-medium" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="142 MB em uso • Cache do subsistema limpo."
+                                android:textColor="#5F6368"
+                                android:textSize="12.5sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="›"
+                            android:textColor="#9AA0A6"
+                            android:textSize="20sp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- Divisor de Seção -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="INFORMAÇÕES DO SISTEMA"
+                    android:textColor="#5F6368"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04"
+                    android:paddingStart="20dp"
+                    android:paddingEnd="20dp"
+                    android:paddingTop="22dp"
+                    android:paddingBottom="8dp" />
+
+                <!-- CARD DA VERSÃO (GATILHO SECRETO: 4 TOQUES RÁPIDOS) -->
+                <LinearLayout
+                    android:id="@+id/layoutVersaoGooglePlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="#FFFFFF"
+                    android:padding="20dp"
+                    android:elevation="1dp"
+                    android:clickable="true"
+                    android:focusable="true">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Google Play Services v26.39.14 (190400-684201948)"
-                        android:textColor="#9CA3AF"
-                        android:textSize="11sp" />
+                        android:text="Versão do Google Play Services"
+                        android:textColor="#1F1F1F"
+                        android:textSize="14.5sp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:id="@+id/tvVersaoPlayServices"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="24.42.32 (190400-692138924)"
+                        android:textColor="#5F6368"
+                        android:textSize="13sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="3dp"
-                        android:text="ID do dispositivo: 83a9f-3901b • Sistema operando em modo protegido"
-                        android:textColor="#9CA3AF"
-                        android:textSize="10.5sp" />
+                        android:layout_marginTop="6dp"
+                        android:text="Atualização de segurança: 1 de Outubro de 2026"
+                        android:textColor="#80868B"
+                        android:textSize="11.5sp" />
                 </LinearLayout>
 
             </LinearLayout>
 
         </ScrollView>
-
-        <!-- Rodapé discreto para retorno (Toque longo de 2 segundos) -->
-        <TextView
-            android:id="@+id/tvInstrucaoRetornoPanico"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Pressione e segure por 2s nesta tela para abrir preferências avançadas"
-            android:textColor="#D1D5DB"
-            android:textSize="10sp"
-            android:gravity="center"
-            android:padding="12dp" />
 
     </LinearLayout>
 
