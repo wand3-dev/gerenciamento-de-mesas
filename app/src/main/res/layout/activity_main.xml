@@ -1,549 +1,1161 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/rootLayoutMain"
+    android:id="@+id/rootContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="#F8FAFC"
     android:fitsSystemWindows="true">
 
     <!-- ═══════════════════════════════════════════════════════════════
-         1. CABEÇALHO EXECUTIVO MINIMALISTA
+         CONTEÚDO PRINCIPAL DO APLICATIVO
     ═══════════════════════════════════════════════════════════════ -->
     <LinearLayout
+        android:id="@+id/layoutAppContainer"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@drawable/bg_header_luxury"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="12dp"
-        android:elevation="4dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <!-- Logo e Título à esquerda -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
-                android:orientation="vertical">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="⚙️ "
-                        android:textSize="17sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="SERVIÇOS DO SISTEMA"
-                        android:textColor="#F8FAFC"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:letterSpacing="0.04" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvSubtituloHeader"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Painel de Métricas &amp; Faturamento"
-                    android:textColor="#94A3B8"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Ações à direita -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <!-- Status Pill -->
-                <TextView
-                    android:id="@+id/tvStatusServidorPill"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_dashboard_card_slate"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp"
-                    android:text="● OFFLINE"
-                    android:textColor="#94A3B8"
-                    android:textSize="10.5sp"
-                    android:textStyle="bold" />
-
-                <!-- Botão Atualizar Manual -->
-                <TextView
-                    android:id="@+id/btnAtualizar"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="8dp"
-                    android:gravity="center"
-                    android:text="🔄"
-                    android:textSize="15sp"
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <!-- Botão Configurações do Garçom -->
-                <TextView
-                    android:id="@+id/btnConfigGarcom"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="4dp"
-                    android:gravity="center"
-                    android:text="⚙️"
-                    android:textSize="16sp"
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true" />
-            </LinearLayout>
-
-        </RelativeLayout>
-
-        <!-- Barra inferior do cabeçalho com identificação do garçom -->
+        <!-- 1. CABEÇALHO EXECUTIVO (TOQUE DUPLO ATIVA MODO CAMUFLAGEM) -->
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="8dp">
-
-            <TextView
-                android:id="@+id/tvNomeGarcomAtivo"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="👤 Garçom Wanderson (#223)"
-                android:textColor="#E2E8F0"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvUltimaSincronizacao"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="⏱ Aguardando sincronização..."
-                android:textColor="#94A3B8"
-                android:textSize="10.5sp" />
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         2. BANNER DE CONFIRMAÇÃO DE CANCELAMENTO (DINÂMICO)
-         Aparece automaticamente quando um produto com o número 223 sumir!
-    ═══════════════════════════════════════════════════════════════ -->
-    <LinearLayout
-        android:id="@+id/cardItemPendenteConfirmacao"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginStart="14dp"
-        android:layout_marginEnd="14dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/bg_card_warning_banner"
-        android:padding="14dp"
-        android:elevation="3dp"
-        android:visibility="gone">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="⚠️"
-                android:textSize="20sp" />
-
-            <TextView
-                android:id="@+id/tvTituloAlertaPendente"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="Item Removido da Comanda!"
-                android:textColor="#991B1B"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvBadgeContadorPendentes"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_badge_notif"
-                android:paddingStart="7dp"
-                android:paddingEnd="7dp"
-                android:paddingTop="2dp"
-                android:paddingBottom="2dp"
-                android:text="1 pendente"
-                android:textColor="#FFFFFF"
-                android:textSize="10.5sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvPendenteDescricao"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="1x PF FRANGO GRELHADO — R$ 22,99"
-            android:textColor="#1E293B"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvPendenteMesaComanda"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="Mesa 04 • CMD #22 • Detectado agora"
-            android:textColor="#64748B"
-            android:textSize="12sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="O produto sumiu da comanda. Este item foi cancelado?"
-            android:textColor="#7F1D1D"
-            android:textSize="12sp"
-            android:textStyle="italic" />
-
-        <!-- Botões de Ação Imediata -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="10dp">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnConfirmarCancelado"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="6dp"
-                android:text="❌ Sim, foi Cancelado"
-                android:textSize="11.5sp"
-                android:textStyle="bold"
-                android:backgroundTint="#DC2626"
-                app:cornerRadius="10dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnDescartarCancelado"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:layout_marginStart="6dp"
-                android:text="✅ Não, foi Pago / Normal"
-                android:textSize="11.5sp"
-                android:textStyle="bold"
-                android:backgroundTint="#059669"
-                app:cornerRadius="10dp" />
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <!-- ═══════════════════════════════════════════════════════════════
-         3. CONTEÚDO PRINCIPAL (DASHBOARD SCROLLÁVEL)
-    ═══════════════════════════════════════════════════════════════ -->
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true">
-
-        <LinearLayout
+            android:id="@+id/layoutHeaderPrincipal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="14dp">
+            android:background="@drawable/bg_header_luxury"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:elevation="4dp"
+            android:clickable="true"
+            android:focusable="true">
 
-            <!-- ── CARD 1: FATURAMENTO HOJE ── -->
-            <LinearLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/bg_card_finance"
-                android:padding="18dp"
-                android:elevation="3dp">
+                android:layout_height="wrap_content">
 
+                <!-- Logo e Título à esquerda -->
                 <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="FATURAMENTO HOJE"
-                        android:textColor="#A7F3D0"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:letterSpacing="0.05" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="📅 DIA"
-                        android:textColor="#D1FAE5"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvFaturamentoHoje"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="R$ 0,00"
-                    android:textColor="#FFFFFF"
-                    android:textSize="32sp"
-                    android:textStyle="bold"
-                    android:fontFamily="sans-serif-black" />
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tvQtdItensHoje"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="0 produtos vendidos hoje"
-                    android:textColor="#E2E8F0"
-                    android:textSize="13sp" />
-
-                <!-- Detalhe de mesas abertas agora -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="12dp"
-                    android:background="@drawable/bg_dashboard_card_slate"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
-                    android:paddingTop="6dp"
-                    android:paddingBottom="6dp">
-
-                    <TextView
-                        android:id="@+id/tvAbertosAgora"
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🟢 R$ 0,00 em mesas abertas agora"
-                        android:textColor="#FDE68A"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
-            </LinearLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⚙️ "
+                            android:textSize="17sp" />
 
-            <!-- ── CARD 2: FATURAMENTO NO MÊS ── -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/bg_card_finance_month"
-                android:padding="18dp"
-                android:layout_marginTop="12dp"
-                android:elevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="SERVIÇOS DO SISTEMA"
+                            android:textColor="#F8FAFC"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.04" />
+                    </LinearLayout>
 
                     <TextView
-                        android:id="@+id/tvTituloMes"
-                        android:layout_width="0dp"
+                        android:id="@+id/tvSubtituloHeader"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="FATURAMENTO NO MÊS"
+                        android:text="Painel de Métricas &amp; Faturamento"
                         android:textColor="#94A3B8"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:letterSpacing="0.05" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="📊 ACUMULADO"
-                        android:textColor="#64748B"
                         android:textSize="11sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvFaturamentoMes"
+                <!-- Ações à direita -->
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="R$ 0,00"
-                    android:textColor="#FFFFFF"
-                    android:textSize="26sp"
-                    android:textStyle="bold" />
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                <TextView
-                    android:id="@+id/tvQtdItensMes"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="0 vendas acumuladas no mês"
-                    android:textColor="#94A3B8"
-                    android:textSize="12.5sp" />
+                    <!-- Status Pill -->
+                    <TextView
+                        android:id="@+id/tvStatusServidorPill"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_dashboard_card_slate"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:text="● OFFLINE"
+                        android:textColor="#94A3B8"
+                        android:textSize="10.5sp"
+                        android:textStyle="bold" />
 
-            </LinearLayout>
+                    <!-- Botão Atualizar Manual -->
+                    <TextView
+                        android:id="@+id/btnAtualizar"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_marginStart="8dp"
+                        android:gravity="center"
+                        android:text="🔄"
+                        android:textSize="15sp"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
 
-            <!-- ── CARD 3: CANCELAMENTOS ── -->
+                    <!-- Botão Configurações do Garçom -->
+                    <TextView
+                        android:id="@+id/btnConfigGarcom"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_marginStart="4dp"
+                        android:gravity="center"
+                        android:text="⚙️"
+                        android:textSize="16sp"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+                </LinearLayout>
+
+            </RelativeLayout>
+
+            <!-- Barra inferior do cabeçalho com identificação do garçom -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:background="@drawable/bg_card_cancelamento"
-                android:padding="14dp"
-                android:layout_marginTop="12dp"
-                android:elevation="1dp">
+                android:layout_marginTop="8dp">
 
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🚫"
-                    android:textSize="24sp"
-                    android:layout_marginEnd="12dp" />
-
-                <LinearLayout
+                    android:id="@+id/tvNomeGarcomAtivo"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Cancelamentos Hoje"
-                        android:textColor="#475569"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvCancelamentosHoje"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:text="R$ 0,00 (0 itens)"
-                        android:textColor="#EF4444"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvStatusMonitoramento"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🛡️ Monitor Ativo"
-                    android:textColor="#059669"
-                    android:textSize="11sp"
+                    android:text="👤 Garçom Wanderson (#223)"
+                    android:textColor="#E2E8F0"
+                    android:textSize="12sp"
                     android:textStyle="bold" />
 
-            </LinearLayout>
-
-            <!-- ── SEÇÃO 4: HISTÓRICO DE DIAS DO MÊS ── -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="18dp">
-
                 <TextView
+                    android:id="@+id/tvUltimaSincronizacao"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📅 VENDAS POR DIA (ESTE MÊS)"
-                    android:textColor="#475569"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:letterSpacing="0.05"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:id="@+id/tvVazioDias"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Nenhuma venda acumulada registrada ainda este mês."
+                    android:text="⏱ Aguardando sincronização..."
                     android:textColor="#94A3B8"
-                    android:textSize="12sp"
-                    android:gravity="center"
-                    android:padding="16dp"
-                    android:visibility="gone" />
-
-                <LinearLayout
-                    android:id="@+id/layoutHistoricoDias"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical" />
-
-            </LinearLayout>
-
-            <!-- ── SEÇÃO 5: HISTÓRICO DE CANCELAMENTOS CONFIRMADOS ── -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="14dp"
-                android:layout_marginBottom="24dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🚫 HISTÓRICO DE CANCELAMENTOS"
-                    android:textColor="#475569"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:letterSpacing="0.05"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:id="@+id/tvVazioCancelamentos"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Nenhum produto cancelado registrado."
-                    android:textColor="#94A3B8"
-                    android:textSize="12sp"
-                    android:gravity="center"
-                    android:padding="14dp" />
-
-                <LinearLayout
-                    android:id="@+id/layoutHistoricoCancelamentos"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical" />
-
+                    android:textSize="10.5sp" />
             </LinearLayout>
 
         </LinearLayout>
 
-    </ScrollView>
+        <!-- 2. BARRA DE NAVEGAÇÃO DE ABAS SUPERIORES -->
+        <LinearLayout
+            android:id="@+id/layoutBarraAbas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="#0F172A"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="8dp">
 
-</LinearLayout>
+            <!-- Aba 1: Faturamento & Metas -->
+            <LinearLayout
+                android:id="@+id/btnTabFaturamento"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="5dp"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="@drawable/bg_tab_selected"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:id="@+id/tvLabelTabFaturamento"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📊 FATURAMENTO &amp; METAS"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Aba 2: Conferência de Saídas -->
+            <LinearLayout
+                android:id="@+id/btnTabConferencia"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:layout_marginStart="5dp"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="@drawable/bg_tab_unselected_soft"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:id="@+id/tvLabelTabConferencia"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📋 CONFERÊNCIA"
+                    android:textColor="#475569"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvBadgeTabConferencia"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_badge_notif"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp"
+                    android:paddingTop="1dp"
+                    android:paddingBottom="1dp"
+                    android:text="0"
+                    android:textColor="#FFFFFF"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- 3. BANNER DINÂMICO DE CANCELAMENTO PENDENTE -->
+        <LinearLayout
+            android:id="@+id/cardItemPendenteConfirmacao"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="14dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_card_warning_banner"
+            android:padding="14dp"
+            android:elevation="3dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⚠️"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/tvTituloAlertaPendente"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="Item Removido da Comanda!"
+                    android:textColor="#991B1B"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvBadgeContadorPendentes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_notif"
+                    android:paddingStart="7dp"
+                    android:paddingEnd="7dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:text="1 pendente"
+                    android:textColor="#FFFFFF"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvPendenteDescricao"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="1x PF FRANGO GRELHADO — R$ 22,99"
+                android:textColor="#1E293B"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvPendenteMesaComanda"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Mesa 04 • CMD #22 • Detectado agora"
+                android:textColor="#64748B"
+                android:textSize="12sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="O produto sumiu da comanda. Este item foi cancelado?"
+                android:textColor="#7F1D1D"
+                android:textSize="12sp"
+                android:textStyle="italic" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="10dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnConfirmarCancelado"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="❌ Sim, foi Cancelado"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#DC2626"
+                    app:cornerRadius="10dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDescartarCancelado"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="✅ Não, foi Pago / Normal"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#059669"
+                    app:cornerRadius="10dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- 4. CONTAINER DE CONTEÚDO DAS DUAS ABAS -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <!-- ═══════════════════════════════════════════════════════
+                 ABA 1: PAINEL DE FATURAMENTO E METAS
+            ═══════════════════════════════════════════════════════ -->
+            <ScrollView
+                android:id="@+id/scrollAbaFaturamento"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true"
+                android:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <!-- ── CARD 0: META DIÁRIA (COMIDAS & SUCOS - R$ 500) ── -->
+                    <LinearLayout
+                        android:id="@+id/cardMetaDiaria"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_card_conferencia"
+                        android:padding="16dp"
+                        android:elevation="2dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🎯 "
+                                android:textSize="16sp" />
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="META DIÁRIA (COMIDAS &amp; SUCOS)"
+                                android:textColor="#0F172A"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:letterSpacing="0.04" />
+
+                            <TextView
+                                android:id="@+id/tvMetaPercentualBadge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_badge_categoria_comida"
+                                android:text="0%"
+                                android:textColor="#047857"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Barra de Progresso Horizontal Customizada -->
+                        <ProgressBar
+                            android:id="@+id/progressMetaDiaria"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="match_parent"
+                            android:layout_height="12dp"
+                            android:layout_marginTop="10dp"
+                            android:max="100"
+                            android:progress="0"
+                            android:progressDrawable="@drawable/bg_progress_meta_diaria" />
+
+                        <!-- Texto explicativo da meta -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginTop="8dp">
+
+                            <TextView
+                                android:id="@+id/tvMetaProgressoValores"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="R$ 0,00 de R$ 500,00"
+                                android:textColor="#475569"
+                                android:textSize="12.5sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvMetaFaltante"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Faltam R$ 500,00"
+                                android:textColor="#059669"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- ── CARD 1: FATURAMENTO HOJE COM SEPARAÇÃO ── -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_card_finance"
+                        android:padding="18dp"
+                        android:layout_marginTop="12dp"
+                        android:elevation="3dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="FATURAMENTO HOJE"
+                                android:textColor="#A7F3D0"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:letterSpacing="0.05" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📅 DIA"
+                                android:textColor="#D1FAE5"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvFaturamentoHoje"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="R$ 0,00"
+                            android:textColor="#FFFFFF"
+                            android:textSize="32sp"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-black" />
+
+                        <TextView
+                            android:id="@+id/tvQtdItensHoje"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="0 produtos vendidos hoje"
+                            android:textColor="#E2E8F0"
+                            android:textSize="13sp" />
+
+                        <!-- Linha de Separação: Comidas vs Terceiros -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="12dp">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:background="#154B37"
+                                android:padding="8dp"
+                                android:layout_marginEnd="4dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="🍽️ Comidas / Sucos"
+                                    android:textColor="#A7F3D0"
+                                    android:textSize="10.5sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/tvFatComidasHoje"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="R$ 0,00"
+                                    android:textColor="#FFFFFF"
+                                    android:textSize="15sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:background="#154B37"
+                                android:padding="8dp"
+                                android:layout_marginStart="4dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="📦 Terceiros / Bebidas"
+                                    android:textColor="#A7F3D0"
+                                    android:textSize="10.5sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/tvFatTerceirosHoje"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="R$ 0,00"
+                                    android:textColor="#FFFFFF"
+                                    android:textSize="15sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- Detalhe de mesas abertas agora -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginTop="10dp"
+                            android:background="@drawable/bg_dashboard_card_slate"
+                            android:paddingStart="10dp"
+                            android:paddingEnd="10dp"
+                            android:paddingTop="6dp"
+                            android:paddingBottom="6dp">
+
+                            <TextView
+                                android:id="@+id/tvAbertosAgora"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🟢 R$ 0,00 em mesas abertas agora"
+                                android:textColor="#FDE68A"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- ── CARD 2: FATURAMENTO NO MÊS COM SEPARAÇÃO ── -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_card_finance_month"
+                        android:padding="18dp"
+                        android:layout_marginTop="12dp"
+                        android:elevation="2dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <TextView
+                                android:id="@+id/tvTituloMes"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="FATURAMENTO NO MÊS"
+                                android:textColor="#94A3B8"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:letterSpacing="0.05" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📊 ACUMULADO"
+                                android:textColor="#64748B"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvFaturamentoMes"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="R$ 0,00"
+                            android:textColor="#FFFFFF"
+                            android:textSize="26sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvQtdItensMes"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="0 vendas acumuladas no mês"
+                            android:textColor="#94A3B8"
+                            android:textSize="12.5sp" />
+
+                        <!-- Sub-totais do mês -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="10dp">
+
+                            <TextView
+                                android:id="@+id/tvFatComidasMes"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="🍽️ Comidas: R$ 0,00"
+                                android:textColor="#CBD5E1"
+                                android:textSize="11.5sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvFatTerceirosMes"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="📦 Terceiros: R$ 0,00"
+                                android:textColor="#CBD5E1"
+                                android:textSize="11.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <!-- ── CARD 3: CANCELAMENTOS ── -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/bg_card_cancelamento"
+                        android:padding="14dp"
+                        android:layout_marginTop="12dp"
+                        android:elevation="1dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🚫"
+                            android:textSize="24sp"
+                            android:layout_marginEnd="12dp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Cancelamentos Hoje"
+                                android:textColor="#475569"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvCancelamentosHoje"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="1dp"
+                                android:text="R$ 0,00 (0 itens)"
+                                android:textColor="#EF4444"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvStatusMonitoramento"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🛡️ Monitor Ativo"
+                            android:textColor="#059669"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                    <!-- ── SEÇÃO 4: HISTÓRICO DE DIAS DO MÊS ── -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="18dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📅 VENDAS POR DIA (ESTE MÊS)"
+                            android:textColor="#475569"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.05"
+                            android:layout_marginBottom="8dp" />
+
+                        <TextView
+                            android:id="@+id/tvVazioDias"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Nenhuma venda acumulada registrada ainda este mês."
+                            android:textColor="#94A3B8"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:padding="16dp"
+                            android:visibility="gone" />
+
+                        <LinearLayout
+                            android:id="@+id/layoutHistoricoDias"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+
+                    </LinearLayout>
+
+                    <!-- ── SEÇÃO 5: HISTÓRICO DE CANCELAMENTOS CONFIRMADOS ── -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="14dp"
+                        android:layout_marginBottom="24dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🚫 HISTÓRICO DE CANCELAMENTOS"
+                            android:textColor="#475569"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.05"
+                            android:layout_marginBottom="8dp" />
+
+                        <TextView
+                            android:id="@+id/tvVazioCancelamentos"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Nenhum produto cancelado registrado."
+                            android:textColor="#94A3B8"
+                            android:textSize="12sp"
+                            android:gravity="center"
+                            android:padding="14dp" />
+
+                        <LinearLayout
+                            android:id="@+id/layoutHistoricoCancelamentos"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </ScrollView>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 ABA 2: CONFERÊNCIA DE COMANDAS E ITENS QUE SAÍRAM
+            ═══════════════════════════════════════════════════════ -->
+            <LinearLayout
+                android:id="@+id/layoutAbaConferencia"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- Barra de filtro de conferência (Pendentes vs Todas) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="6dp">
+
+                    <TextView
+                        android:id="@+id/btnFiltroPendentes"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_badge_notif"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp"
+                        android:paddingTop="5dp"
+                        android:paddingBottom="5dp"
+                        android:text="Pendentes de Conferência"
+                        android:textColor="#FFFFFF"
+                        android:textSize="11.5sp"
+                        android:textStyle="bold"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/btnFiltroTodas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_badge_categoria_terceiro"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp"
+                        android:paddingTop="5dp"
+                        android:paddingBottom="5dp"
+                        android:text="Todas as Saídas"
+                        android:textColor="#475569"
+                        android:textSize="11.5sp"
+                        android:textStyle="bold"
+                        android:clickable="true"
+                        android:focusable="true" />
+                </LinearLayout>
+
+                <!-- Mensagem quando não há comandas para conferir -->
+                <TextView
+                    android:id="@+id/tvVazioConferencia"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Nenhuma comanda saiu recentemente.\nQuando uma mesa for fechada no sistema, ela aparecerá aqui para você conferir se foi paga ou cancelada."
+                    android:textColor="#94A3B8"
+                    android:textSize="13sp"
+                    android:gravity="center"
+                    android:padding="32dp"
+                    android:lineSpacingExtra="4dp"
+                    android:visibility="gone" />
+
+                <!-- Lista de comandas que saíram -->
+                <ScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:fillViewport="true">
+
+                    <LinearLayout
+                        android:id="@+id/layoutListaComandasConferencia"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp" />
+
+                </ScrollView>
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         5. TELA DE CAMUFLAGEM RÁPIDA (MODO PÂNICO)
+         Disfarce completo e convincente de tela do sistema Android
+         Ativação: Toque duplo no cabeçalho
+         Desativação: Pressionar e segurar por 2 segundos na tela
+    ═══════════════════════════════════════════════════════════════ -->
+    <LinearLayout
+        android:id="@+id/layoutCamuflagemPanico"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#FFFFFF"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <!-- Topo Estilo Android Settings / Google Play Services -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="?android:attr/actionBarSize"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:background="#FFFFFF"
+            android:elevation="1dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="←"
+                android:textColor="#1F2937"
+                android:textSize="20sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:text="Google Play Services"
+                android:textColor="#1F2937"
+                android:textSize="18sp"
+                android:fontFamily="sans-serif-medium" />
+        </LinearLayout>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <!-- Escudo de Proteção Verde Central -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:paddingTop="20dp"
+                    android:paddingBottom="24dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🛡️"
+                        android:textSize="54sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="O dispositivo está protegido"
+                        android:textColor="#1F2937"
+                        android:textSize="18sp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Todos os subsistemas e serviços de background estão atualizados e operando com segurança."
+                        android:textColor="#6B7280"
+                        android:textSize="13sp"
+                        android:gravity="center"
+                        android:lineSpacingExtra="2dp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#E5E7EB"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Item 1: Google Play Protect -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="✅"
+                        android:textSize="18sp"
+                        android:layout_marginEnd="16dp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Google Play Protect"
+                            android:textColor="#1F2937"
+                            android:textSize="15sp"
+                            android:fontFamily="sans-serif-medium" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Verificação concluída recentemente. Nenhum app nocivo encontrado."
+                            android:textColor="#6B7280"
+                            android:textSize="12.5sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Item 2: Sincronização de Contas -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔄"
+                        android:textSize="18sp"
+                        android:layout_marginEnd="16dp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Sincronização do Sistema"
+                            android:textColor="#1F2937"
+                            android:textSize="15sp"
+                            android:fontFamily="sans-serif-medium" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Serviços em nuvem sincronizados e criptografados de ponta a ponta."
+                            android:textColor="#6B7280"
+                            android:textSize="12.5sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Item 3: Segurança do Sistema -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔒"
+                        android:textSize="18sp"
+                        android:layout_marginEnd="16dp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Atualizações de Segurança"
+                            android:textColor="#1F2937"
+                            android:textSize="15sp"
+                            android:fontFamily="sans-serif-medium" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Nível do patch de segurança: 1 de Outubro de 2026."
+                            android:textColor="#6B7280"
+                            android:textSize="12.5sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Informações de Versão do Sistema -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="24dp"
+                    android:padding="14dp"
+                    android:background="#F3F4F6">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Google Play Services v26.39.14 (190400-684201948)"
+                        android:textColor="#9CA3AF"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="ID do dispositivo: 83a9f-3901b • Sistema operando em modo protegido"
+                        android:textColor="#9CA3AF"
+                        android:textSize="10.5sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </ScrollView>
+
+        <!-- Rodapé discreto para retorno (Toque longo de 2 segundos) -->
+        <TextView
+            android:id="@+id/tvInstrucaoRetornoPanico"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Pressione e segure por 2s nesta tela para abrir preferências avançadas"
+            android:textColor="#D1D5DB"
+            android:textSize="10sp"
+            android:gravity="center"
+            android:padding="12dp" />
+
+    </LinearLayout>
+
+</FrameLayout>

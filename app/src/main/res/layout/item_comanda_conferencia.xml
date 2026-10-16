@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardComandaConferenciaRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_card_conferencia"
+    android:padding="14dp"
+    android:layout_marginBottom="12dp"
+    android:elevation="2dp">
+
+    <!-- Cabeçalho da Comanda -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvConfMesaCmd"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Mesa 04 • CMD #22"
+            android:textColor="#0F172A"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvConfTotalValor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="R$ 48,00"
+            android:textColor="#047857"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- Detalhes de Tempo / Saída -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="3dp">
+
+        <TextView
+            android:id="@+id/tvConfHorarioSaida"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Saiu às 14:32 • Aberta por 12 min"
+            android:textColor="#64748B"
+            android:textSize="11.5sp" />
+
+        <TextView
+            android:id="@+id/tvConfStatusBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_dashboard_card_amber"
+            android:paddingStart="7dp"
+            android:paddingEnd="7dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:text="🟡 PENDENTE"
+            android:textColor="#92400E"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- Alerta de Saída Suspeita (< 15 minutos) -->
+    <TextView
+        android:id="@+id/tvConfBadgeSuspeita"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_badge_suspeita"
+        android:layout_marginTop="8dp"
+        android:text="⚠️ SAÍDA RÁPIDA (12 min) — Verifique se a mesa cancelou"
+        android:textColor="#B45309"
+        android:textSize="11.5sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <!-- Divisória suave -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E2E8F0"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Título da lista de produtos -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PRODUTOS LANÇADOS NESTA COMANDA:"
+        android:textColor="#64748B"
+        android:textSize="10.5sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.04"
+        android:layout_marginBottom="4dp" />
+
+    <!-- Container onde os itens serão adicionados um abaixo do outro -->
+    <LinearLayout
+        android:id="@+id/layoutConfListaItens"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <!-- Botões de Ação da Comanda Toda -->
+    <LinearLayout
+        android:id="@+id/layoutConfAcoesBotoes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnConfComandaTodaPaga"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1.2"
+            android:layout_marginEnd="6dp"
+            android:text="✅ Comanda Paga Integral"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:backgroundTint="#059669"
+            app:cornerRadius="10dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnConfCancelarTudo"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="0.8"
+            android:layout_marginStart="6dp"
+            android:text="❌ Cancelar Tudo"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:backgroundTint="#EF4444"
+            app:cornerRadius="10dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

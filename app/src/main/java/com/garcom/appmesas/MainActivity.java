@@ -14,6 +14,8 @@ import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,16 +29,40 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements
         MonitorComandasEngine.MonitorCallback,
-        CancelamentoDetectorManager.OnCancelamentoListener {
+        CancelamentoDetectorManager.OnCancelamentoListener,
+        ConferenciaSaidasManager.OnConferenciaListener {
 
     // Views do Cabeçalho
+    private View layoutHeaderPrincipal;
     private TextView tvStatusServidorPill;
     private View btnAtualizar;
     private View btnConfigGarcom;
     private TextView tvNomeGarcomAtivo;
     private TextView tvUltimaSincronizacao;
 
-    // Card de Alerta de Cancelamento Pendente (Aparece se um produto sumir da comanda)
+    // Navegação entre Abas
+    private View btnTabFaturamento;
+    private TextView tvLabelTabFaturamento;
+    private View btnTabConferencia;
+    private TextView tvLabelTabConferencia;
+    private TextView tvBadgeTabConferencia;
+    private ScrollView scrollAbaFaturamento;
+    private LinearLayout layoutAbaConferencia;
+
+    // Aba de Conferência de Saídas
+    private TextView btnFiltroPendentes;
+    private TextView btnFiltroTodas;
+    private TextView tvVazioConferencia;
+    private LinearLayout layoutListaComandasConferencia;
+
+    // Meta Diária de Comidas (R$ 500)
+    private View cardMetaDiaria;
+    private TextView tvMetaPercentualBadge;
+    private ProgressBar progressMetaDiaria;
+    private TextView tvMetaProgressoValores;
+    private TextView tvMetaFaltante;
+
+    // Banner de Alerta de Cancelamento Pendente (Produto que sumiu)
     private View cardItemPendenteConfirmacao;
     private TextView tvBadgeContadorPendentes;
     private TextView tvPendenteDescricao;
@@ -44,13 +70,17 @@ public class MainActivity extends AppCompatActivity implements
     private MaterialButton btnConfirmarCancelado;
     private MaterialButton btnDescartarCancelado;
 
-    // Métricas de Vendas
+    // Métricas Financeiras
     private TextView tvFaturamentoHoje;
     private TextView tvQtdItensHoje;
+    private TextView tvFatComidasHoje;
+    private TextView tvFatTerceirosHoje;
     private TextView tvAbertosAgora;
     private TextView tvTituloMes;
     private TextView tvFaturamentoMes;
     private TextView tvQtdItensMes;
+    private TextView tvFatComidasMes;
+    private TextView tvFatTerceirosMes;
     private TextView tvCancelamentosHoje;
 
     // Listas / Históricos
@@ -59,13 +89,22 @@ public class MainActivity extends AppCompatActivity implements
     private LinearLayout layoutHistoricoCancelamentos;
     private TextView tvVazioCancelamentos;
 
-    // Motores e Gerenciadores
+    // Camuflagem Rápida (Modo Pânico)
+    private View layoutCamuflagemPanico;
+
+    // Gerenciadores
     private MonitorComandasEngine monitorEngine;
     private VendasFaturamentoManager vendasManager;
     private CancelamentoDetectorManager cancelamentoManager;
+    private ConferenciaSaidasManager conferenciaManager;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private AlertDialog dialogCancelamentoAtivo;
+
+    // Estados
+    private boolean abaConferenciaAtiva = false;
+    private boolean apenasPendentesConferencia = true;
+    private long ultimoToqueHeader = 0L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +115,7 @@ public class MainActivity extends AppCompatActivity implements
         monitorEngine = MonitorComandasEngine.getInstance(this);
         vendasManager = VendasFaturamentoManager.getInstance(this);
         cancelamentoManager = CancelamentoDetectorManager.getInstance(this);
+        conferenciaManager = ConferenciaSaidasManager.getInstance(this);
 
         // Garante que o garçom padrão seja o 223 (Wanderson)
         String codAtual = ResumoGarcomManager.getCodigoGarcom(this);
@@ -85,26 +125,50 @@ public class MainActivity extends AppCompatActivity implements
 
         vincularViews();
         configurarBotoes();
+        configurarAbas();
+        configurarModoCamuflagem();
 
         // Solicita permissão de notificações em Android 13+
         solicitarPermissaoNotificacoes();
 
-        // Registra listeners de cancelamento e monitoramento
+        // Registra listeners de cancelamento e de conferência de saídas
         cancelamentoManager.registrarListener(this);
+        conferenciaManager.registrarListener(this);
 
         // Verifica atualizações remotas discretamente
         verificarAtualizacaoApp();
 
         // Atualiza a tela inicialmente com os dados salvos
         atualizarDadosDashboard();
+        atualizarBadgeConferencia();
     }
 
     private void vincularViews() {
+        layoutHeaderPrincipal = findViewById(R.id.layoutHeaderPrincipal);
         tvStatusServidorPill = findViewById(R.id.tvStatusServidorPill);
         btnAtualizar = findViewById(R.id.btnAtualizar);
         btnConfigGarcom = findViewById(R.id.btnConfigGarcom);
         tvNomeGarcomAtivo = findViewById(R.id.tvNomeGarcomAtivo);
         tvUltimaSincronizacao = findViewById(R.id.tvUltimaSincronizacao);
+
+        btnTabFaturamento = findViewById(R.id.btnTabFaturamento);
+        tvLabelTabFaturamento = findViewById(R.id.tvLabelTabFaturamento);
+        btnTabConferencia = findViewById(R.id.btnTabConferencia);
+        tvLabelTabConferencia = findViewById(R.id.tvLabelTabConferencia);
+        tvBadgeTabConferencia = findViewById(R.id.tvBadgeTabConferencia);
+        scrollAbaFaturamento = findViewById(R.id.scrollAbaFaturamento);
+        layoutAbaConferencia = findViewById(R.id.layoutAbaConferencia);
+
+        btnFiltroPendentes = findViewById(R.id.btnFiltroPendentes);
+        btnFiltroTodas = findViewById(R.id.btnFiltroTodas);
+        tvVazioConferencia = findViewById(R.id.tvVazioConferencia);
+        layoutListaComandasConferencia = findViewById(R.id.layoutListaComandasConferencia);
+
+        cardMetaDiaria = findViewById(R.id.cardMetaDiaria);
+        tvMetaPercentualBadge = findViewById(R.id.tvMetaPercentualBadge);
+        progressMetaDiaria = findViewById(R.id.progressMetaDiaria);
+        tvMetaProgressoValores = findViewById(R.id.tvMetaProgressoValores);
+        tvMetaFaltante = findViewById(R.id.tvMetaFaltante);
 
         cardItemPendenteConfirmacao = findViewById(R.id.cardItemPendenteConfirmacao);
         tvBadgeContadorPendentes = findViewById(R.id.tvBadgeContadorPendentes);
@@ -115,20 +179,25 @@ public class MainActivity extends AppCompatActivity implements
 
         tvFaturamentoHoje = findViewById(R.id.tvFaturamentoHoje);
         tvQtdItensHoje = findViewById(R.id.tvQtdItensHoje);
+        tvFatComidasHoje = findViewById(R.id.tvFatComidasHoje);
+        tvFatTerceirosHoje = findViewById(R.id.tvFatTerceirosHoje);
         tvAbertosAgora = findViewById(R.id.tvAbertosAgora);
         tvTituloMes = findViewById(R.id.tvTituloMes);
         tvFaturamentoMes = findViewById(R.id.tvFaturamentoMes);
         tvQtdItensMes = findViewById(R.id.tvQtdItensMes);
+        tvFatComidasMes = findViewById(R.id.tvFatComidasMes);
+        tvFatTerceirosMes = findViewById(R.id.tvFatTerceirosMes);
         tvCancelamentosHoje = findViewById(R.id.tvCancelamentosHoje);
 
         layoutHistoricoDias = findViewById(R.id.layoutHistoricoDias);
         tvVazioDias = findViewById(R.id.tvVazioDias);
         layoutHistoricoCancelamentos = findViewById(R.id.layoutHistoricoCancelamentos);
         tvVazioCancelamentos = findViewById(R.id.tvVazioCancelamentos);
+
+        layoutCamuflagemPanico = findViewById(R.id.layoutCamuflagemPanico);
     }
 
     private void configurarBotoes() {
-        // Botão de atualização manual com animação suave de giro
         if (btnAtualizar != null) {
             btnAtualizar.setOnClickListener(v -> {
                 RotateAnimation rotate = new RotateAnimation(0, 360,
@@ -144,12 +213,107 @@ public class MainActivity extends AppCompatActivity implements
             });
         }
 
-        // Botão para ajustar o código do garçom
         if (btnConfigGarcom != null) {
             btnConfigGarcom.setOnClickListener(v -> exibirDialogoConfigGarcom());
         }
         if (tvNomeGarcomAtivo != null) {
             tvNomeGarcomAtivo.setOnClickListener(v -> exibirDialogoConfigGarcom());
+        }
+
+        if (cardMetaDiaria != null) {
+            cardMetaDiaria.setOnClickListener(v -> exibirDialogoMetaDiaria());
+        }
+    }
+
+    private void configurarAbas() {
+        if (btnTabFaturamento != null) {
+            btnTabFaturamento.setOnClickListener(v -> alternarAba(false));
+        }
+
+        if (btnTabConferencia != null) {
+            btnTabConferencia.setOnClickListener(v -> alternarAba(true));
+        }
+
+        if (btnFiltroPendentes != null) {
+            btnFiltroPendentes.setOnClickListener(v -> {
+                apenasPendentesConferencia = true;
+                btnFiltroPendentes.setBackgroundResource(R.drawable.bg_badge_notif);
+                btnFiltroPendentes.setTextColor(Color.WHITE);
+                btnFiltroTodas.setBackgroundResource(R.drawable.bg_badge_categoria_terceiro);
+                btnFiltroTodas.setTextColor(Color.parseColor("#475569"));
+                renderizarComandasConferencia();
+            });
+        }
+
+        if (btnFiltroTodas != null) {
+            btnFiltroTodas.setOnClickListener(v -> {
+                apenasPendentesConferencia = false;
+                btnFiltroTodas.setBackgroundResource(R.drawable.bg_badge_notif);
+                btnFiltroTodas.setTextColor(Color.WHITE);
+                btnFiltroPendentes.setBackgroundResource(R.drawable.bg_badge_categoria_terceiro);
+                btnFiltroPendentes.setTextColor(Color.parseColor("#475569"));
+                renderizarComandasConferencia();
+            });
+        }
+    }
+
+    private void alternarAba(boolean paraConferencia) {
+        abaConferenciaAtiva = paraConferencia;
+        if (paraConferencia) {
+            btnTabConferencia.setBackgroundResource(R.drawable.bg_tab_selected);
+            tvLabelTabConferencia.setTextColor(Color.WHITE);
+            btnTabFaturamento.setBackgroundResource(R.drawable.bg_tab_unselected_soft);
+            tvLabelTabFaturamento.setTextColor(Color.parseColor("#475569"));
+
+            if (scrollAbaFaturamento != null) scrollAbaFaturamento.setVisibility(View.GONE);
+            if (layoutAbaConferencia != null) layoutAbaConferencia.setVisibility(View.VISIBLE);
+
+            renderizarComandasConferencia();
+        } else {
+            btnTabFaturamento.setBackgroundResource(R.drawable.bg_tab_selected);
+            tvLabelTabFaturamento.setTextColor(Color.WHITE);
+            btnTabConferencia.setBackgroundResource(R.drawable.bg_tab_unselected_soft);
+            tvLabelTabConferencia.setTextColor(Color.parseColor("#475569"));
+
+            if (scrollAbaFaturamento != null) scrollAbaFaturamento.setVisibility(View.VISIBLE);
+            if (layoutAbaConferencia != null) layoutAbaConferencia.setVisibility(View.GONE);
+
+            atualizarDadosDashboard();
+        }
+    }
+
+    private void configurarModoCamuflagem() {
+        // Toque duplo no cabeçalho ativa imediatamente a camuflagem
+        if (layoutHeaderPrincipal != null) {
+            layoutHeaderPrincipal.setOnClickListener(v -> {
+                long agora = System.currentTimeMillis();
+                if (agora - ultimoToqueHeader < 400) {
+                    ativarModoCamuflagem(true);
+                    ultimoToqueHeader = 0;
+                } else {
+                    ultimoToqueHeader = agora;
+                }
+            });
+        }
+
+        // Toque longo (2 segundos) na tela de camuflagem restaura o app
+        if (layoutCamuflagemPanico != null) {
+            layoutCamuflagemPanico.setOnLongClickListener(v -> {
+                VibrationHelper.vibrateLongPress(MainActivity.this);
+                ativarModoCamuflagem(false);
+                Toast.makeText(MainActivity.this, "Painel restaurado.", Toast.LENGTH_SHORT).show();
+                return true;
+            });
+        }
+    }
+
+    private void ativarModoCamuflagem(boolean ativar) {
+        if (layoutCamuflagemPanico == null) return;
+        if (ativar) {
+            VibrationHelper.vibrateLongPress(this);
+            layoutCamuflagemPanico.setVisibility(View.VISIBLE);
+        } else {
+            layoutCamuflagemPanico.setVisibility(View.GONE);
         }
     }
 
@@ -163,6 +327,10 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
         atualizarDadosDashboard();
+        atualizarBadgeConferencia();
+        if (abaConferenciaAtiva) {
+            renderizarComandasConferencia();
+        }
     }
 
     @Override
@@ -179,10 +347,13 @@ public class MainActivity extends AppCompatActivity implements
         if (cancelamentoManager != null) {
             cancelamentoManager.removerListener(this);
         }
+        if (conferenciaManager != null) {
+            conferenciaManager.removerListener(this);
+        }
     }
 
     /**
-     * Atualiza os números, cards e históricos da interface
+     * Atualiza os números, cards e históricos da interface principal
      */
     public synchronized void atualizarDadosDashboard() {
         String cod = ResumoGarcomManager.getCodigoGarcom(this);
@@ -196,9 +367,35 @@ public class MainActivity extends AppCompatActivity implements
             tvNomeGarcomAtivo.setText("👤 " + nome + " (#" + cod + ")");
         }
 
-        // 1. Faturamento Hoje
+        // 1. Meta Diária (R$ 500)
+        double meta = vendasManager.getMetaDiaria();
+        double fatComidasHoje = vendasManager.getFaturamentoComidasHoje(cod);
+        int percentual = vendasManager.getPercentualMetaHoje(cod);
+        double faltante = vendasManager.getValorFaltanteMeta(cod);
+
+        if (progressMetaDiaria != null) {
+            progressMetaDiaria.setProgress(Math.min(100, Math.max(0, percentual)));
+        }
+        if (tvMetaPercentualBadge != null) {
+            tvMetaPercentualBadge.setText(percentual + "%" + (percentual >= 100 ? " 🏆" : ""));
+        }
+        if (tvMetaProgressoValores != null) {
+            tvMetaProgressoValores.setText(VendasFaturamentoManager.formatarMoeda(fatComidasHoje) + " de " + VendasFaturamentoManager.formatarMoeda(meta));
+        }
+        if (tvMetaFaltante != null) {
+            if (faltante > 0) {
+                tvMetaFaltante.setText("Faltam " + VendasFaturamentoManager.formatarMoeda(faltante));
+                tvMetaFaltante.setTextColor(Color.parseColor("#059669"));
+            } else {
+                tvMetaFaltante.setText("🎉 Meta Atingida!");
+                tvMetaFaltante.setTextColor(Color.parseColor("#047857"));
+            }
+        }
+
+        // 2. Faturamento Hoje & Separação de Comidas vs Terceiros
         double fatHoje = vendasManager.getFaturamentoHoje(cod);
         int qtdHoje = vendasManager.getQtdItensHoje(cod);
+        double fatTercHoje = vendasManager.getFaturamentoTerceirosHoje(cod);
         double abertosHoje = vendasManager.getFaturamentoAbertoAgora();
         int qtdAbertosHoje = vendasManager.getQtdItensAbertoAgora();
 
@@ -207,6 +404,12 @@ public class MainActivity extends AppCompatActivity implements
         }
         if (tvQtdItensHoje != null) {
             tvQtdItensHoje.setText(qtdHoje + (qtdHoje == 1 ? " produto vendido hoje" : " produtos vendidos hoje"));
+        }
+        if (tvFatComidasHoje != null) {
+            tvFatComidasHoje.setText(VendasFaturamentoManager.formatarMoeda(fatComidasHoje));
+        }
+        if (tvFatTerceirosHoje != null) {
+            tvFatTerceirosHoje.setText(VendasFaturamentoManager.formatarMoeda(fatTercHoje));
         }
         if (tvAbertosAgora != null) {
             if (abertosHoje > 0) {
@@ -218,7 +421,7 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
 
-        // 2. Faturamento Mês
+        // 3. Faturamento Mês & Separação
         Calendar cal = Calendar.getInstance();
         String mesNome = new DateFormatSymbols(new Locale("pt", "BR")).getMonths()[cal.get(Calendar.MONTH)];
         if (mesNome != null && !mesNome.isEmpty()) {
@@ -232,6 +435,8 @@ public class MainActivity extends AppCompatActivity implements
 
         double fatMes = vendasManager.getFaturamentoMes(cod);
         int qtdMes = vendasManager.getQtdItensMes(cod);
+        double fatComMes = vendasManager.getFaturamentoComidasMes(cod);
+        double fatTercMes = vendasManager.getFaturamentoTerceirosMes(cod);
 
         if (tvFaturamentoMes != null) {
             tvFaturamentoMes.setText(VendasFaturamentoManager.formatarMoeda(fatMes));
@@ -239,8 +444,14 @@ public class MainActivity extends AppCompatActivity implements
         if (tvQtdItensMes != null) {
             tvQtdItensMes.setText(qtdMes + (qtdMes == 1 ? " venda acumulada no mês" : " vendas acumuladas no mês"));
         }
+        if (tvFatComidasMes != null) {
+            tvFatComidasMes.setText("🍽️ Comidas: " + VendasFaturamentoManager.formatarMoeda(fatComMes));
+        }
+        if (tvFatTerceirosMes != null) {
+            tvFatTerceirosMes.setText("📦 Terceiros: " + VendasFaturamentoManager.formatarMoeda(fatTercMes));
+        }
 
-        // 3. Cancelamentos Hoje
+        // 4. Cancelamentos Hoje
         double cancHoje = cancelamentoManager.getTotalCanceladoHoje();
         int qtdCancHoje = cancelamentoManager.getQtdCanceladoHoje();
 
@@ -254,14 +465,179 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
 
-        // 4. Banner de Item Pendente de Confirmação
+        // 5. Banner de Item Pendente de Confirmação
         atualizarBannerItemPendente();
 
-        // 5. Histórico diário do mês
+        // 6. Histórico diário do mês
         renderizarHistoricoDias(cod);
 
-        // 6. Histórico de cancelamentos confirmados
+        // 7. Histórico de cancelamentos confirmados
         renderizarHistoricoCancelamentos();
+    }
+
+    private void atualizarBadgeConferencia() {
+        if (tvBadgeTabConferencia == null) return;
+        int pendentes = conferenciaManager.getQtdPendentes();
+        if (pendentes > 0) {
+            tvBadgeTabConferencia.setText(String.valueOf(pendentes));
+            tvBadgeTabConferencia.setVisibility(View.VISIBLE);
+        } else {
+            tvBadgeTabConferencia.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * Renderiza as comandas que saíram do sistema para conferência
+     */
+    private synchronized void renderizarComandasConferencia() {
+        if (layoutListaComandasConferencia == null) return;
+        layoutListaComandasConferencia.removeAllViews();
+
+        List<ComandaSaidaModel> comandas = apenasPendentesConferencia
+                ? conferenciaManager.getComandasPendentes()
+                : conferenciaManager.getTodasComandasSaidas();
+
+        if (comandas.isEmpty()) {
+            if (tvVazioConferencia != null) {
+                tvVazioConferencia.setVisibility(View.VISIBLE);
+                if (apenasPendentesConferencia) {
+                    tvVazioConferencia.setText("Nenhuma saída pendente de conferência no momento.\nToque em 'Todas as Saídas' para ver o histórico recente.");
+                } else {
+                    tvVazioConferencia.setText("Nenhuma comanda saiu recentemente.\nQuando uma mesa for fechada no sistema, ela aparecerá aqui para você conferir.");
+                }
+            }
+            return;
+        }
+
+        if (tvVazioConferencia != null) tvVazioConferencia.setVisibility(View.GONE);
+
+        LayoutInflater inflater = LayoutInflater.from(this);
+        CatalogoClassificador classificador = CatalogoClassificador.getInstance(this);
+
+        for (ComandaSaidaModel cmd : comandas) {
+            View cardView = inflater.inflate(R.layout.item_comanda_conferencia, layoutListaComandasConferencia, false);
+
+            TextView tvConfMesaCmd = cardView.findViewById(R.id.tvConfMesaCmd);
+            TextView tvConfTotalValor = cardView.findViewById(R.id.tvConfTotalValor);
+            TextView tvConfHorarioSaida = cardView.findViewById(R.id.tvConfHorarioSaida);
+            TextView tvConfStatusBadge = cardView.findViewById(R.id.tvConfStatusBadge);
+            TextView tvConfBadgeSuspeita = cardView.findViewById(R.id.tvConfBadgeSuspeita);
+            LinearLayout layoutConfListaItens = cardView.findViewById(R.id.layoutConfListaItens);
+            View layoutConfAcoesBotoes = cardView.findViewById(R.id.layoutConfAcoesBotoes);
+            MaterialButton btnConfComandaTodaPaga = cardView.findViewById(R.id.btnConfComandaTodaPaga);
+            MaterialButton btnConfCancelarTudo = cardView.findViewById(R.id.btnConfCancelarTudo);
+
+            tvConfMesaCmd.setText(cmd.getIdentificadorComanda());
+            tvConfTotalValor.setText(cmd.getTotalValorFormatado());
+
+            String tempoTexto = "Saiu às " + cmd.getHoraSaida()
+                    + (cmd.getDuracaoMinutos() > 0 ? (" • Aberta por " + cmd.getDuracaoMinutos() + " min") : "");
+            tvConfHorarioSaida.setText(tempoTexto);
+
+            // Alerta de Saída Suspeita (< 15 minutos)
+            if (cmd.isEhSaidaSuspeita()) {
+                tvConfBadgeSuspeita.setVisibility(View.VISIBLE);
+                tvConfBadgeSuspeita.setText("⚠️ SAÍDA RÁPIDA (" + cmd.getDuracaoMinutos() + " min) — Verifique se a mesa cancelou");
+                cardView.setBackgroundResource(R.drawable.bg_card_conferencia_suspeita);
+            } else {
+                tvConfBadgeSuspeita.setVisibility(View.GONE);
+                cardView.setBackgroundResource(R.drawable.bg_card_conferencia);
+            }
+
+            // Status da conferência
+            if (cmd.isPendente()) {
+                tvConfStatusBadge.setText("🟡 PENDENTE");
+                tvConfStatusBadge.setBackgroundResource(R.drawable.bg_dashboard_card_amber);
+                tvConfStatusBadge.setTextColor(Color.parseColor("#92400E"));
+                if (layoutConfAcoesBotoes != null) layoutConfAcoesBotoes.setVisibility(View.VISIBLE);
+            } else if ("PAGA_INTEGRAL".equals(cmd.getStatusConferencia())) {
+                tvConfStatusBadge.setText("✅ PAGA INTEGRAL");
+                tvConfStatusBadge.setBackgroundResource(R.drawable.bg_badge_categoria_comida);
+                tvConfStatusBadge.setTextColor(Color.parseColor("#047857"));
+                if (layoutConfAcoesBotoes != null) layoutConfAcoesBotoes.setVisibility(View.GONE);
+            } else if ("CANCELAMENTO_PARCIAL".equals(cmd.getStatusConferencia())) {
+                tvConfStatusBadge.setText("⚠️ CANC. PARCIAL");
+                tvConfStatusBadge.setBackgroundResource(R.drawable.bg_dashboard_card_amber);
+                tvConfStatusBadge.setTextColor(Color.parseColor("#B45309"));
+                if (layoutConfAcoesBotoes != null) layoutConfAcoesBotoes.setVisibility(View.GONE);
+            } else {
+                tvConfStatusBadge.setText("🚫 CANCELADA");
+                tvConfStatusBadge.setBackgroundResource(R.drawable.bg_badge_notif);
+                tvConfStatusBadge.setTextColor(Color.WHITE);
+                if (layoutConfAcoesBotoes != null) layoutConfAcoesBotoes.setVisibility(View.GONE);
+            }
+
+            // Infla os itens desta comanda um abaixo do outro
+            layoutConfListaItens.removeAllViews();
+            for (ItemCanceladoModel it : cmd.getItens()) {
+                View itemView = inflater.inflate(R.layout.item_linha_conferencia_item, layoutConfListaItens, false);
+                TextView tvLinhaItemQtdNome = itemView.findViewById(R.id.tvLinhaItemQtdNome);
+                TextView tvLinhaItemBadge = itemView.findViewById(R.id.tvLinhaItemBadge);
+                TextView tvLinhaItemValor = itemView.findViewById(R.id.tvLinhaItemValor);
+                TextView btnLinhaItemCancelar = itemView.findViewById(R.id.btnLinhaItemCancelar);
+                TextView tvLinhaItemStatusCancelado = itemView.findViewById(R.id.tvLinhaItemStatusCancelado);
+
+                tvLinhaItemQtdNome.setText(it.getQtde() + "x " + it.getDescricao());
+                tvLinhaItemValor.setText(it.getValorFormatado());
+
+                boolean ehComida = classificador.isComidaOuProducao(it.getCodProd(), it.getDescricao());
+                if (ehComida) {
+                    tvLinhaItemBadge.setText("🍽️ Comida / Produção");
+                    tvLinhaItemBadge.setBackgroundResource(R.drawable.bg_badge_categoria_comida);
+                    tvLinhaItemBadge.setTextColor(Color.parseColor("#047857"));
+                } else {
+                    tvLinhaItemBadge.setText("📦 Terceiro / Bebida");
+                    tvLinhaItemBadge.setBackgroundResource(R.drawable.bg_badge_categoria_terceiro);
+                    tvLinhaItemBadge.setTextColor(Color.parseColor("#475569"));
+                }
+
+                if (it.isConfirmadoCancelado()) {
+                    btnLinhaItemCancelar.setVisibility(View.GONE);
+                    tvLinhaItemStatusCancelado.setVisibility(View.VISIBLE);
+                } else {
+                    tvLinhaItemStatusCancelado.setVisibility(View.GONE);
+                    btnLinhaItemCancelar.setVisibility(View.VISIBLE);
+
+                    btnLinhaItemCancelar.setOnClickListener(v -> {
+                        new AlertDialog.Builder(MainActivity.this)
+                                .setTitle("Confirmar Cancelamento do Item")
+                                .setMessage("Deseja marcar como cancelado:\n\n" + it.getLinhaResumo() + "?\n\nO valor será deduzido do faturamento.")
+                                .setPositiveButton("Sim, Cancelar Item", (dialog, which) -> {
+                                    conferenciaManager.cancelarItemIndividual(cmd, it);
+                                    Toast.makeText(MainActivity.this, "Item cancelado e deduzido!", Toast.LENGTH_SHORT).show();
+                                })
+                                .setNegativeButton("Voltar", null)
+                                .show();
+                    });
+                }
+
+                layoutConfListaItens.addView(itemView);
+            }
+
+            // Ações da Comanda Inteira
+            if (btnConfComandaTodaPaga != null) {
+                btnConfComandaTodaPaga.setOnClickListener(v -> {
+                    conferenciaManager.confirmarComandaTodaPaga(cmd);
+                    Toast.makeText(MainActivity.this, "Comanda confirmada como paga integral!", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            if (btnConfCancelarTudo != null) {
+                btnConfCancelarTudo.setOnClickListener(v -> {
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Cancelar Todos os Itens da Comanda")
+                            .setMessage("Tem certeza de que todos os produtos de " + cmd.getIdentificadorComanda() + " foram cancelados?")
+                            .setPositiveButton("Sim, Cancelar Todos", (dialog, which) -> {
+                                conferenciaManager.cancelarComandaToda(cmd);
+                                Toast.makeText(MainActivity.this, "Todos os itens foram cancelados e deduzidos!", Toast.LENGTH_SHORT).show();
+                            })
+                            .setNegativeButton("Voltar", null)
+                            .show();
+                });
+            }
+
+            layoutListaComandasConferencia.addView(cardView);
+        }
     }
 
     private void atualizarBannerItemPendente() {
@@ -372,22 +748,34 @@ public class MainActivity extends AppCompatActivity implements
     public void onNovoItemParaConfirmar(ItemCanceladoModel item) {
         if (item == null) return;
 
-        // Se a atividade estiver visível, abre o diálogo de pergunta imediatamente
         if (!isFinishing() && !isDestroyed()) {
             exibirDialogoPerguntaCancelamento(item);
         }
         atualizarDadosDashboard();
+        atualizarBadgeConferencia();
     }
 
     @Override
     public void onCancelamentosAtualizados() {
+        atualizarDadosDashboard();
+        atualizarBadgeConferencia();
+        if (abaConferenciaAtiva) {
+            renderizarComandasConferencia();
+        }
+    }
+
+    @Override
+    public void onConferenciaAtualizada() {
+        atualizarBadgeConferencia();
+        if (abaConferenciaAtiva) {
+            renderizarComandasConferencia();
+        }
         atualizarDadosDashboard();
     }
 
     private void exibirDialogoPerguntaCancelamento(ItemCanceladoModel item) {
         if (isFinishing() || isDestroyed()) return;
         if (dialogCancelamentoAtivo != null && dialogCancelamentoAtivo.isShowing()) {
-            // Já existe um diálogo aberto, o banner na tela tratará o próximo
             return;
         }
 
@@ -415,9 +803,46 @@ public class MainActivity extends AppCompatActivity implements
                 .show();
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // DIÁLOGO PARA CONFIGURAR CÓDIGO DO GARÇOM
-    // ═══════════════════════════════════════════════════════════════
+    private void exibirDialogoMetaDiaria() {
+        if (isFinishing() || isDestroyed()) return;
+
+        final EditText input = new EditText(this);
+        input.setHint("Ex: 500");
+        input.setText(String.format(Locale.US, "%.0f", vendasManager.getMetaDiaria()));
+        input.setSelection(input.getText().length());
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (18 * getResources().getDisplayMetrics().density);
+        container.setPadding(pad, pad / 2, pad, pad / 2);
+
+        TextView tvDica = new TextView(this);
+        tvDica.setText("Defina a sua meta diária de vendas em Comidas, Pizzas, Lanches e Sucos Feitos na Hora:\n(Produtos de terceiros como refrigerantes em lata e cervejas não contam para esta meta).");
+        tvDica.setTextSize(12.5f);
+        tvDica.setTextColor(Color.parseColor("#64748B"));
+        tvDica.setPadding(0, 0, 0, pad / 2);
+
+        container.addView(tvDica);
+        container.addView(input);
+
+        new AlertDialog.Builder(this)
+                .setTitle("🎯 Meta Diária de Comidas")
+                .setView(container)
+                .setPositiveButton("Salvar", (d, which) -> {
+                    try {
+                        double novaMeta = Double.parseDouble(input.getText().toString().replace(",", "."));
+                        vendasManager.setMetaDiaria(novaMeta);
+                        Toast.makeText(MainActivity.this, "Meta atualizada para " + VendasFaturamentoManager.formatarMoeda(novaMeta), Toast.LENGTH_SHORT).show();
+                        atualizarDadosDashboard();
+                    } catch (Exception e) {
+                        Toast.makeText(MainActivity.this, "Valor inválido.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
     private void exibirDialogoConfigGarcom() {
         if (isFinishing() || isDestroyed()) return;
 
@@ -492,6 +917,10 @@ public class MainActivity extends AppCompatActivity implements
                 tvUltimaSincronizacao.setText("⏱ Sincronizado às " + ultimaSincronizacao);
             }
             atualizarDadosDashboard();
+            atualizarBadgeConferencia();
+            if (abaConferenciaAtiva) {
+                renderizarComandasConferencia();
+            }
         });
     }
 

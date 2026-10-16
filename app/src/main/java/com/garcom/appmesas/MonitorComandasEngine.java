@@ -527,6 +527,15 @@ public class MonitorComandasEngine {
                         Map.Entry<String, ComandaCardModel> entry = it.next();
                         String chaveRemovida = entry.getKey();
                         if (!chavesAtivasNestaConsulta.contains(chaveRemovida)) {
+                            ComandaCardModel cardRemovido = entry.getValue();
+                            if (cardRemovido != null) {
+                                try {
+                                    String codGarcom = ResumoGarcomManager.getCodigoGarcom(context);
+                                    ConferenciaSaidasManager.getInstance(context).registrarComandaQueSaiu(cardRemovido, codGarcom);
+                                } catch (Exception e) {
+                                    android.util.Log.e("MonitorComandasEngine", "Erro ao registrar saida de comanda", e);
+                                }
+                            }
                             comandasEntregues.remove(chaveRemovida);
                             // Purga itens checados associados à comanda fechada para liberar memória
                             String prefixo = chaveRemovida + "_";

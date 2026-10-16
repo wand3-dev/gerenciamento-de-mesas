@@ -15,12 +15,14 @@ public class ItemCanceladoModel {
     private double valorTotal;
     private int qtde;
     private String codVend;
+    private String codProd;
     private long timestampDetectado;
     private String horaFormatada;
     private String dataStr;
     private boolean confirmadoCancelado;
 
     public ItemCanceladoModel(ItemComandaModel item, String comandaId) {
+        this.codProd = item.getCodProd() != null ? item.getCodProd().trim() : "";
         this.autonum = item.getAutonum() != null ? item.getAutonum().trim() : "";
         this.documento = item.getDocumento() != null ? item.getDocumento().trim() : "";
         this.numComanda = item.getNumComanda() != null ? item.getNumComanda().trim() : "";
@@ -52,6 +54,7 @@ public class ItemCanceladoModel {
         this.valorTotal = json.optDouble("valorTotal", 0.0);
         this.qtde = json.optInt("qtde", 1);
         this.codVend = json.optString("codVend", "");
+        this.codProd = json.optString("codProd", "");
         this.timestampDetectado = json.optLong("timestampDetectado", System.currentTimeMillis());
         this.horaFormatada = json.optString("horaFormatada", "");
         this.dataStr = json.optString("dataStr", "");
@@ -70,6 +73,7 @@ public class ItemCanceladoModel {
             obj.put("valorTotal", valorTotal);
             obj.put("qtde", qtde);
             obj.put("codVend", codVend);
+            obj.put("codProd", codProd);
             obj.put("timestampDetectado", timestampDetectado);
             obj.put("horaFormatada", horaFormatada);
             obj.put("dataStr", dataStr);
@@ -87,6 +91,7 @@ public class ItemCanceladoModel {
     public double getValorTotal() { return valorTotal; }
     public int getQtde() { return qtde; }
     public String getCodVend() { return codVend; }
+    public String getCodProd() { return codProd != null ? codProd : ""; }
     public long getTimestampDetectado() { return timestampDetectado; }
     public String getHoraFormatada() { return horaFormatada; }
     public String getDataStr() { return dataStr; }
