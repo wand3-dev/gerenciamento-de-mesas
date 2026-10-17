@@ -430,7 +430,25 @@ public class MonitorComandasEngine {
 
                             mapaComandas.put(chave, card);
                         } else {
-                            // Comanda já existente: preserva detectedAt e atualiza valores/itens
+                            // Comanda já existente: preserva detectedAt e detecta troca de mesa
+                            int mesaAnterior = card.getMesa();
+                            int mesaNova = m;
+                            if (mesaAnterior > 0 && mesaNova > 0 && mesaAnterior != mesaNova && !primeiraConsulta) {
+                                final int mAnt = mesaAnterior;
+                                final int mNova = mesaNova;
+                                final String cNum = !card.getNumComanda().isEmpty() ? card.getNumComanda() : numCmd;
+                                mainHandler.post(() -> {
+                                    NotificationHelper.notificarMudancaMesa(context, cNum, mAnt, mNova);
+                                    String toastMsg = "🔄 CMD #" + cNum + " mudou da Mesa " + mAnt + " ➔ Mesa " + mNova;
+                                    android.widget.Toast.makeText(context, toastMsg, android.widget.Toast.LENGTH_LONG).show();
+                                });
+                                // Se a mesa antiga era favorita, migra para a nova mesa
+                                if (favoritos.contains("MESA_" + mAnt)) {
+                                    favoritos.remove("MESA_" + mAnt);
+                                    favoritos.add("MESA_" + mNova);
+                                    salvarComandasEntregues();
+                                }
+                            }
                             card.atualizarDados(objCmd);
                             card.setFavorita(isFavorito(card));
                         }

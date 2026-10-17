@@ -904,21 +904,39 @@ public class MainActivity extends AppCompatActivity implements
 
         VibrationHelper.vibrateLongPress(this);
 
-        String msg = "O produto abaixo não consta mais na comanda:\n\n"
-                + "📦 " + item.getLinhaResumo() + "\n"
-                + "📍 " + item.getIdentificadorComanda() + "\n\n"
-                + "Este item foi realmente cancelado pelo cliente ou pelo gerente?";
+        String titulo;
+        String msg;
+        String btnPositivo;
+        String btnNegativo;
+
+        if (item.isReducaoQuantidade()) {
+            titulo = "⚠️ Quantidade Reduzida";
+            msg = "A quantidade do produto abaixo foi reduzida em comanda aberta:\n\n"
+                    + "📦 " + item.getLinhaResumo() + "\n"
+                    + "📍 " + item.getIdentificadorComanda() + "\n\n"
+                    + "Esta redução de " + item.getQtde() + " un foi realmente cancelada pelo cliente ou gerente?";
+            btnPositivo = "❌ Sim, foi Cancelada";
+            btnNegativo = "✅ Não, Manter Venda";
+        } else {
+            titulo = "⚠️ Item Removido da Comanda Aberta";
+            msg = "O produto abaixo foi removido enquanto a mesa continua consumindo:\n\n"
+                    + "📦 " + item.getLinhaResumo() + "\n"
+                    + "📍 " + item.getIdentificadorComanda() + "\n\n"
+                    + "Este item foi realmente cancelado pelo cliente ou pelo gerente?";
+            btnPositivo = "❌ Sim, foi Cancelado";
+            btnNegativo = "✅ Não, Manter Venda";
+        }
 
         dialogCancelamentoAtivo = new AlertDialog.Builder(this)
-                .setTitle("⚠️ Item Removido da Comanda")
+                .setTitle(titulo)
                 .setMessage(msg)
                 .setCancelable(false)
-                .setPositiveButton("❌ Sim, foi Cancelado", (d, which) -> {
+                .setPositiveButton(btnPositivo, (d, which) -> {
                     cancelamentoManager.confirmarCancelamento(item);
-                    Toast.makeText(MainActivity.this, "Cancelamento registrado com sucesso!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Cancelamento registrado e deduzido com sucesso!", Toast.LENGTH_SHORT).show();
                     dialogCancelamentoAtivo = null;
                 })
-                .setNegativeButton("✅ Não, foi Pago / Normal", (d, which) -> {
+                .setNegativeButton(btnNegativo, (d, which) -> {
                     cancelamentoManager.descartarCancelamento(item);
                     Toast.makeText(MainActivity.this, "Item mantido como venda.", Toast.LENGTH_SHORT).show();
                     dialogCancelamentoAtivo = null;

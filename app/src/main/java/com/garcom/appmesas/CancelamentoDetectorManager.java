@@ -119,7 +119,8 @@ public class CancelamentoDetectorManager {
 
     /**
      * Executado a cada ciclo de polling pelo MonitorComandasEngine.
-     * Detecta itens pertencentes ao garçom que sumiram da comanda.
+     * Detecta cirurgicamente itens removidos ou reduzidos enquanto a comanda continua aberta.
+     * Ignora comandas que foram fechadas/pagas no caixa (essas vão para a Conferência).
      */
     public synchronized void processarCicloPolling(String meuCodGarcom, List<ComandaCardModel> comandasAbertas) {
         if (meuCodGarcom == null || meuCodGarcom.trim().isEmpty()) {
@@ -127,12 +128,27 @@ public class CancelamentoDetectorManager {
         }
         final String codAlvo = GarcomManager.normalizarCodigo(meuCodGarcom);
 
-        // 1. Mapeia todos os itens atuais pertencentes ao garçom alvo
+        // 1. Mapeia identificadores de comandas abertas atualmente no servidor
+        Set<String> comandaIdsAbertasAtuais = new HashSet<>();
         Map<String, ItemCanceladoModel> itensAtuaisGarcom = new HashMap<>();
 
         if (comandasAbertas != null) {
             for (ComandaCardModel cmd : comandasAbertas) {
-                if (cmd == null || !cmd.hasItens()) continue;
+                if (cmd == null) continue;
+                comandaIdsAbertasAtuais.add(cmd.getId());
+                if (!cmd.getNumComanda().isEmpty()) {
+                    comandaIdsAbertasAtuais.add(ComandaCardModel.normalizarIdComanda(cmd.getNumComanda()));
+                    comandaIdsAbertasAtuais.add(cmd.getNumComanda().trim());
+                }
+                if (!cmd.getDocumento().isEmpty()) {
+                    comandaIdsAbertasAtuais.add("DOC_" + cmd.getDocumento().trim());
+                    comandaIdsAbertasAtuais.add(cmd.getDocumento().trim());
+                }
+                if (cmd.getMesa() > 0) {
+                    comandaIdsAbertasAtuais.add("MESA_" + cmd.getMesa());
+                }
+
+                if (!cmd.hasItens()) continue;
                 for (ItemComandaModel it : cmd.getItens()) {
                     if (it == null) continue;
                     String codVendIt = GarcomManager.normalizarCodigo(it.getCodVend());
@@ -152,17 +168,45 @@ public class CancelamentoDetectorManager {
             return;
         }
 
-        // 2. Compara os itens anteriores com os atuais: os que sumiram são potenciais cancelamentos
+        // 2. Compara os itens anteriores com os atuais com precisão cirúrgica:
         List<ItemCanceladoModel> novosSumiços = new ArrayList<>();
 
         for (Map.Entry<String, ItemCanceladoModel> entry : itensAtivosAnteriores.entrySet()) {
             String chave = entry.getKey();
             ItemCanceladoModel itemAntigo = entry.getValue();
 
-            if (!itensAtuaisGarcom.containsKey(chave)) {
-                // O item sumiu!
-                // Verifica se já foi tratado antes
+            if (itensAtuaisGarcom.containsKey(chave)) {
+                // Item continua presente no sistema!
+                // Verifica se houve REDUÇÃO PARCIAL DE QUANTIDADE (ex: de 3x para 2x):
+                ItemCanceladoModel itemAtual = itensAtuaisGarcom.get(chave);
+                if (itemAtual != null && itemAtual.getQtde() < itemAntigo.getQtde()) {
+                    int deltaQtd = itemAntigo.getQtde() - itemAtual.getQtde();
+                    double precoUnitario = itemAntigo.getValorTotal() / Math.max(1, itemAntigo.getQtde());
+                    double valorReduzido = precoUnitario * deltaQtd;
+                    String chaveReducao = "REDUCAO_" + itemAntigo.getId() + "_DE_" + itemAntigo.getQtde() + "_PARA_" + itemAtual.getQtde();
+
+                    if (!jaEstaEmPendentes(chaveReducao) && !jaEstaEmConfirmados(chaveReducao) && !chavesDescartadas.contains(chaveReducao)) {
+                        ItemCanceladoModel reducaoModel = new ItemCanceladoModel(
+                                itemAntigo, deltaQtd, valorReduzido, chaveReducao, itemAntigo.getQtde(), itemAtual.getQtde());
+                        itensPendentes.add(0, reducaoModel);
+                        novosSumiços.add(reducaoModel);
+                    }
+                }
+            } else {
+                // O item não consta mais em nenhuma comanda aberta deste garçom!
+                // DIFERENCIAÇÃO CIRÚRGICA: A comanda inteira foi fechada/paga no caixa, ou foi um item removido de comanda aberta?
+                boolean comandaAindaAberta = itemAntigo.pertenceAComandaAberta(comandaIdsAbertasAtuais);
+
+                if (!comandaAindaAberta) {
+                    // A comanda inteira saiu do servidor (fechada/paga no caixa)!
+                    // O MonitorComandasEngine já registrou essa comanda no ConferenciaSaidasManager.
+                    // Não gera popup alarmista de cancelamento aqui!
+                    continue;
+                }
+
+                // A comanda continua aberta e consumindo, mas este item específico foi removido!
                 if (!jaEstaEmPendentes(chave) && !jaEstaEmConfirmados(chave) && !chavesDescartadas.contains(chave)) {
+                    itemAntigo.setMotivoAlerta("REMOVIDO_COMANDA_ABERTA");
                     itensPendentes.add(0, itemAntigo);
                     novosSumiços.add(itemAntigo);
                 }

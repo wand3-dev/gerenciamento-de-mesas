@@ -4,6 +4,7 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Set;
 
 public class ItemCanceladoModel {
     private String id; // Chave única (autonum ou chave do item)
@@ -20,6 +21,9 @@ public class ItemCanceladoModel {
     private String horaFormatada;
     private String dataStr;
     private boolean confirmadoCancelado;
+    private String motivoAlerta; // "REMOVIDO_COMANDA_ABERTA", "REDUCAO_QUANTIDADE"
+    private int qtdeAnterior;
+    private int qtdeNova;
 
     public ItemCanceladoModel(ItemComandaModel item, String comandaId) {
         this.codProd = item.getCodProd() != null ? item.getCodProd().trim() : "";
@@ -30,6 +34,9 @@ public class ItemCanceladoModel {
         this.descricao = item.getDescricao() != null ? item.getDescricao().trim() : "Produto";
         this.valorTotal = item.getValorTotalNumerico();
         this.qtde = Math.max(1, item.getVlrQtde());
+        this.qtdeAnterior = this.qtde;
+        this.qtdeNova = 0;
+        this.motivoAlerta = "REMOVIDO_COMANDA_ABERTA";
         this.codVend = item.getCodVend() != null ? item.getCodVend().trim() : "";
 
         if (!this.autonum.isEmpty()) {
@@ -38,6 +45,26 @@ public class ItemCanceladoModel {
             this.id = item.getItemKey(comandaId);
         }
 
+        this.timestampDetectado = System.currentTimeMillis();
+        this.horaFormatada = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date(this.timestampDetectado));
+        this.dataStr = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date(this.timestampDetectado));
+        this.confirmadoCancelado = false;
+    }
+
+    public ItemCanceladoModel(ItemCanceladoModel itemOriginal, int qtdReduzida, double valorReduzido, String novaChave, int qtdAnterior, int qtdNova) {
+        this.id = novaChave;
+        this.autonum = itemOriginal.getAutonum();
+        this.documento = itemOriginal.getDocumento();
+        this.numComanda = itemOriginal.getNumComanda();
+        this.mesa = itemOriginal.getMesa();
+        this.descricao = itemOriginal.getDescricao();
+        this.valorTotal = valorReduzido;
+        this.qtde = qtdReduzida;
+        this.qtdeAnterior = qtdAnterior;
+        this.qtdeNova = qtdNova;
+        this.motivoAlerta = "REDUCAO_QUANTIDADE";
+        this.codVend = itemOriginal.getCodVend();
+        this.codProd = itemOriginal.getCodProd();
         this.timestampDetectado = System.currentTimeMillis();
         this.horaFormatada = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date(this.timestampDetectado));
         this.dataStr = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date(this.timestampDetectado));
@@ -59,6 +86,9 @@ public class ItemCanceladoModel {
         this.horaFormatada = json.optString("horaFormatada", "");
         this.dataStr = json.optString("dataStr", "");
         this.confirmadoCancelado = json.optBoolean("confirmadoCancelado", false);
+        this.motivoAlerta = json.optString("motivoAlerta", "REMOVIDO_COMANDA_ABERTA");
+        this.qtdeAnterior = json.optInt("qtdeAnterior", this.qtde);
+        this.qtdeNova = json.optInt("qtdeNova", 0);
     }
 
     public JSONObject toJson() {
@@ -78,6 +108,9 @@ public class ItemCanceladoModel {
             obj.put("horaFormatada", horaFormatada);
             obj.put("dataStr", dataStr);
             obj.put("confirmadoCancelado", confirmadoCancelado);
+            obj.put("motivoAlerta", motivoAlerta);
+            obj.put("qtdeAnterior", qtdeAnterior);
+            obj.put("qtdeNova", qtdeNova);
         } catch (Exception ignored) {}
         return obj;
     }
@@ -97,6 +130,33 @@ public class ItemCanceladoModel {
     public String getDataStr() { return dataStr; }
     public boolean isConfirmadoCancelado() { return confirmadoCancelado; }
     public void setConfirmadoCancelado(boolean confirmadoCancelado) { this.confirmadoCancelado = confirmadoCancelado; }
+    public String getMotivoAlerta() { return motivoAlerta; }
+    public void setMotivoAlerta(String motivoAlerta) { this.motivoAlerta = motivoAlerta; }
+    public int getQtdeAnterior() { return qtdeAnterior; }
+    public int getQtdeNova() { return qtdeNova; }
+
+    public boolean isReducaoQuantidade() {
+        return "REDUCAO_QUANTIDADE".equals(motivoAlerta) || (qtdeAnterior > qtdeNova && qtdeNova > 0);
+    }
+
+    public boolean pertenceAComandaAberta(Set<String> comandaIdsAbertasSet) {
+        if (comandaIdsAbertasSet == null || comandaIdsAbertasSet.isEmpty()) return false;
+        if (numComanda != null && !numComanda.trim().isEmpty()) {
+            String norm = ComandaCardModel.normalizarIdComanda(numComanda);
+            if (comandaIdsAbertasSet.contains(norm) || comandaIdsAbertasSet.contains(numComanda.trim())) {
+                return true;
+            }
+        }
+        if (documento != null && !documento.trim().isEmpty()) {
+            if (comandaIdsAbertasSet.contains("DOC_" + documento.trim()) || comandaIdsAbertasSet.contains(documento.trim())) {
+                return true;
+            }
+        }
+        if (mesa > 0 && comandaIdsAbertasSet.contains("MESA_" + mesa)) {
+            return true;
+        }
+        return false;
+    }
 
     public String getValorFormatado() {
         return String.format(Locale.GERMANY, "R$ %.2f", valorTotal);
@@ -113,6 +173,9 @@ public class ItemCanceladoModel {
     }
 
     public String getLinhaResumo() {
+        if (isReducaoQuantidade()) {
+            return qtde + "x " + descricao + " (Redução de " + qtdeAnterior + "x para " + qtdeNova + "x) — " + getValorFormatado();
+        }
         return qtde + "x " + descricao + " — " + getValorFormatado();
     }
 }

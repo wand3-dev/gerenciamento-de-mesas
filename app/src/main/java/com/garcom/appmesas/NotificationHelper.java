@@ -566,8 +566,15 @@ public class NotificationHelper {
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
 
-            String titulo = "⚠️ Item Removido: " + item.getDescricao();
-            String mensagem = item.getLinhaResumo() + " (" + item.getIdentificadorComanda() + "). Toque para confirmar se foi cancelado.";
+            String titulo;
+            String mensagem;
+            if (item.isReducaoQuantidade()) {
+                titulo = "⚠️ Quantidade Reduzida: " + item.getDescricao();
+                mensagem = item.getLinhaResumo() + " (" + item.getIdentificadorComanda() + "). Toque para verificar.";
+            } else {
+                titulo = "⚠️ Item Removido: " + item.getDescricao();
+                mensagem = item.getLinhaResumo() + " (" + item.getIdentificadorComanda() + "). Toque para confirmar se foi cancelado.";
+            }
 
             NotificationCompat.Builder builder = new NotificationCompat.Builder(appContext, CHANNEL_PEDIDOS)
                     .setSmallIcon(R.drawable.ic_notification_alert)
@@ -580,6 +587,7 @@ public class NotificationHelper {
                     .setContentIntent(pendingIntent);
 
             NotificationManagerCompat.from(appContext).notify(reqCode, builder.build());
+            AlertaHistoricoManager.registrarAlerta(appContext, new AlertaHistorico("CANCELAMENTO", titulo, mensagem, item.getMesa(), item.getNumComanda()));
         } catch (Exception ignored) {}
     }
 }
